@@ -12,75 +12,89 @@
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/layout_margin">
 
-        <Switch
-            android:id="@+id/optSyncEnabled"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_advanced_enabled_sync"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optSyncEnabled"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_enabled_sync"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="VisualLintButtonSize" />
 
-        <Switch
-            android:id="@+id/optAvatars"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_advanced_avatars"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optSyncEnabled" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optAvatars"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_avatars"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optSyncEnabled"
+        tools:ignore="VisualLintButtonSize" />
 
-        <Switch
-            android:id="@+id/optLight"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_advanced_light"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optAvatars" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optLight"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_light"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optAvatars"
+        tools:ignore="VisualLintButtonSize" />
 
-        <Switch
-            android:id="@+id/optBrowse"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_advanced_browse"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optLight" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optBrowse"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_browse"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optLight"
+        tools:ignore="VisualLintButtonSize" />
 
-        <Switch
-            android:id="@+id/optCompact"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_advanced_compact"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optBrowse" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optCompact"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_compact"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optBrowse"
+        tools:ignore="VisualLintButtonSize" />
 
-        <Switch
-            android:id="@+id/optInsecure"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_allow_insecure"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optCompact" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optInsecure"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_allow_insecure"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optCompact"
+        tools:ignore="VisualLintButtonSize" />
 
-        <Switch
-            android:id="@+id/optDebug"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
-            android:text="@string/title_advanced_debug"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optInsecure" />
+      <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optDebug"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_debug"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optInsecure"
+        tools:ignore="VisualLintButtonSize" />
 
         <TextView
             android:id="@+id/tvBodyTextSizeLabel"
@@ -98,6 +112,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:entries="@array/body_text_size_entries"
+        android:minHeight="48dp"
         app:layout_constraintBaseline_toBaselineOf="@id/tvBodyTextSizeLabel"
         app:layout_constraintEnd_toEndOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>

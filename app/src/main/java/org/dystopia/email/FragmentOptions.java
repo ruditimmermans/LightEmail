@@ -27,7 +27,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.Switch;
+import androidx.appcompat.widget.SwitchCompat;
 import android.widget.Spinner;
 import android.widget.AdapterView;
 
@@ -35,13 +35,13 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 public class FragmentOptions extends FragmentEx {
-    private Switch optSyncEnabled;
-    private Switch optAvatars;
-    private Switch optLight;
-    private Switch optBrowse;
-    private Switch optCompact;
-    private Switch optInsecure;
-    private Switch optDebug;
+    private SwitchCompat optSyncEnabled;
+    private SwitchCompat optAvatars;
+    private SwitchCompat optLight;
+    private SwitchCompat optBrowse;
+    private SwitchCompat optCompact;
+    private SwitchCompat optInsecure;
+    private SwitchCompat optDebug;
     private Spinner spnBodyTextSize;
 
     @Override

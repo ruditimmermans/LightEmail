@@ -31,7 +31,7 @@
   <string name="default_hint_smtp" translatable="false">smtp.domain.tld</string>
   <string name="default_imap_port" translatable="false">993</string>
   <string name="default_smtp_port" translatable="false">465</string>
-  <string name="default_link" translatable="false">https://framagit.org/dystopia-project</string>
+  <string name="default_link" translatable="false">https://github.com/ruditimmermans/LightEmail</string>
   <string name="default_sync" translatable="false">7</string>
   <string name="default_attachment_size" translatable="false">10 kB</string>
   <string name="default_attachment_type" translatable="false">text/plain</string>
