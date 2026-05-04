@@ -1,4 +1,0 @@
-Bug Fixes
-
-- check compatibility on notification settings
-- crash on public notification without color

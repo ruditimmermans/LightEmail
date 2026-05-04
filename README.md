@@ -41,7 +41,7 @@ notification to make sure you'll never miss a new email.
 
 ## Screenshots
 
-[<img src="metadata/en-US/images/phoneScreenshots/05_screenshot.png" width=160>](metadata/en-US/images/phoneScreenshots/05_screenshot.png)
+[<img src="metadata/en-US/images/phoneScreenshots/1.png" width=160>](metadata/en-US/images/phoneScreenshots/1.png)
 [<img src="metadata/en-US/images/phoneScreenshots/08_screenshot.png" width=160>](metadata/en-US/images/phoneScreenshots/08_screenshot.png)
 
 
