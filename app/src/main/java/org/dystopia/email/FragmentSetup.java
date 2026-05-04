@@ -507,7 +507,7 @@ public class FragmentSetup extends FragmentEx {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(
             Uri.parse(
-                "https://framagit.org/dystopia-project/simple-email/blob/8f7296ddc2275471d4190df1dd55dee4025a5114/docs/SETUP.md"));
+                "https://raw.githubusercontent.com/ruditimmermans/LightEmail/refs/heads/main/SETUP.md"));
         return intent;
     }
 
@@ -518,7 +518,7 @@ public class FragmentSetup extends FragmentEx {
         intent.putExtra(
             Intent.EXTRA_TITLE,
             "LightEmail_backup_"
-                + new SimpleDateFormat("yyyyMMdd", Locale.getDefault()).format(new Date().getTime())
+                + new SimpleDateFormat("ddMMyyyy", Locale.getDefault()).format(new Date().getTime())
                 + ".json");
         return intent;
     }
