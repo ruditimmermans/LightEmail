@@ -31,8 +31,11 @@ import androidx.room.PrimaryKey;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.io.FileInputStream;
+import java.io.OutputStreamWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date;
@@ -160,7 +163,7 @@ public class EntityMessage implements Serializable {
         File file = getFile(context, id);
         BufferedWriter out = null;
         try {
-            out = new BufferedWriter(new FileWriter(file));
+            out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
             out.write(body == null ? "" : body);
         } finally {
             if (out != null) {
@@ -181,7 +184,7 @@ public class EntityMessage implements Serializable {
         File file = getFile(context, id);
         BufferedReader in = null;
         try {
-            in = new BufferedReader(new FileReader(file));
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
             StringBuilder body = new StringBuilder();
             String line;
             while ((line = in.readLine()) != null) {

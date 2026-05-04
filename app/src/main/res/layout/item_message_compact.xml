@@ -72,7 +72,8 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintEnd_toStartOf="@id/tvTime"
         app:layout_constraintStart_toEndOf="@id/ivAvatar"
-        app:layout_constraintTop_toBottomOf="@id/paddingTop" />
+        app:layout_constraintTop_toBottomOf="@id/paddingTop"
+      tools:ignore="VisualLintSystemUi" />
 
     <TextView
         android:id="@+id/tvTime"
@@ -83,7 +84,8 @@
         android:text="@string/default_time"
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
         app:layout_constraintEnd_toStartOf="@+id/ivFlagged"
-        app:layout_constraintTop_toTopOf="@id/tvFrom" />
+        app:layout_constraintTop_toTopOf="@id/tvFrom"
+      tools:ignore="VisualLintSystemUi" />
 
     <ImageView
         android:id="@+id/ivFlagged"
@@ -434,19 +436,29 @@
         app:layout_constraintStart_toStartOf="@id/tvHeaders"
         app:layout_constraintTop_toBottomOf="@id/vSeparatorHeaders" />
 
+    <View
+        android:id="@+id/vSeparatorActions"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="?attr/colorSeparator"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@id/vwColor"
+        app:layout_constraintTop_toBottomOf="@id/tvHeaders" />
+
     <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/bnvActions"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="3dp"
-        android:background="?attr/colorSeparator"
+        android:background="@android:color/black"
         app:itemIconTint="@color/bottomnav_background"
         app:itemTextColor="@color/bottomnav_background"
-        app:labelVisibilityMode="labeled"
+        app:labelVisibilityMode="unlabeled"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/vwColor"
-        app:layout_constraintTop_toBottomOf="@id/tvHeaders"
-        app:menu="@menu/action_message" />
+        app:layout_constraintTop_toBottomOf="@id/vSeparatorActions"
+        app:menu="@menu/action_message"
+      tools:ignore="VisualLintBottomNav" />
 
     <View
         android:id="@+id/vSeparatorBody"
@@ -459,17 +471,17 @@
         app:layout_constraintTop_toBottomOf="@id/bnvActions" />
 
     <Button
-        android:id="@+id/btnImages"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="3dp"
-        android:layout_marginEnd="6dp"
-        android:minWidth="0dp"
-        android:minHeight="0dp"
-        android:text="@string/title_show_images"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/vSeparatorBody" />
+      android:id="@+id/btnImages"
+      style="?android:attr/buttonStyleSmall"
+      android:layout_width="wrap_content"
+      android:layout_height="wrap_content"
+      android:layout_marginTop="3dp"
+      android:layout_marginEnd="6dp"
+      android:minWidth="0dp"
+      android:minHeight="48dp"
+      android:text="@string/title_show_images"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/vSeparatorBody" />
 
     <TextView
         android:id="@+id/tvBody"
@@ -551,6 +563,6 @@
         android:id="@+id/grpExpanded"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:constraint_referenced_ids="tvBody" />
+        app:constraint_referenced_ids="vSeparatorActions,bnvActions,vSeparatorBody,tvBody,btnImages,pbBody" />
   </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

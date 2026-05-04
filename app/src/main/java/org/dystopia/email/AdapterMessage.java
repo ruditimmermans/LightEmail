@@ -321,7 +321,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
             ivExpander.setImageResource(
                 show_expanded ? R.drawable.baseline_expand_less_24 : R.drawable.baseline_expand_more_24);
-            ivExpander.setVisibility(viewType == ViewType.THREAD ? View.VISIBLE : View.GONE);
+            ivExpander.setVisibility(View.VISIBLE);
 
             if (viewType == ViewType.THREAD) {
                 ivFlagged.setVisibility(message.unflagged == 1 ? View.GONE : View.VISIBLE);
@@ -457,10 +457,9 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             tvSummary.setTextColor(colorSecondary);
             itemView.setBackground(!message.ui_seen && !show_expanded ? backgroundUnseen : backgroundSeen);
 
-            grpExpanded.setVisibility(
-                viewType == ViewType.THREAD && show_expanded ? View.VISIBLE : View.GONE);
+            grpExpanded.setVisibility(show_expanded ? View.VISIBLE : View.GONE);
             ivAddContact.setVisibility(
-                viewType == ViewType.THREAD && show_expanded && contacts && message.from != null
+                show_expanded && contacts && message.from != null
                     ? View.VISIBLE
                     : View.GONE);
 
@@ -470,7 +469,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             grpHeaders.setVisibility(show_headers && show_expanded ? View.VISIBLE : View.GONE);
 
             bnvActions.setVisibility(show_expanded ? View.INVISIBLE : View.GONE);
-            vSeparatorBody.setVisibility(!show_expanded ? View.INVISIBLE : View.GONE);
+            vSeparatorBody.setVisibility(show_expanded ? View.GONE : View.GONE);
             btnImages.setVisibility(View.GONE);
             pbBody.setVisibility(View.GONE);
             grpAttachments.setVisibility(
@@ -615,30 +614,15 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
             if (view.getId() == R.id.ivAddContact) {
                 onAddContact(message);
-            } else if (viewType == ViewType.THREAD) {
-                if (view.getId() == R.id.btnImages) {
-                    onShowImages(message);
-                } else {
-                    onExpandMessage(pos, message);
-                }
+            } else if (view.getId() == R.id.btnImages) {
+                onShowImages(message);
+            } else if (EntityFolder.DRAFTS.equals(message.folderType) && viewType != ViewType.THREAD) {
+                context.startActivity(
+                    new Intent(context, ActivityCompose.class)
+                        .putExtra("action", "edit")
+                        .putExtra("id", message.id));
             } else {
-                if (EntityFolder.DRAFTS.equals(message.folderType)) {
-                    context.startActivity(
-                        new Intent(context, ActivityCompose.class)
-                            .putExtra("action", "edit")
-                            .putExtra("id", message.id));
-                } else {
-                    LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
-                    Intent intent =
-                        new Intent(ActivityView.ACTION_VIEW_THREAD)
-                            .putExtra("account", message.account)
-                            .putExtra("thread", message.thread);
-
-                    if (viewType == ViewType.FOLDER) {
-                        intent.putExtra("folder", folder);
-                    }
-                    lbm.sendBroadcast(intent);
-                }
+                onExpandMessage(pos, message);
             }
         }
 

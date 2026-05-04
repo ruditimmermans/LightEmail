@@ -53,6 +53,7 @@ public class FragmentWebView extends FragmentEx {
         progressBar.setProgress(0);
         progressBar.setVisibility(View.VISIBLE);
 
+        webview.setBackgroundColor(android.graphics.Color.BLACK);
         WebSettings settings = webview.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setUseWideViewPort(true);
@@ -100,7 +101,8 @@ public class FragmentWebView extends FragmentEx {
                 @Override
                 protected void onLoaded(Bundle args, String html) {
                     String from = args.getString("from");
-                    webview.loadDataWithBaseURL("email://", html, "text/html", "UTF-8", null);
+                    String styledHtml = "<style>body{background-color:black;color:white;}</style>" + html;
+                    webview.loadDataWithBaseURL("email://", styledHtml, "text/html", "UTF-8", null);
                     setSubtitle(from);
                 }
 

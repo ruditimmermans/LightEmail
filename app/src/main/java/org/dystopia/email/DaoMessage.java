@@ -41,8 +41,8 @@ public interface DaoMessage {
         "SELECT message.*"
             + ", account.name AS accountName, account.color AS accountColor"
             + ", folder.name AS folderName, folder.display AS folderDisplay, folder.type AS folderType"
-            + ", COUNT(message.id) AS count"
-            + ", SUM(CASE WHEN message.ui_seen"
+            + ", 1 AS count"
+            + ", CASE WHEN message.ui_seen"
             + "    OR folder.type = '"
             + EntityFolder.ARCHIVE
             + "'"
@@ -51,8 +51,8 @@ public interface DaoMessage {
             + "'"
             + "    OR folder.type = '"
             + EntityFolder.DRAFTS
-            + "' THEN 0 ELSE 1 END) AS unseen"
-            + ", SUM(CASE WHEN message.ui_flagged"
+            + "' THEN 0 ELSE 1 END AS unseen"
+            + ", CASE WHEN message.ui_flagged"
             + "    AND NOT folder.type = '"
             + EntityFolder.ARCHIVE
             + "'"
@@ -61,7 +61,7 @@ public interface DaoMessage {
             + "'"
             + "    AND NOT folder.type = '"
             + EntityFolder.DRAFTS
-            + "' THEN 0 ELSE 1 END) AS unflagged"
+            + "' THEN 0 ELSE 1 END AS unflagged"
             + ", (SELECT COUNT(a.id) FROM attachment a WHERE a.message = message.id) AS attachments"
             + " FROM message"
             + " JOIN account ON account.id = message.account"
@@ -70,8 +70,6 @@ public interface DaoMessage {
             + " AND (NOT message.ui_hide OR :debug)"
             + " AND NOT ui_found"
             + " AND folder.unified "
-            + " GROUP BY account.id, CASE WHEN message.thread IS NULL THEN message.id ELSE message.thread END"
-            + " HAVING SUM(unified) > 0"
             + " ORDER BY CASE"
             + "  WHEN 'unread' = :sort THEN NOT message.ui_seen"
             + "  WHEN 'starred' = :sort THEN message.ui_flagged"
@@ -83,8 +81,8 @@ public interface DaoMessage {
         "SELECT message.*"
             + ", account.name AS accountName, account.color AS accountColor"
             + ", folder.name AS folderName, folder.display AS folderDisplay, folder.type AS folderType"
-            + ", COUNT(message.id) AS count"
-            + ", SUM(CASE WHEN message.ui_seen"
+            + ", 1 AS count"
+            + ", CASE WHEN message.ui_seen"
             + "    OR (folder.id <> :folderId AND folder.type = '"
             + EntityFolder.ARCHIVE
             + "')"
@@ -93,8 +91,8 @@ public interface DaoMessage {
             + "')"
             + "    OR (folder.id <> :folderId AND folder.type = '"
             + EntityFolder.DRAFTS
-            + "') THEN 0 ELSE 1 END) AS unseen"
-            + ", SUM(CASE WHEN message.ui_flagged"
+            + "') THEN 0 ELSE 1 END AS unseen"
+            + ", CASE WHEN message.ui_flagged"
             + "    AND NOT (folder.id <> :folderId AND folder.type = '"
             + EntityFolder.ARCHIVE
             + "')"
@@ -103,7 +101,7 @@ public interface DaoMessage {
             + "')"
             + "    AND NOT (folder.id <> :folderId AND folder.type = '"
             + EntityFolder.DRAFTS
-            + "') THEN 0 ELSE 1 END) AS unflagged"
+            + "') THEN 0 ELSE 1 END AS unflagged"
             + ", (SELECT COUNT(a.id) FROM attachment a WHERE a.message = message.id) AS attachments"
             + " FROM message"
             + " JOIN account ON account.id = message.account"
@@ -123,8 +121,6 @@ public interface DaoMessage {
             + "      END"
             + " AND (NOT message.ui_hide OR :debug)"
             + " AND ui_found = :found"
-            + " GROUP BY CASE WHEN message.thread IS NULL THEN message.id ELSE message.thread END"
-            + " HAVING SUM(CASE WHEN folder.id = :folderId THEN 1 ELSE 0 END) > 0"
             + " ORDER BY CASE"
             + "  WHEN 'unread' = :sort THEN NOT message.ui_seen"
             + "  WHEN 'starred' = :sort THEN message.ui_flagged"

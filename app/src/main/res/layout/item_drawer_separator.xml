@@ -6,11 +6,11 @@
     android:paddingBottom="12dp"
     android:paddingTop="12dp">
 
-    <View
-        android:id="@+id/vSeparatorAddress"
-        android:layout_width="match_parent"
-        android:layout_height="3dp"
-        android:background="?attr/colorSeparator"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+  <View
+    android:id="@+id/vSeparatorAddress"
+    android:layout_width="match_parent"
+    android:layout_height="3dp"
+    android:background="?attr/colorSeparator"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

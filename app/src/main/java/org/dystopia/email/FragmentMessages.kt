@@ -280,13 +280,8 @@ class FragmentMessages : FragmentEx() {
                                     db.beginTransaction()
                                     for (id in ids!!) {
                                         val message = db.message().getMessage(id)
-                                        val messages = db.message().getMessageByThread(message.account, message.thread)
-                                        for (threaded in messages) {
-                                            if (threaded.folder == message.folder) {
-                                                db.message().setMessageUiHide(threaded.id, true)
-                                                EntityOperation.queue(db, threaded, EntityOperation.MOVE, target)
-                                            }
-                                        }
+                                        db.message().setMessageUiHide(message.id, true)
+                                        EntityOperation.queue(db, message, EntityOperation.MOVE, target)
                                     }
                                     db.setTransactionSuccessful()
                                 } finally {

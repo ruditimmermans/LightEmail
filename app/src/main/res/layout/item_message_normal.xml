@@ -432,18 +432,27 @@
             app:layout_constraintStart_toStartOf="@id/tvHeaders"
             app:layout_constraintTop_toBottomOf="@id/vSeparatorHeaders" />
 
+        <View
+            android:id="@+id/vSeparatorActions"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:background="?attr/colorSeparator"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/vwColor"
+            app:layout_constraintTop_toBottomOf="@id/tvHeaders" />
+
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bnvActions"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:background="?attr/colorSeparator"
+            android:background="@android:color/black"
             app:itemIconTint="@color/bottomnav_background"
             app:itemTextColor="@color/bottomnav_background"
-            app:labelVisibilityMode="labeled"
+            app:labelVisibilityMode="unlabeled"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toEndOf="@id/vwColor"
-            app:layout_constraintTop_toBottomOf="@id/tvHeaders"
+            app:layout_constraintTop_toBottomOf="@id/vSeparatorActions"
             app:menu="@menu/action_message" />
 
         <View
@@ -549,6 +558,6 @@
             android:id="@+id/grpExpanded"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            app:constraint_referenced_ids="tvBody" />
+            app:constraint_referenced_ids="vSeparatorActions,bnvActions,vSeparatorBody,tvBody,btnImages,pbBody" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 </FrameLayout>

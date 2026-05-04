@@ -82,8 +82,6 @@
     <string name="title_setup_notifications">Xestionar notificacións</string>
     <string name="title_setup_to_do">Para facer</string>
     <string name="title_setup_done">Feito</string>
-    <string name="title_setup_light_theme">Decorado claro</string>
-    <string name="title_setup_dark_theme">Decorado escuro</string>
     <string name="title_advanced">Opcións avanzadas</string>
     <string name="title_advanced_enabled_sync">Activar sincr</string>
     <string name="title_advanced_avatars">Mostrar foto de contactos</string>
