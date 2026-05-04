@@ -1,0 +1,87 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <attr name="colorUnread" format="reference" />
+    <attr name="colorSeparator" format="reference" />
+    <attr name="colorWarning" format="reference" />
+    <attr name="colorDrawerScrim" format="reference" />
+    <attr name="colorDrawerText" format="reference" />
+    <attr name="colorDrawerBackground" format="reference" />
+    <attr name="colorDrawerUnreadBackground" format="reference" />
+    <attr name="drawableItemBackground" format="reference" />
+    <attr name="drawableItemUnreadBackground" format="reference" />
+
+    <style name="AppThemeDark" parent="Base.Theme.AppCompat">
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:editTextColor">@android:color/white</item>
+
+        <item name="colorPrimary">@android:color/black</item>
+        <item name="colorPrimaryDark">@android:color/black</item>
+        <item name="colorAccent">@color/colorAccent</item>
+
+        <item name="colorUnread">@color/darkColorUnread</item>
+        <item name="colorSeparator">@color/darkColorSeparator</item>
+        <item name="colorWarning">@color/darkColorWarning</item>
+        <item name="colorDrawerScrim">@color/darkColorDrawerScrim</item>
+        <item name="colorDrawerText">@color/darkColorDrawerText</item>
+        <item name="colorDrawerBackground">@color/darkColorDrawerBackground</item>
+        <item name="colorDrawerUnreadBackground">@color/darkColorUnreadDrawerBackground</item>
+
+        <item name="drawableItemBackground">@drawable/item_background_dark</item>
+        <item name="drawableItemUnreadBackground">@drawable/item_background_unread_dark</item>
+
+        <item name="android:checkboxStyle">@style/checkboxStyle</item>
+        <item name="android:buttonStyle">@style/buttonStyle</item>
+        <item name="android:buttonStyleSmall">@style/buttonStyleSmall</item>
+        <item name="android:buttonStyleToggle">@style/buttonStyleToggle</item>
+
+        <item name="actionBarStyle">@style/actionBarStyleDark</item>
+        <item name="android:statusBarColor">@android:color/black</item>
+        <!-- Force dark status bar on API >= 23 -->
+        <item name="android:windowLightStatusBar" tools:targetApi="23">false</item>
+    </style>
+
+    <style name="Theme.Transparent" parent="Base.Theme.AppCompat">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+
+    <style name="checkboxStyle" parent="Base.Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Small</item>
+        <item name="android:textColor">?android:attr/textColorSecondary</item>
+    </style>
+
+    <style name="buttonStyle" parent="Base.Widget.AppCompat.Button">
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Medium</item>
+    </style>
+
+    <style name="buttonStyleSmall" parent="Base.Widget.AppCompat.Button.Small">
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Small</item>
+    </style>
+
+    <style name="buttonStyleToggle" parent="Base.Widget.AppCompat.Button">
+        <item name="android:textAppearance">@style/TextAppearance.AppCompat.Medium</item>
+    </style>
+
+    <style name="actionBarStyleDark" parent="Base.Widget.AppCompat.ActionBar">
+        <item name="android:background">@android:color/black</item>
+        <item name="titleTextStyle">@style/actionBarTitleStyleDark</item>
+    </style>
+
+    <style name="actionBarTitleStyleDark" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">@android:color/white</item>
+        <item name="android:editTextColor">@android:color/white</item>
+    </style>
+
+    <style name="AppThemeLight" parent="Base.Theme.AppCompat.Light">
+        <item name="colorPrimary">@android:color/white</item>
+        <item name="colorPrimaryDark">@android:color/white</item>
+        <item name="colorAccent">@android:color/black</item>
+    </style>
+</resources>

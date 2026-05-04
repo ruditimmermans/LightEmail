@@ -1,0 +1,13 @@
+Bug Fixes
+
+-   compatibly with SDK API 21
+-   crash on uninitialized cursor instance, closes #15
+-   gmail authentication over non-oAuth
+-   wrong format on compose email addresses
+-   UI: improve message items view to compact and unread
+-   UI: increase distance on refreshable
+
+Features
+
+-   improve swipe actions in archive/trash folders
+-   update color picker dialog

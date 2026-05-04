@@ -1,0 +1,113 @@
+//
+// Gradle task that creates the JDEE project file to andorid
+//
+
+import static groovy.io.FileType.FILES
+
+def jarFiles = { project ->
+    def folder = new File("${project.buildDir}/intermediates")
+    def files = []
+
+    if( folder.exists() ) {
+        // if exist look for jars
+        folder.eachFileRecurse(FILES) {
+            if(it.name.endsWith('.jar')) {
+                files << it.getAbsolutePath()
+            }
+        }
+    }
+    files
+}
+
+def getImplementation = { project ->
+    def files = []
+    def transforms = []
+
+    // get dependencies jars
+    project.configurations.implementationDeps.each { dep ->
+        if(dep.name.endsWith('.jar')) {
+            files << dep.getAbsolutePath()
+        } else {
+            // get jar from aar
+            def cacheFolder = new File("${System.getProperty('user.home')}/.gradle/caches")
+
+            if( cacheFolder.exists() ) {
+                cacheFolder.eachFileRecurse(FILES) {
+                    if(!transforms.contains(dep.name) && it.path.contains(dep.name) &&
+                       it.name.endsWith('.jar')) {
+                        transforms << dep.name
+                        files << it.getAbsolutePath()
+                    }
+                }
+            }
+        }
+    }
+
+    files
+}
+
+def classPaths = { project ->
+    def paths = [
+        "${project.buildDir}/intermediates/classes/debug",
+        "${project.buildDir}/intermediates/classes/test/debug"] +
+        android.getBootClasspath() +
+        configurations.archives.allArtifacts.getFiles() +
+        project.compileDebugJavaWithJavac.destinationDir +
+        project.compileReleaseJavaWithJavac.destinationDir +
+        (([] as Set) +
+         getImplementation(project) +
+         jarFiles(project)
+    )
+    paths.join(':')
+}
+
+def prj = { project ->
+    "((nil ." {
+        "(" {
+            "(eval ." {
+                "(setenv \"CLASSPATH\"" ([classPaths(project)])
+            }
+        }
+    }
+}
+
+projects {
+    task("dirlocal") {
+        doLast {
+            def output = new File(project.projectDir, ".dir-locals.el").newPrintWriter()
+            output.print ';;\n'
+            output.print ';; This is a generated file.\n'
+            output.print ';; To recreate, run "`gradlew dirlocal` or `gradlew assemble dirlocal`".\n'
+            try {
+                prj.delegate = new NodeBuilder() {
+                    def lev = 0
+
+                    def write = { Object file ->
+                        output.print '\n' + ''.padRight(lev, ' ') +  "\"${file}\"".tr('\\', '/')
+                    }
+
+                    Object createNode(Object name) {
+                        output.print ''.padRight(lev++, ' ') + name
+                        return name
+                    }
+
+                    Object createNode(Object name, Object value) {
+                        createNode(name)
+                        value.each write
+                        return name
+                    }
+
+                    void nodeCompleted(Object parent, Object child) {
+                        output.print ")"
+                        lev--
+                    }
+                }
+
+                prj(project)
+                output.close()
+            } finally {
+                output.flush()
+            }
+        }
+    }
+}

@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<resources>
+  <string name="default_count" translatable="false">--</string>
+  <string name="default_count_num" translatable="false">3</string>
+  <string name="default_email" translatable="false">Email</string>
+  <string name="default_from" translatable="false">From</string>
+  <string name="default_to" translatable="false">To</string>
+  <string name="default_reply_to" translatable="false">Reply to</string>
+  <string name="default_cc" translatable="false">Cc</string>
+  <string name="default_bcc" translatable="false">Bcc</string>
+  <string name="default_subject" translatable="false">Subject</string>
+  <string name="default_summary" translatable="false">Summary</string>
+  <string name="default_headers" translatable="false">Headers</string>
+  <string name="default_body" translatable="false">Body</string>
+  <string name="default_name" translatable="false">Name</string>
+  <string name="default_title" translatable="false">Title</string>
+  <string name="default_version" translatable="false">Version 1.0</string>
+  <string name="default_time" translatable="false">Time</string>
+  <string name="default_timelog" translatable="false">12:34:56</string>
+  <string name="default_log" translatable="false">log</string>
+  <string name="default_msg" translatable="false">Msg#</string>
+  <string name="default_user" translatable="false">User</string>
+  <string name="default_host" translatable="false">Host</string>
+  <string name="default_type" translatable="false">Type</string>
+  <string name="default_account" translatable="false">Account</string>
+  <string name="default_folder" translatable="false">Folder</string>
+  <string name="default_error" translatable="false">Error</string>
+  <string name="default_interval" translatable="false">19</string>
+  <string name="default_hint_domain" translatable="false">domain.tld</string>
+  <string name="default_hint_imap" translatable="false">imap.domain.tld</string>
+  <string name="default_hint_smtp" translatable="false">smtp.domain.tld</string>
+  <string name="default_imap_port" translatable="false">993</string>
+  <string name="default_smtp_port" translatable="false">465</string>
+  <string name="default_link" translatable="false">https://framagit.org/dystopia-project</string>
+  <string name="default_sync" translatable="false">7</string>
+  <string name="default_attachment_size" translatable="false">10 kB</string>
+  <string name="default_attachment_type" translatable="false">text/plain</string>
+  <string name="default_menu_item" translatable="false">Menu item</string>
+  <string name="default_messages_count" translatable="false">120</string>
+</resources>

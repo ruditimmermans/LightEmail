@@ -1,0 +1,9 @@
+Bug Fixes
+
+-   Open and share/save attachments on android >= 10
+
+Features
+
+-   design: white/black action bar + status bar
+-   display downloading attachment status
+-   Start migration to Kotlin

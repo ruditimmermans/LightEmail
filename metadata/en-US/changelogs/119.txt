@@ -1,0 +1,4 @@
+Bug Fixes
+
+-   crash on change between message view
+-   new permission ‘POST_NOTIFICATIONS’ required by android >= 13

@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   id="svg8"
+   version="1.1"
+   viewBox="0 0 52.916665 52.916668"
+   height="200"
+   width="200">
+  <title
+     id="title957">Simple Emial Icon</title>
+  <defs
+     id="defs2">
+    <filter
+       id="filter1427"
+       style="color-interpolation-filters:sRGB;">
+      <feFlood
+         id="feFlood1417"
+         result="flood"
+         flood-color="rgb(29,29,29)"
+         flood-opacity="0.501961" />
+      <feComposite
+         id="feComposite1419"
+         result="composite1"
+         operator="in"
+         in2="SourceGraphic"
+         in="flood" />
+      <feGaussianBlur
+         id="feGaussianBlur1421"
+         result="blur"
+         stdDeviation="1.2"
+         in="composite1" />
+      <feOffset
+         id="feOffset1423"
+         result="offset"
+         dy="0"
+         dx="1" />
+      <feComposite
+         id="feComposite1425"
+         result="composite2"
+         operator="over"
+         in2="offset"
+         in="SourceGraphic" />
+    </filter>
+    <filter
+       id="filter1427-7"
+       style="color-interpolation-filters:sRGB">
+      <feFlood
+         id="feFlood1417-8"
+         result="flood"
+         flood-color="rgb(29,29,29)"
+         flood-opacity="0.501961" />
+      <feComposite
+         id="feComposite1419-8"
+         result="composite1"
+         operator="in"
+         in2="SourceGraphic"
+         in="flood" />
+      <feGaussianBlur
+         id="feGaussianBlur1421-4"
+         result="blur"
+         stdDeviation="1.2"
+         in="composite1" />
+      <feOffset
+         id="feOffset1423-1"
+         result="offset"
+         dy="0"
+         dx="1" />
+      <feComposite
+         id="feComposite1425-2"
+         result="composite2"
+         operator="over"
+         in2="offset"
+         in="SourceGraphic" />
+    </filter>
+    <filter
+       id="filter1603"
+       style="color-interpolation-filters:sRGB;">
+      <feFlood
+         id="feFlood1593"
+         result="flood"
+         flood-color="rgb(29,29,29)"
+         flood-opacity="0.501961" />
+      <feComposite
+         id="feComposite1595"
+         result="composite1"
+         operator="in"
+         in2="SourceGraphic"
+         in="flood" />
+      <feGaussianBlur
+         id="feGaussianBlur1597"
+         result="blur"
+         stdDeviation="0.8"
+         in="composite1" />
+      <feOffset
+         id="feOffset1599"
+         result="offset"
+         dy="0"
+         dx="0.7" />
+      <feComposite
+         id="feComposite1601"
+         result="composite2"
+         operator="over"
+         in2="offset"
+         in="SourceGraphic" />
+    </filter>
+  </defs>
+  <metadata
+     id="metadata5">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title>Simple Emial Icon</dc:title>
+        <cc:license
+           rdf:resource="http://creativecommons.org/licenses/by-sa/4.0/" />
+        <dc:date>Nov 05 2018</dc:date>
+        <dc:creator>
+          <cc:Agent>
+            <dc:title>Distopico &lt;distopico@riseup.net&gt;</dc:title>
+          </cc:Agent>
+        </dc:creator>
+        <dc:subject>
+          <rdf:Bag>
+            <rdf:li>simple</rdf:li>
+            <rdf:li>email</rdf:li>
+          </rdf:Bag>
+        </dc:subject>
+        <dc:description>Simple Email Icon</dc:description>
+        <dc:contributor>
+          <cc:Agent>
+            <dc:title>Distopico</dc:title>
+          </cc:Agent>
+        </dc:contributor>
+      </cc:Work>
+      <cc:License
+         rdf:about="http://creativecommons.org/licenses/by-sa/4.0/">
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Reproduction" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#Distribution" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#Notice" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#Attribution" />
+        <cc:permits
+           rdf:resource="http://creativecommons.org/ns#DerivativeWorks" />
+        <cc:requires
+           rdf:resource="http://creativecommons.org/ns#ShareAlike" />
+      </cc:License>
+    </rdf:RDF>
+  </metadata>
+  <g
+     id="g1623"
+     transform="translate(0,-244.08332)"
+     style="display:inline">
+    <g
+       id="g1621"
+       transform="translate(0.19352928,0.76972034)">
+      <path
+         style="opacity:1;fill:#ff2a2a;fill-opacity:1;stroke:none;stroke-width:3.8900702;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         d="M 179.82812,73.707031 A 99.297982,68.728551 0 0 1 98.929688,102.72852 99.297982,68.728551 0 0 1 18.708984,74.384766 v 77.884764 c 0,3.91737 3.152941,7.07227 7.070313,7.07227 H 172.75586 c 3.91737,0 7.07226,-3.1549 7.07226,-7.07227 z"
+         transform="matrix(0.26458333,0,0,0.26458333,0,244.08332)"
+         id="path1609" />
+      <path
+         transform="matrix(0.26458333,0,0,0.26458333,0,244.08332)"
+         id="path1611"
+         d="m 25.779297,34.839844 c -3.917372,0 -7.070313,3.154894 -7.070313,7.072265 V 52.892578 A 84.842449,58.72323 0 0 0 98.929688,92.722656 84.842449,58.72323 0 0 0 179.82812,51.650391 v -9.738282 c 0,-3.917371 -3.15489,-7.072265 -7.07226,-7.072265 z"
+         style="opacity:1;fill:#ff2a2a;fill-opacity:1;stroke:none;stroke-width:3.8900702;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <path
+         id="path1613"
+         transform="matrix(0.26458333,0,0,0.26458333,0,244.08332)"
+         d="m 99.087891,59.023438 -29.619141,29.978515 0.0039,0.0039 a 84.842448,58.723229 0 0 0 29.457032,3.716797 84.842448,58.723229 0 0 0 29.906248,-3.849609 l 0.23047,-0.232422 z"
+         style="opacity:1;fill:#de2525;fill-opacity:1;stroke:none;stroke-width:3.8900702;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <path
+         id="path1615"
+         d="M 179.82812,73.707031 A 99.297982,68.728551 0 0 1 98.929688,102.72852 99.297982,68.728551 0 0 1 18.708984,74.384766 v 77.884764 c 0,3.91737 3.152941,7.07227 7.070313,7.07227 H 172.75586 c 3.91737,0 7.07226,-3.1549 7.07226,-7.07227 z"
+         style="opacity:1;fill:#ff2a2a;fill-opacity:1;stroke:none;stroke-width:3.8900702;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         transform="matrix(0.26458333,0,0,0.26458333,0,244.08332)" />
+      <path
+         id="path1617"
+         transform="matrix(0.26458333,0,0,0.26458333,0,244.08332)"
+         d="m 18.708984,74.384766 v 77.884764 c 0,3.91737 3.152941,7.07227 7.070313,7.07227 h 1.039062 l 73.927731,-56.64844 a 99.297981,68.72855 0 0 1 -1.816402,0.0352 99.297981,68.72855 0 0 1 -80.220704,-28.343754 z"
+         style="opacity:1;fill:#de2525;fill-opacity:1;stroke:none;stroke-width:3.8900702;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1" />
+      <path
+         style="opacity:1;fill:#de2525;fill-opacity:1;stroke:none;stroke-width:1.02924776;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1"
+         d="m 47.527457,263.75045 v 20.60701 c 0,1.03647 -0.834216,1.8712 -1.870687,1.8712 H 45.381852 L 25.821806,271.24043 a 26.27259,18.184429 0 0 0 0.48059,0.009 26.27259,18.184429 0 0 0 21.225061,-7.49928 z"
+         id="path1619" />
+    </g>
+  </g>
+</svg>

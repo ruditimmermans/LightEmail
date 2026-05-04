@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<issues format="5" by="lint 4.1.0" client="gradle" variant="debug" version="4.1.0">
+
+    <issue
+        id="MissingConstraints"
+        message="This view is not constrained horizontally: at runtime it will jump to the left unless you add a horizontal constraint"
+        errorLine1="    &lt;View"
+        errorLine2="     ~~~~">
+        <location
+            file="src/main/res/layout/item_account.xml"
+            line="7"
+            column="6"/>
+    </issue>
+
+    <issue
+        id="MissingDefaultResource"
+        message="The array &quot;colorPicker&quot; in values-pt has no declaration in the base `values` folder; this can lead to crashes when the resource is queried in a configuration that does not match this qualifier"
+        errorLine1="    &lt;array name=&quot;colorPicker&quot;>"
+        errorLine2="           ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-pt/strings.xml"
+            line="274"
+            column="12"/>
+    </issue>
+
+    <issue
+        id="NotSibling"
+        message="`@+id/tvSize` is not a sibling in the same `ConstraintLayout`"
+        errorLine1="        app:layout_constraintEnd_toStartOf=&quot;@+id/tvSize&quot;"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/item_answer.xml"
+            line="18"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="UseAppTint"
+        message="Must use `app:tint` instead of `android:tint`"
+        errorLine1="        android:tint=&quot;@color/colorWidgetForeground&quot; />"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget.xml"
+            line="17"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="StringFormatInvalid"
+        message="Format string &apos;`title_notification_failed`&apos; is not a valid format string so it should not be passed to `String.format`"
+        errorLine1="            .setContentTitle(getString(R.string.title_notification_failed, action))"
+        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/java/org/dystopia/email/ServiceSynchronize.java"
+            line="626"
+            column="30"/>
+        <location
+            file="src/main/res/values-fa/strings.xml"
+            line="22"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StringFormatInvalid"
+        message="Incorrect formatting string `title_privacy_description`; missing conversion character in &apos;`% S`&apos; ?"
+        errorLine1="    &lt;string name=&quot;title_privacy_description&quot;>"
+        errorLine2="    ^">
+        <location
+            file="src/main/res/values-gl/strings.xml"
+            line="38"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StringFormatInvalid"
+        message="Incorrect formatting string `title_privacy_description`; missing conversion character in &apos;`% S`&apos; ?"
+        errorLine1="    &lt;string name=&quot;title_privacy_description&quot;>O &lt;b>LightEmail&lt;/b> não coleta nenhuma informação, não requer permissões desnecessárias e é &lt;b>100% Software Livre&lt;/b>.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-pt-rBR/strings.xml"
+            line="251"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StringFormatInvalid"
+        message="Incorrect formatting string `title_privacy_description`; missing conversion character in &apos;`% f`&apos; ?"
+        errorLine1="    &lt;string name=&quot;title_privacy_description&quot;>"
+        errorLine2="    ^">
+        <location
+            file="src/main/res/values-no/strings.xml"
+            line="251"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StringFormatInvalid"
+        message="Incorrect formatting string `title_privacy_description`; missing conversion character in &apos;`% s`&apos; ?"
+        errorLine1="    &lt;string name=&quot;title_privacy_description&quot;>&lt;b>LightEmail&lt;/b> non raccoglie alcuna informazione, non richiede autorizzazioni non necessarie ed è &lt;b>100% software libero&lt;/b>.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-it/strings.xml"
+            line="251"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="StringFormatInvalid"
+        message="Incorrect formatting string `title_privacy_description`; missing conversion character in &apos;`% s`&apos; ?"
+        errorLine1="    &lt;string name=&quot;title_privacy_description&quot;>&lt;b>LightEmail&lt;/b> no recopila ninguna información, no requiere permisos innecesarios y es &lt;b>100 % software libre&lt;/b>.&lt;/string>"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-es-rES/strings.xml"
+            line="253"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;title_try_subject&quot; is not translated in &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;title_try_subject&quot;>Try LightEmail&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="255"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;title_try_text&quot; is not translated in &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;el&quot; (Greek), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;title_try_text&quot;>Invite to:&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="256"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;title_reset&quot; is not translated in &quot;fi&quot; (Finnish), &quot;bg&quot; (Bulgarian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;gl&quot; (Galician), &quot;el&quot; (Greek), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;title_reset&quot;>Reset&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="266"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;title_color&quot; is not translated in &quot;fi&quot; (Finnish), &quot;bg&quot; (Bulgarian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;gl&quot; (Galician), &quot;el&quot; (Greek), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;title_color&quot;>Color&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="267"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;title_cancel&quot; is not translated in &quot;fi&quot; (Finnish), &quot;bg&quot; (Bulgarian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;gl&quot; (Galician), &quot;el&quot; (Greek), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;title_cancel&quot;>Cancel&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="268"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;text_gmail_note&quot; is not translated in &quot;fi&quot; (Finnish), &quot;bg&quot; (Bulgarian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;gl&quot; (Galician), &quot;el&quot; (Greek), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;text_gmail_note&quot;>&lt;![CDATA[Requires have non-oAuth authentication enabled. &lt;font color=\&apos;#0055C7\&apos;>More info&lt;/font>]]&gt;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="269"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="MissingTranslation"
+        message="&quot;message_gmail_note&quot; is not translated in &quot;fi&quot; (Finnish), &quot;bg&quot; (Bulgarian), &quot;hu&quot; (Hungarian), &quot;uk&quot; (Ukrainian), &quot;ca&quot; (Catalan), &quot;sr&quot; (Serbian), &quot;sv&quot; (Swedish), &quot;ko&quot; (Korean), &quot;af&quot; (Afrikaans), &quot;gl&quot; (Galician), &quot;el&quot; (Greek), &quot;iw&quot; (Hebrew), &quot;cs&quot; (Czech), &quot;vi&quot; (Vietnamese), &quot;nb&quot; (Norwegian Bokmål), &quot;ja&quot; (Japanese), &quot;az&quot; (Azerbaijani), &quot;fa&quot; (Persian), &quot;pl&quot; (Polish), &quot;da&quot; (Danish), &quot;ro&quot; (Romanian)"
+        errorLine1="    &lt;string name=&quot;message_gmail_note&quot;>Since January 2020, Gmail restricted the OAuth scopes, and now requires authorization to authenticate, we are looking for the best way to fix OAuth authentication without private libraries.&amp;lt;br/&amp;gt;&amp;lt;br/&amp;gt; As a temporary solution you need to allow normal authentication or what Google calls &amp;lt;i&amp;gt;\&quot;less secure apps\&quot;&amp;lt;/i&amp;gt;.&amp;lt;br/&amp;gt;&amp;lt;br/&amp;gt;&amp;lt;b&amp;gt;Instructions here:&amp;lt;/b&amp;gt; https://support.google.com/accounts/answer/6010255&amp;lt;/br&amp;gt;&lt;/string>"
+        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values/strings.xml"
+            line="270"
+            column="13"/>
+    </issue>
+
+    <issue
+        id="ImpliedQuantity"
+        message="The quantity `&apos;one&apos;` matches more than one specific number in this locale (0, 1), but the message did not include a formatting argument (such as `%d`). This is usually an internationalization error. See full issue explanation for more."
+        errorLine1="        &lt;item quantity=&quot;one&quot;/>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-si/strings.xml"
+            line="12"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="ImpliedQuantity"
+        message="The quantity `&apos;one&apos;` matches more than one specific number in this locale (0, 1), but the message did not include a formatting argument (such as `%d`). This is usually an internationalization error. See full issue explanation for more."
+        errorLine1="        &lt;item quantity=&quot;one&quot;/>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-si/strings.xml"
+            line="16"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="ImpliedQuantity"
+        message="The quantity `&apos;one&apos;` matches more than one specific number in this locale (0, 1), but the message did not include a formatting argument (such as `%d`). This is usually an internationalization error. See full issue explanation for more."
+        errorLine1="        &lt;item quantity=&quot;one&quot;/>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-si/strings.xml"
+            line="20"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="ImpliedQuantity"
+        message="The quantity `&apos;one&apos;` matches more than one specific number in this locale (0, 1), but the message did not include a formatting argument (such as `%d`). This is usually an internationalization error. See full issue explanation for more."
+        errorLine1="        &lt;item quantity=&quot;one&quot;/>"
+        errorLine2="        ~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/values-si/strings.xml"
+            line="24"
+            column="9"/>
+    </issue>
+
+    <issue
+        id="Overdraw"
+        message="Possible overdraw: Root element paints background `@color/colorWidgetBackground` with a theme that also paints a background (inferred theme is `@style/AppThemeLight`)"
+        errorLine1="    android:background=&quot;@color/colorWidgetBackground&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="src/main/res/layout/widget.xml"
+            line="6"
+            column="5"/>
+    </issue>
+
+    <issue
+        id="KtxExtensionAvailable"
+        message="Add suffix `-ktx` to enable the Kotlin extensions for this library"
+        errorLine1="    implementation &quot;androidx.fragment:fragment:$fragment_version&quot;"
+        errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
+        <location
+            file="build.gradle"
+            line="93"
+            column="5"/>
+    </issue>
+
+</issues>

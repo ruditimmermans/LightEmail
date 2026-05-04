@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    ~ This file is part of LightEmail
+    ~ Copyright 2018, Distopico (dystopia project) and contributors
+    ~
+    ~ This program is free software: you can redistribute it and/or modify
+    ~ it under the terms of the GNU General Public License as published by
+    ~ the Free Software Foundation, either version 3 of the License, or
+    ~ (at your option) any later version.
+    ~
+    ~ This program is distributed in the hope that it will be useful,
+    ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+    ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    ~ GNU General Public License for more details.
+    ~
+    ~ You should have received a copy of the GNU General Public License
+    ~ along with this program. If not, see <http://www.gnu.org/licenses/>.
+-->
+
+<lint>
+    <issue id="AnimatorKeep">
+        <ignore regexp="setMaxLines" />
+    </issue>
+    <issue id="NewApi">
+        <ignore regexp="android.webkit.WebView.FindListener" />
+    </issue>
+    <issue id="Overdraw" severity="informational" /> <!-- TODO http://b.android.com/169879 -->
+    <issue id="IconLauncherShape" severity="informational" />
+    <issue id="ResourceType" severity="ignore" />    <!-- TODO http://b.android.com/201882 -->
+    <issue id="RestrictedApi" severity="ignore" /> <!-- TODO http://b.android.com/230387 -->
+    <issue id="ClickableViewAccessibility" severity="informational" />
+    <issue id="OldTargetApi" severity="informational" />
+    <issue id="MissingTranslation" severity="ignore" />
+    <issue id="ExpiringTargetSdkVersion" severity="ignore" /> <!-- we are not restricted by Google Play policies -->
+</lint>

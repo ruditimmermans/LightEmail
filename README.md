@@ -1,4 +1,3 @@
-![logo](/assets/icon_small.png)
 # LightEmail
 
 A [Free Software][free-software], minimalistic and privacy friendly email app for the Light Phone.

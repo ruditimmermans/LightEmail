@@ -1,0 +1,45 @@
+Una aplicación de correo amigable con la privacidad, minimalista y Software Libre.
+
+<h3>Destacado</h3>
+* Fácil navegación
+* No hay configuraciones innecesarias
+* No hay campanas y silbidos
+* Amigable con la privacidad
+* Diseño simple
+
+<h3>¿Porqué?</h3>
+El enfoque de LightEmail es ser una aplicación de correo
+electrónico amigable con la privacidad con una buena interfza y expereincia de
+usuario y con un modelo de desarrollo comunitario.
+
+LightEmail es minimalista por diseño, por lo que puede concentrarse en leer y
+escribir mensajes, comienza un primer plano Servicio con una notificación de
+barra de estado de baja prioridad para asegurarse de que nunca perderá un nuevo
+correo electrónico.
+
+<h3>Caracteristicas</h3>
+* 100% Software Libre
+* Múltiples cuentas (bandejas de entrada)
+* Identidades múltiples (buzones de salida)
+* Bandeja de entrada unificada
+* Vista de conversación
+* Sincronización bidireccional
+* Almacenamiento y operaciones fuera de línea
+* Amigable con la batería
+* Bajo uso de datos
+* Gestión de carpetas
+* Firmas
+* Tema oscuro
+* Colores para la cuenta
+* Búsqueda en el servidor
+* Cifrado / descifrado
+* Exporta la configuracion
+
+<h3>Seguro:</h3>
+* Permitir solo conexiones encriptadas
+* Aceptar solo certificados de seguridad válidos
+* Autenticacion requerida
+* Vista de mensaje seguro (estilo, scripts y HTML inseguro eliminado)
+* No se requieren permisos especiales
+* Sin publicidad
+* Sin analytics y sin seguimiento

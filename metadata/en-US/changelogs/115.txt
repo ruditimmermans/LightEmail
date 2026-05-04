@@ -1,0 +1,12 @@
+Bug Fixes
+
+-   change app Invite to share because require google account
+-   check error on open attachment, closes #10
+-   prevent flickering on message view
+
+Features
+
+-   better layout for the message list, closes #8
+-   implement refresh messages list
+-   move color picker account outside of advanced
+

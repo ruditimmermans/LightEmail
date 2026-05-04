@@ -1,0 +1,156 @@
+apply plugin: "com.android.application"
+apply plugin: "kotlin-android"
+apply from: "${rootDir}/dirlocal.gradle"
+
+base {
+    archivesName = "LightEmail-v1.6"
+}
+
+android {
+    namespace 'org.dystopia.email'
+    compileSdk 34
+
+    signingConfigs {
+        releaseTest {
+            storeFile file('release-test.jks')
+            storePassword '123456'
+            keyAlias 'key0'
+            keyPassword '123456'
+        }
+    }
+
+    defaultConfig {
+        applicationId "org.dystopia.email"
+        minSdkVersion 21
+        targetSdkVersion 33
+        versionCode 126
+        versionName "1.6"
+
+        proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            applicationIdSuffix ".debug"
+            debuggable true
+            shrinkResources false
+            minifyEnabled false
+        }
+
+        release {
+            debuggable false
+            minifyEnabled true
+            shrinkResources true
+            signingConfig signingConfigs.releaseTest
+        }
+    }
+
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+    }
+
+    packagingOptions {
+        resources {
+            pickFirsts += ['META-INF/LICENSE.txt', 'META-INF/LICENSE.md']
+            excludes += 'META-INF/NOTICE.md'
+        }
+    }
+
+    lint {
+        lintConfig file("${rootProject.getRootDir()}/lint.xml")
+        baseline file("lint-baseline.xml")
+        abortOnError true
+        absolutePaths false
+        explainIssues true
+        htmlReport true
+        ignoreWarnings true
+        textReport true
+        warningsAsErrors false
+        xmlReport false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    kotlinOptions {
+        jvmTarget = "11"
+    }
+}
+
+configurations {
+    implementationDeps.extendsFrom implementation
+}
+
+dependencies {
+    def androidx_version = "1.0.0"
+    def appcompat_version = "1.2.0"
+    def fragment_version = "1.3.0-beta01"
+    def constraintlayout_version = "1.1.3"
+    def lifecycle_version = "2.0.0"
+    def room_version = "2.0.0"
+    def paging_version = "2.0.0"
+    def javamail_version = "1.6.7"
+    def jsoup_version = "1.11.3"
+    def jcharset_version = "2.0"
+    def dnsjava_version = "2.1.8"
+    def openpgp_version = "12.0"
+    def colorpicker_version = "0.0.15"
+
+    // https://mvnrepository.com/artifact/androidx.appcompat/appcompat
+    implementation "androidx.appcompat:appcompat:$appcompat_version"
+    // https://mvnrepository.com/artifact/androidx.fragment/fragment
+    implementation "androidx.fragment:fragment:$fragment_version"
+    // https://mvnrepository.com/artifact/androidx.annotation/annotation
+    implementation "androidx.annotation:annotation:$androidx_version"
+    // https://mvnrepository.com/artifact/androidx.recyclerview/recyclerview
+    implementation "androidx.recyclerview:recyclerview:$androidx_version"
+    implementation "androidx.recyclerview:recyclerview-selection:$androidx_version"
+    // https://mvnrepository.com/artifact/androidx.constraintlayout/constraintlayout
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidx_version"
+    implementation "androidx.constraintlayout:constraintlayout:$constraintlayout_version"
+    // https://mvnrepository.com/artifact/com.google.android.material/material
+    implementation "com.google.android.material:material:$androidx_version"
+    // https://mvnrepository.com/artifact/androidx.browser/browser
+    implementation "androidx.browser:browser:$androidx_version"
+
+    // https://mvnrepository.com/artifact/androidx.lifecycle/lifecycle-runtime
+    implementation "androidx.lifecycle:lifecycle-extensions:$lifecycle_version"
+    annotationProcessor "androidx.lifecycle:lifecycle-compiler:$lifecycle_version"
+
+    // https://mvnrepository.com/artifact/androidx.room/room-runtime
+    implementation "androidx.room:room-runtime:$room_version"
+    annotationProcessor "androidx.room:room-compiler:$room_version"
+
+    // https://mvnrepository.com/artifact/androidx.paging/paging-runtime
+    implementation "androidx.paging:paging-runtime:$paging_version"
+
+    // https://javaee.github.io/javamail/
+    implementation "com.sun.mail:android-mail:$javamail_version"
+    implementation "com.sun.mail:android-activation:$javamail_version"
+
+    // https://jsoup.org/
+    implementation "org.jsoup:jsoup:$jsoup_version"
+
+    // http://www.freeutils.net/source/jcharset/
+    implementation "net.freeutils:jcharset:$jcharset_version"
+
+    // http://www.xbill.org/dnsjava/
+    implementation "dnsjava:dnsjava:$dnsjava_version"
+
+    // https://github.com/open-keychain/openpgp-api
+    implementation "org.sufficientlysecure:openpgp-api:$openpgp_version"
+
+    // https://android.googlesource.com/platform/frameworks/opt/colorpicker
+    implementation "com.github.QuadFlask:colorpicker:$colorpicker_version"
+
+    // Kotlin support
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}

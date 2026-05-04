@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="no_size">0dp</dimen>
+    <dimen name="base_margin">12dp</dimen>
+    <dimen name="padding_xs">3dp</dimen>
+    <dimen name="padding_sm">6dp</dimen>
+    <dimen name="margin_xs">3dp</dimen>
+    <dimen name="margin_sm">6dp</dimen>
+    <dimen name="margin_md">12dp</dimen>
+    <dimen name="margin_lg">16dp</dimen>
+    <dimen name="icon_xxs">12dp</dimen>
+    <dimen name="icon_xs">14dp</dimen>
+    <dimen name="layout_margin">12dp</dimen>
+    <dimen name="content_margin">8dp</dimen>
+    <dimen name="compose_padding">6dp</dimen>
+    <dimen name="input_height">40dp</dimen>
+    <dimen name="normal_size">40dp</dimen>
+    <dimen name="color_pick">30dp</dimen>
+</resources>
