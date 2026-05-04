@@ -1,2 +1,88 @@
+![logo](/assets/icon_small.png)
 # LightEmail
-Light Phone Email Client App 
+
+A [Free Software][free-software], minimalistic and privacy friendly email app for the Light Phone.
+
+You can download directly from GitHub.
+
+## Highlights
+
+* Easy navigation
+* No unnecessary settings
+* No bells and whistles
+* Privacy friendly
+* Simple design
+
+## Why?
+
+The focus of LightEmail is be a privacy-friendly email app with a good UX/UI
+and with a community development model.
+
+LightEmail is minimalistic by design, so you can concentrate on reading and
+writing messages, it starts a foreground service with a low priority status bar
+notification to make sure you'll never miss a new email.
+
+## Features
+
+* 100% [Free Software][free-software]
+* Multiple accounts (inboxes)
+* Multiple identities (outboxes)
+* Unified inbox
+* Conversation view
+* Two way synchronization
+* Offline storage and operations
+* Battery friendly
+* Low data usage
+* Folder management
+* Signatures
+* Account colors
+* Search on server
+* Encryption/decryption
+* Export settings
+
+## Screenshots
+
+[<img src="metadata/en-US/images/phoneScreenshots/05_screenshot.png" width=160>](metadata/en-US/images/phoneScreenshots/05_screenshot.png)
+[<img src="metadata/en-US/images/phoneScreenshots/08_screenshot.png" width=160>](metadata/en-US/images/phoneScreenshots/08_screenshot.png)
+
+
+## Secure
+
+* Allow encrypted connections only
+* Accept valid security certificates only
+* Authentication required
+* Safe message view (styling, scripting and unsafe HTML removed)
+* No special permissions required
+* No advertisements
+* No analytics and no tracking
+
+## Efficient
+
+* [IMAP IDLE](https://en.wikipedia.org/wiki/IMAP_IDLE) (push messages) supported
+* Built with latest development tools and libraries
+* Android 6 Marshmallow or later required
+
+## Compatibility
+
+LightEmail requires at least Android 6 Marshmallow.
+
+## Attribution
+
+LightEmail uses:
+
+* [JavaMail](https://javaee.github.io/javamail/). under [GPLv2+CE license](https://javaee.github.io/javamail/JavaMail-License).
+* [jsoup](https://jsoup.org/). under [MIT license](https://jsoup.org/license).
+* [JCharset](http://www.freeutils.net/source/jcharset/). under [GNU General Public License](http://www.freeutils.net/source/jcharset/#license)
+* [Android Support Library](https://developer.android.com/tools/support-library/). under [Apache license](https://android.googlesource.com/platform/frameworks/support/+/master/LICENSE.txt).
+* [Android Architecture Components](https://developer.android.com/topic/libraries/architecture/). under [Apache license](https://github.com/googlesamples/android-architecture-components/blob/master/LICENSE).
+* [colorpicker](https://github.com/QuadFlask/colorpicker). under [Apache license](https://github.com/QuadFlask/colorpicker#license).
+* [dnsjava](http://www.xbill.org/dnsjava/). under [BSD License](https://sourceforge.net/p/dnsjava/code/HEAD/tree/trunk/LICENSE).
+* [OpenPGP API library](https://github.com/open-keychain/openpgp-api). under [Apache License 2.0](https://github.com/jagadeesh-k-2802/simple-email-fork/blob/main/LICENSE).
+
+## License
+
+[![GNU General Public License version 3](https://www.gnu.org/graphics/gplv3-127x51.png)](https://github.com/jagadeesh-k-2802/simple-email-fork/blob/main/LICENSE)
+
+* All assets and docs are under [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/),
+for the license of the image used in the [assets](/assets) please see the metadata under the SVG file.
+
