@@ -80,8 +80,7 @@ LightEmail uses:
 
 ## License
 
-[![GNU General Public License version 3](https://www.gnu.org/graphics/gplv3-127x51.png)](https://github.com/jagadeesh-k-2802/simple-email-fork/blob/main/LICENSE)
+[![GNU General Public License version 3](https://www.gnu.org/graphics/gplv3-127x51.png)](https://github.com/ruditimmermans/LightEmail/blob/main/LICENSE)
 
-* All assets and docs are under [CC BY-SA 4.0](http://creativecommons.org/licenses/by-sa/4.0/),
-for the license of the image used in the [assets](/assets) please see the metadata under the SVG file.
+
 
