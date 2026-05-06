@@ -10,6 +10,7 @@
         android:id="@+id/ivItem"
         android:layout_width="36dp"
         android:layout_height="36dp"
+        android:contentDescription="@null"
         android:gravity="center_vertical"
         android:src="@drawable/baseline_mail_outline_24"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -28,6 +29,7 @@
         android:text="@string/default_menu_item"
         android:textAppearance="?android:attr/textAppearanceListItemSmall"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/ivItem"
         app:layout_constraintTop_toTopOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -19,7 +19,7 @@
         <item quantity="one">%1$d unsent message</item>
         <item quantity="other">%1$d unsent messages</item>
     </plurals>
-    <string name="title_notification_failed">با خطا مواجه شد</string>
+    <string name="title_notification_failed">«%1$s» با خطا مواجه شد</string>
     <string name="menu_setup">تنظیمات</string>
     <string name="menu_answers">Reply templates</string>
     <string name="menu_operations">عملیات ها</string>

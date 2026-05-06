@@ -134,7 +134,7 @@
             android:layout_height="0dp"
             android:scrollbarStyle="outsideOverlay"
             android:scrollbars="vertical"
-            app:layout_constraintBottom_toTopOf="@+id/bottom_navigation"
+            app:layout_constraintBottom_toTopOf="@+id/vSeparatorBottom"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSelect" />
@@ -149,11 +149,18 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent" />
 
+        <View
+            android:id="@+id/vSeparatorBottom"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="?attr/colorSeparator"
+            app:layout_constraintBottom_toTopOf="@id/bottom_navigation" />
+
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/bottom_navigation"
             android:layout_width="match_parent"
-            android:layout_height="28dp"
-            android:background="@android:color/black"
+            android:layout_height="wrap_content"
+            android:background="?attr/colorPrimary"
             app:itemIconTint="@color/bottomnav_background"
             app:itemTextColor="@color/bottomnav_background"
             app:labelVisibilityMode="unlabeled"
@@ -189,15 +196,15 @@
       </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fabMove"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end|center_vertical"
-        android:layout_margin="16dp"
-        android:src="@drawable/baseline_folder_24"
-        android:tint="@color/colorActionForeground"
-        app:backgroundTint="?attr/colorSeparator" />
+  <com.google.android.material.floatingactionbutton.FloatingActionButton
+    android:id="@+id/fabMove"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="end|center_vertical"
+    android:layout_margin="16dp"
+    android:src="@drawable/baseline_folder_24"
+    android:tint="@color/colorActionForeground"
+    app:backgroundTint="@color/black" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
@@ -207,5 +214,5 @@
         android:layout_margin="16dp"
         android:src="@drawable/baseline_edit_24"
         android:tint="@color/colorActionForeground"
-        app:backgroundTint="?attr/colorAccent" />
+        app:backgroundTint="@color/black" />
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

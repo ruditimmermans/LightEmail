@@ -48,6 +48,9 @@ internal class ActivitySetup : ActivityBase(), FragmentManager.OnBackStackChange
         if (supportFragmentManager.fragments.size == 0) {
             val fragmentTransaction = supportFragmentManager.beginTransaction()
             fragmentTransaction.replace(R.id.content_frame, FragmentSetup()).addToBackStack("setup")
+            if (intent.getBooleanExtra("options", false)) {
+                fragmentTransaction.replace(R.id.content_frame, FragmentOptions()).addToBackStack("options")
+            }
             fragmentTransaction.commit()
         }
 

@@ -108,7 +108,7 @@ class AdapterAttachment(
         }
 
         override fun onClick(view: View) {
-            val pos = adapterPosition
+            val pos = bindingAdapterPosition
             if (pos == RecyclerView.NO_POSITION) {
                 return
             }
@@ -194,8 +194,8 @@ class AdapterAttachment(
     }
 
     fun onShare(attachment: EntityAttachment) {
-        var type = attachment.type
-        var name = attachment.name
+        val type = attachment.type
+        val name = attachment.name
         val file = EntityAttachment.getFile(context, attachment.id)
         val uri: Uri = FileProvider.getUriForFile(context, BuildConfig.APPLICATION_ID, file)
 
@@ -229,7 +229,7 @@ class AdapterAttachment(
             if (ris.isNullOrEmpty()) {
                 Toast.makeText(
                     context,
-                    String.format(context.getString(R.string.title_no_viewer), type),
+                    context.getString(R.string.title_no_viewer, type),
                     Toast.LENGTH_LONG
                 ).show()
                 return
@@ -241,7 +241,7 @@ class AdapterAttachment(
         } catch (err: ActivityNotFoundException) {
             Toast.makeText(
                 context,
-                String.format(context.getString(R.string.title_no_viewer), type),
+                context.getString(R.string.title_no_viewer, type),
                 Toast.LENGTH_LONG
             ).show()
         }
@@ -276,7 +276,7 @@ class AdapterAttachment(
         diff.dispatchUpdatesTo(this)
     }
 
-    private inner class MessageDiffCallback internal constructor(
+    private class MessageDiffCallback(
         private val prev: List<EntityAttachment>,
         private val next: List<EntityAttachment>
     ) : DiffUtil.Callback() {

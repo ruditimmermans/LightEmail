@@ -43,4 +43,10 @@
         android:icon="@drawable/baseline_lock_24"
         android:title="@string/title_encrypt"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_quote"
+        android:checkable="true"
+        android:title="@string/title_advanced_reply_quote"
+        app:showAsAction="never" />
 </menu>

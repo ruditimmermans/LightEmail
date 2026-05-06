@@ -5,7 +5,7 @@
     <color name="colorAccent">#000000</color>
 
     <color name="colorActionForeground">#FFFFFF</color>
-    <color name="colorActionForegroundDisabled">#FFFFFF</color>
+    <color name="colorActionForegroundDisabled">#80FFFFFF</color>
 
     <color name="colorWidgetForeground">#FFFFFF</color>
     <color name="colorWidgetBackground">#000000</color>

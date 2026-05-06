@@ -55,7 +55,7 @@ import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.Observer;
-import androidx.lifecycle.ViewModelProviders;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
 import com.google.android.material.snackbar.Snackbar;
@@ -161,6 +161,8 @@ public class ActivityView extends ActivityBase
                         onMenuFolders((long) item.getData());
                     } else if (itemId == R.string.menu_setup) {
                         onMenuSetup();
+                    } else if (itemId == R.string.title_advanced) {
+                        onMenuOptions();
                     } else if (itemId == R.string.menu_answers) {
                         onMenuAnswers();
                     } else if (itemId == R.string.menu_operations) {
@@ -228,6 +230,12 @@ public class ActivityView extends ActivityBase
                                 R.layout.item_drawer,
                                 R.drawable.baseline_settings_applications_24,
                                 R.string.menu_setup));
+                        drawerArray.add(
+                            new DrawerItem(
+                                ActivityView.this,
+                                R.layout.item_drawer,
+                                R.drawable.baseline_settings_applications_24,
+                                R.string.title_advanced));
                         drawerArray.add(
                             new DrawerItem(
                                 ActivityView.this,
@@ -359,7 +367,7 @@ public class ActivityView extends ActivityBase
             intent.setAction(null);
             setIntent(intent);
 
-            ViewModelMessages model = ViewModelProviders.of(this).get(ViewModelMessages.class);
+            ViewModelMessages model = new ViewModelProvider(this).get(ViewModelMessages.class);
             model.setMessages(null);
 
             intent.putExtra("thread", action.split(":", 2)[1]);
@@ -742,6 +750,10 @@ public class ActivityView extends ActivityBase
 
     private void onMenuSetup() {
         startActivity(new Intent(ActivityView.this, ActivitySetup.class));
+    }
+
+    private void onMenuOptions() {
+        startActivity(new Intent(ActivityView.this, ActivitySetup.class).putExtra("options", true));
     }
 
     private void onMenuAnswers() {

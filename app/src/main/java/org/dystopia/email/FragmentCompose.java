@@ -437,6 +437,10 @@ public class FragmentCompose extends FragmentEx {
         menu.findItem(R.id.menu_attachment).setEnabled(etBody.isEnabled());
         menu.findItem(R.id.menu_addresses).setVisible(working >= 0);
 
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        menu.findItem(R.id.menu_quote).setVisible(working >= 0);
+        menu.findItem(R.id.menu_quote).setChecked(prefs.getBoolean("reply_quote", true));
+
         PackageManager pm = getContext().getPackageManager();
         menu.findItem(R.id.menu_image).setEnabled(getImageIntent().resolveActivity(pm) != null);
         menu.findItem(R.id.menu_attachment)
@@ -462,6 +466,9 @@ public class FragmentCompose extends FragmentEx {
             return true;
         } else if (itemId == R.id.menu_addresses) {
             onMenuAddresses();
+            return true;
+        } else if (itemId == R.id.menu_quote) {
+            onMenuQuote(item);
             return true;
         } else if (itemId == R.id.menu_encrypt) {
             onAction(R.id.menu_encrypt);
@@ -517,6 +524,13 @@ public class FragmentCompose extends FragmentEx {
     private void onMenuAddresses() {
         grpAddresses.setVisibility(
             grpAddresses.getVisibility() == View.GONE ? View.VISIBLE : View.GONE);
+    }
+
+    private void onMenuQuote(MenuItem item) {
+        boolean checked = !item.isChecked();
+        item.setChecked(checked);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        prefs.edit().putBoolean("reply_quote", checked).apply();
     }
 
     private void onDelete() {
@@ -1179,6 +1193,9 @@ public class FragmentCompose extends FragmentEx {
                         }
                     }
 
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+                    boolean quote = prefs.getBoolean("reply_quote", true);
+
                     EntityFolder drafts;
                     drafts = db.folder().getFolderByType(account.id, EntityFolder.DRAFTS);
                     if (drafts == null) {
@@ -1269,12 +1286,14 @@ public class FragmentCompose extends FragmentEx {
 
                         if ("reply".equals(action) || "reply_all".equals(action)) {
                             draft.subject = context.getString(R.string.title_subject_reply, ref.subject);
-                            body =
-                                String.format(
-                                    "<p>%s %s:</p><blockquote>%s</blockquote>",
-                                    Html.escapeHtml(new Date(time).toString()),
-                                    Html.escapeHtml(MessageHelper.getFormattedAddresses(draft.to, MessageHelper.ADDRESS_FULL)),
-                                    HtmlHelper.sanitize(ref.read(context)));
+                            if (quote) {
+                                body =
+                                    String.format(
+                                        "<p>%s %s:</p><blockquote>%s</blockquote>",
+                                        Html.escapeHtml(new Date(time).toString()),
+                                        Html.escapeHtml(MessageHelper.getFormattedAddresses(draft.to, MessageHelper.ADDRESS_FULL)),
+                                        HtmlHelper.sanitize(ref.read(context)));
+                            }
                         } else if ("forward".equals(action)) {
                             draft.subject = context.getString(R.string.title_subject_forward, ref.subject);
                             body =

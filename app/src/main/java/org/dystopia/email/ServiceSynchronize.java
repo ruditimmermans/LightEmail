@@ -1166,7 +1166,7 @@ public class ServiceSynchronize extends LifecycleService {
                         new Intent(id),
                         PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
                     );
-                    registerReceiver(alarm, new IntentFilter(id));
+                    ContextCompat.registerReceiver(this, alarm, new IntentFilter(id), ContextCompat.RECEIVER_NOT_EXPORTED);
 
                     // Keep alive
                     AlarmManager alarmManager = CompatibilityHelper.getAlarmManager(this);

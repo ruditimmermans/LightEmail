@@ -34,7 +34,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProviders
+import androidx.lifecycle.ViewModelProvider
 import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import androidx.paging.LivePagedListBuilder
 import androidx.paging.PagedList
@@ -73,7 +73,7 @@ class FragmentMessages : FragmentEx() {
     private val trashes: MutableList<Long> = ArrayList()
     private var viewType: ViewType? = null
     private var selectionTracker: SelectionTracker<Long>? = null
-    private var messages: LiveData<PagedList<TupleMessageEx>?>? = null
+    private var messages: LiveData<PagedList<TupleMessageEx>>? = null
     private var autoCount = 0
     private var autoExpand = true
     private var expanded: MutableList<Long> = ArrayList()
@@ -206,7 +206,7 @@ class FragmentMessages : FragmentEx() {
                     StorageStrategy.createLongStorage())
                     .withSelectionPredicate(SelectionPredicateMessage(binding?.rvFolder)).build()
             adapter!!.setSelectionTracker(selectionTracker)
-            selectionTracker.addObserver(object : SelectionTracker.SelectionObserver<Any?>() {
+            selectionTracker.addObserver(object : SelectionTracker.SelectionObserver<Long>() {
                 override fun onSelectionChanged() {
                     binding?.swipeRefresh?.setEnabled(false)
                     if (selectionTracker.hasSelection()) {
@@ -408,7 +408,7 @@ class FragmentMessages : FragmentEx() {
                         binding?.swipeRefresh?.isRefreshing = folder != null && folder.sync_state != null && "connected" == if (EntityFolder.OUTBOX == folder.type) folder.state else folder.accountState
                     })
             ViewType.THREAD -> setSubtitle(R.string.title_folder_thread)
-            ViewType.SEARCH -> setSubtitle(String.format(getString(R.string.title_searching), search))
+            ViewType.SEARCH -> setSubtitle(getString(R.string.title_searching, search))
             else -> {}
         }
 
@@ -437,7 +437,7 @@ class FragmentMessages : FragmentEx() {
         }
         if (viewType == ViewType.THREAD) {
             // Navigation
-            val model = ViewModelProviders.of(requireActivity()).get(ViewModelMessages::class.java)
+            val model = ViewModelProvider(requireActivity()).get(ViewModelMessages::class.java)
             val pn = model.getPrevNext(thread)
             binding?.bottomNavigation?.tag = pn
             binding?.bottomNavigation?.menu?.findItem(R.id.action_prev)?.isEnabled = pn[0] != null
@@ -654,8 +654,8 @@ class FragmentMessages : FragmentEx() {
 
     private fun loadMessages() {
         val db = DB.getInstance(context)
-        val model = ViewModelProviders.of(requireActivity()).get(ViewModelBrowse::class.java)
-        model[context, folder, search] = REMOTE_PAGE_SIZE
+        val model = ViewModelProvider(requireActivity()).get(ViewModelBrowse::class.java)
+        model.set(context, folder, search, REMOTE_PAGE_SIZE)
 
         // Observe folder/messages/search
         if (TextUtils.isEmpty(search)) {
@@ -798,7 +798,7 @@ class FragmentMessages : FragmentEx() {
                     }
                 }
             } else {
-                val modelMessages = ViewModelProviders.of(requireActivity()).get(ViewModelMessages::class.java)
+                val modelMessages = ViewModelProvider(requireActivity()).get(ViewModelMessages::class.java)
                 modelMessages.setMessages(messages)
             }
             Log.i(Helper.TAG, "Submit messages=" + messages.size)

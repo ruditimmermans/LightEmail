@@ -65,6 +65,7 @@
     <string name="title_advanced_browse">Blader door berichten op de server</string>
     <string name="title_advanced_swipe">Veegacties</string>
     <string name="title_advanced_compact">Compacte berichtweergave</string>
+    <string name="title_advanced_reply_quote">Citeer antwoord</string>
     <string name="title_advanced_debug">Foutopsporingsmodus</string>
     <string name="title_select">Kies…</string>
     <string name="title_identity_name">Je naam</string>

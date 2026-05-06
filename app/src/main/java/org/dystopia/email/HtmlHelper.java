@@ -19,12 +19,14 @@ package org.dystopia.email;
     Copyright 2018, Marcel Bokhorst (M66B)
 */
 
+import androidx.annotation.NonNull;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Node;
 import org.jsoup.nodes.TextNode;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
 import org.jsoup.select.NodeTraversor;
 import org.jsoup.select.NodeVisitor;
 
@@ -32,32 +34,52 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class HtmlHelper {
-    private static Pattern pattern = Pattern.compile("([http|https]+://[\\w\\S(\\.|:|/)]+)");
+    private static final Pattern pattern = Pattern.compile("(https?://[\\S]+)");
 
     public static String sanitize(String html) {
         Document document =
-            Jsoup.parse(Jsoup.clean(html, Whitelist.relaxed().addProtocols("img", "src", "cid")));
+            Jsoup.parse(Jsoup.clean(html, Safelist.relaxed().addProtocols("img", "src", "cid")));
         for (Element tr : document.select("tr")) {
             tr.after("<br>");
         }
         NodeTraversor.traverse(
             new NodeVisitor() {
                 @Override
-                public void head(Node node, int depth) {
-                    if (node instanceof TextNode) {
-                        String text = ((TextNode) node).text();
+                public void head(@NonNull Node node, int depth) {
+                    if (node instanceof TextNode && !hasAncestor(node, "a")) {
+                        String text = ((TextNode) node).getWholeText();
                         Matcher matcher = pattern.matcher(text);
+                        StringBuilder sb = new StringBuilder();
+                        int last = 0;
                         while (matcher.find()) {
+                            sb.append(text, last, matcher.start());
                             String ref = matcher.group();
-                            text = text.replace(ref, String.format("<a href=\"%s\">%s</a>", ref, ref));
+                            sb.append(String.format("<a href=\"%s\">%s</a>", ref, ref));
+                            last = matcher.end();
                         }
-                        node.before(text);
-                        ((TextNode) node).text("");
+                        sb.append(text.substring(last));
+                        String linkified = sb.toString();
+
+                        if (linkified.length() > text.length()) {
+                            node.before(linkified);
+                            node.remove();
+                        }
                     }
                 }
 
                 @Override
-                public void tail(Node node, int depth) {
+                public void tail(@NonNull Node node, int depth) {
+                }
+
+                private boolean hasAncestor(Node node, String tagName) {
+                    Node parent = node.parent();
+                    while (parent != null) {
+                        if (parent instanceof Element && ((Element) parent).tagName().equalsIgnoreCase(tagName)) {
+                            return true;
+                        }
+                        parent = parent.parent();
+                    }
+                    return false;
                 }
             },
             document.body());

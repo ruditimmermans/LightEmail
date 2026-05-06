@@ -103,7 +103,7 @@ public class FragmentSetup extends FragmentEx {
     };
 
     static final List<String> EXPORT_SETTINGS =
-        Arrays.asList("enabled", "avatars", "light", "browse", "compat", "insecure", "sort");
+        Arrays.asList("enabled", "avatars", "light", "browse", "compact", "reply_quote", "insecure", "sort");
 
     @Override
     @Nullable

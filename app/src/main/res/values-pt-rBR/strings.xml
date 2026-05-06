@@ -246,7 +246,7 @@
     <string name="title_debug_info_remark">Por favor, descreva o problema e indique o momento em que ocorrera:</string>
     <string name="title_crash_info_remark">Por favor, descreva o que você estava fazendo quando o aplicativo falhou:</string>
     <string name="title_privacy">Política de Privacidade</string>
-    <string name="title_privacy_description">O <b>LightEmail</b> não coleta nenhuma informação, não requer permissões desnecessárias e é <b>100% Software Livre</b>.</string>
+    <string name="title_privacy_description">O <b>LightEmail</b> não coleta nenhuma informação, não requer permissões desnecessárias e é <b>100%% Software Livre</b>.</string>
     <string name="title_permissions"><b>As permissões são necessárias e por que</b></string>
     <string name="title_permissions_list"><b>• ter acesso total à rede</b> (INTERNET):
 \npara enviar e receber os e-mails <b>

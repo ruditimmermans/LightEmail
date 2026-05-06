@@ -59,3 +59,9 @@
 
 #OpenPGP
 -keep class org.openintents.openpgp.** {* ;}
+
+# R8 suggested rules
+-dontwarn com.sun.jna.**
+-dontwarn javax.naming.**
+-dontwarn lombok.**
+-dontwarn org.slf4j.impl.StaticLoggerBinder

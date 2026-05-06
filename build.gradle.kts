@@ -2,7 +2,7 @@ plugins {
     checkstyle
 }
 
-val kotlin_version by extra("1.7.20")
+val kotlin_version by extra("2.1.0")
 
 buildscript {
     repositories {
@@ -10,7 +10,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath("com.android.tools.build:gradle:9.2.0")
+        classpath("com.android.tools.build:gradle:9.2.1")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:2.2.10")
     }
 }

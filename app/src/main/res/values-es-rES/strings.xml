@@ -248,7 +248,7 @@
     <string name="title_debug_info_remark">Por favor describa el problema e indique el momento del mismo:</string>
     <string name="title_crash_info_remark">Por favor describa que estaba haciendo cuando la app falló:</string>
     <string name="title_privacy">Política de privacidad</string>
-    <string name="title_privacy_description"><b>LightEmail</b> no recopila ninguna información, no requiere permisos innecesarios y es <b>100 % software libre</b>.</string>
+    <string name="title_privacy_description"><b>LightEmail</b> no recopila ninguna información, no requiere permisos innecesarios y es <b>100 %% software libre</b>.</string>
     <string name="title_permissions"><b>Se necesitan permisos y por qué</b></string>
     <string name="title_permissions_list"><b>• tiene acceso completo a la red</b> (INTERNET): para enviar y recibir correo electrónico <b>
 \n• ver conexiones de red </b> (ACCESS_NETWORK_STATE): para monitorear los cambios de conectividad a internet <b>

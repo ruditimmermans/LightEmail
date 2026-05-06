@@ -246,7 +246,7 @@
     <string name="title_debug_info_remark">Si prega di descrivere il problema ed indicare il momento in cui è avvenuto:</string>
     <string name="title_crash_info_remark">Descrivi cosa stavi facendo quando l\'app si è interrotta:</string>
     <string name="title_privacy">Informativa sulla riservatezza</string>
-    <string name="title_privacy_description"><b>LightEmail</b> non raccoglie alcuna informazione, non richiede autorizzazioni non necessarie ed è <b>100% software libero</b>.</string>
+    <string name="title_privacy_description"><b>LightEmail</b> non raccoglie alcuna informazione, non richiede autorizzazioni non necessarie ed è <b>100%% software libero</b>.</string>
     <string name="title_permissions"><b>Le autorizzazioni necessarie e perché</b></string>
     <string name="title_permissions_list"><b> • avere accesso completo alla rete </b> (INTERNET):
 \nper inviare e ricevere e-mail <b>

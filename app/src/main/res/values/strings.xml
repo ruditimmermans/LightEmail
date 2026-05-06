@@ -74,6 +74,7 @@
     <string name="title_advanced_browse">Browse messages on the server</string>
     <string name="title_advanced_swipe">Swipe actions</string>
     <string name="title_advanced_compact">Compact message view</string>
+    <string name="title_advanced_reply_quote">Quote reply</string>
     <string name="title_advanced_debug">Debug mode</string>
     <string name="title_select">Select …</string>
     <string name="title_identity_name">Your name</string>
@@ -266,7 +267,7 @@
     <string name="title_cancel">Cancel</string>
     <string name="title_message_text_size">Message text size</string>
     <string name="text_gmail_note"><![CDATA[Requires have non-oAuth authentication enabled. <font color=\'#0055C7\'>More info</font>]]></string>
-    <string name="message_gmail_note">Since January 2020, Gmail restricted the OAuth scopes, and now requires authorization to authenticate, we are looking for the best way to fix OAuth authentication without private libraries.&lt;br/&gt;&lt;br/&gt; As a temporary solution you need to allow normal authentication or what Google calls &lt;i&gt;\"less secure apps\"&lt;/i&gt;.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Instructions here:&lt;/b&gt; https://support.google.com/accounts/answer/6010255&lt;/br&gt;</string>
+    <string name="message_gmail_note">Since January 2020, Gmail restricted the OAuth scopes, and now requires authorization to authenticate, we are looking for the best way to fix OAuth authentication without private libraries.&lt;br/&gt;&lt;br/&gt; As a temporary solution you need to allow normal authentication or what Google calls &lt;i&gt;\"less secure apps\"&lt;/i&gt;.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Instructions here:&lt;/b&gt; https://support.google.com/accounts/answer/6010255&lt;br/&gt;</string>
     <string name="title_attachment_downloading">Downloading attachment: %1$s</string>
     <string name="title_no_subject">No subject</string>
 </resources>

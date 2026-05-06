@@ -101,7 +101,11 @@ public class FragmentWebView extends FragmentEx {
                 @Override
                 protected void onLoaded(Bundle args, String html) {
                     String from = args.getString("from");
-                    String styledHtml = "<style>body{background-color:black;color:white;}</style>" + html;
+                    final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+                    int bodySp = prefs.getInt("body_text_size_sp", 16);
+                    String styledHtml =
+                        "<style>body{background-color:black;color:white;font-size:" + bodySp + "px;} ::selection { background: rgba(255, 255, 255, 0.3); }</style>"
+                            + html;
                     webview.loadDataWithBaseURL("email://", styledHtml, "text/html", "UTF-8", null);
                     setSubtitle(from);
                 }

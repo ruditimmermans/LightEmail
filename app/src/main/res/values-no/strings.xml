@@ -246,7 +246,7 @@
     <string name="title_debug_info_remark">Beskriv problemet og indiker når problemet inntraff:</string>
     <string name="title_crash_info_remark">Beskriv hva du gjorde da programmet krasjet:</string>
     <string name="title_privacy">Personvernspraksis</string>
-    <string name="title_privacy_description"><b>LightEmail</b> samler ikke inn info, og krever ikke unødvendige tilganger, og er <b>100% fri programvare</b>.</string>
+    <string name="title_privacy_description"><b>LightEmail</b> samler ikke inn info, og krever ikke unødvendige tilganger, og er <b>100%% fri programvare</b>.</string>
     <string name="title_permissions"><b>Tilganger som trengs og hvorfor</b></string>
     <string name="title_permissions_list">
         <b>• have full network access</b> (INTERNET):  to send and receive email <b>\n• view network connections</b> (ACCESS_NETWORK_STATE):  to monitor internet connectivity changes <b>\n• run at startup</b> (RECEIVE_BOOT_COMPLETED):  to start monitoring on device start <b>\n• foreground service</b> (FOREGROUND_SERVICE):  to run a foreground service on Android 9 Pie and later <b>\n• prevent device from sleeping</b> (WAKE_LOCK):  to keep the device awake while synchronizing messages <b>\n• [Optional] read your contacts</b> (READ_CONTACTS):  to autocomplete addresses and to show photos <b>\n• [Optional] find accounts on the device</b> (GET_ACCOUNTS):  to use OAuth instead of passwords</string>
