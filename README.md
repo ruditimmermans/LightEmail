@@ -40,8 +40,7 @@ notification to make sure you'll never miss a new email.
 * Export settings
 
 ## Screenshots
-
-[<img src="metadata/en-US/images/phoneScreenshots/1.png" width=360>](metadata/en-US/images/phoneScreenshots/1.png)
+<img width="2572" height="1048" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/metadata/en-US/images/phoneScreenshots/1.png" />
 [<img src="metadata/en-US/images/phoneScreenshots/2.png" width=360>](metadata/en-US/images/phoneScreenshots/2.png))
 [<img src="metadata/en-US/images/phoneScreenshots/3.png" width=360>](metadata/en-US/images/phoneScreenshots/3.png)
 
