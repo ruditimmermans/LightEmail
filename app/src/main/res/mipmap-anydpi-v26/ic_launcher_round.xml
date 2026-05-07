@@ -1,51 +1,6 @@
-<!--
-  ~ Copyright (C) 2026 The Android Open Source Project
-  ~
-  ~ Licensed under the Apache License, Version 2.0 (the "License");
-  ~ you may not use this file except in compliance with the License.
-  ~ You may obtain a copy of the License at
-  ~
-  ~      http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~ Unless required by applicable law or agreed to in writing, software
-  ~ distributed under the License is distributed on an "AS IS" BASIS,
-  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~ See the License for the specific language governing permissions and
-  ~ limitations under the License.
-  -->
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="200dp"
-    android:height="200dp"
-    android:viewportWidth="52.917"
-    android:viewportHeight="52.917">
-  <path
-      android:pathData="M47.773,20.271A18.184,26.273 90,0 1,26.369 27.95,18.184 26.273,90 0,1 5.144,20.451l0,20.607c0,1.036 0.834,1.871 1.871,1.871L45.902,42.929c1.036,0 1.871,-0.835 1.871,-1.871z"
-      android:strokeWidth="1.029"
-      android:fillColor="#ffffff"
-      android:strokeColor="#00000000"/>
-  <path
-      android:pathData="m7.014,9.988c-1.036,0 -1.871,0.835 -1.871,1.871L5.144,14.764A15.537,22.448 90,0 0,26.369 25.303,15.537 22.448,90 0,0 47.773,14.436l0,-2.577c0,-1.036 -0.835,-1.871 -1.871,-1.871z"
-      android:strokeWidth="1.029"
-      android:fillColor="#ffffff"
-      android:strokeColor="#00000000"/>
-  <path
-      android:pathData="m26.411,16.386 l-7.837,7.932 0.001,0.001a15.537,22.448 90,0 0,7.794 0.983,15.537 22.448,90 0,0 7.913,-1.019l0.061,-0.061z"
-      android:strokeWidth="1.029"
-      android:fillColor="#ffffff"
-      android:strokeColor="#00000000"/>
-  <path
-      android:pathData="M47.773,20.271A18.184,26.273 90,0 1,26.369 27.95,18.184 26.273,90 0,1 5.144,20.451l0,20.607c0,1.036 0.834,1.871 1.871,1.871L45.902,42.929c1.036,0 1.871,-0.835 1.871,-1.871z"
-      android:strokeWidth="1.029"
-      android:fillColor="#ffffff"
-      android:strokeColor="#00000000"/>
-  <path
-      android:pathData="m5.144,20.451l0,20.607c0,1.036 0.834,1.871 1.871,1.871l0.275,0l19.56,-14.988a18.184,26.273 90,0 1,-0.481 0.009,18.184 26.273,90 0,1 -21.225,-7.499z"
-      android:strokeWidth="1.029"
-      android:fillColor="#ffffff"
-      android:strokeColor="#00000000"/>
-  <path
-      android:pathData="m47.721,20.437v20.607c0,1.036 -0.834,1.871 -1.871,1.871L45.575,42.915L26.015,27.927a26.273,18.184 0,0 0,0.481 0.009,26.273 18.184,0 0,0 21.225,-7.499z"
-      android:strokeWidth="1.02924776"
-      android:fillColor="#ffffff"
-      android:strokeColor="#00000000"/>
-</vector>
+<?xml version="1.0" encoding="utf-8"?>
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background" />
+    <foreground android:drawable="@drawable/ic_launcher_foreground" />
+    <monochrome android:drawable="@drawable/ic_launcher_foreground" />
+</adaptive-icon>

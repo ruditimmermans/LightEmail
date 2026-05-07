@@ -21,8 +21,8 @@
 -renamesourcefileattribute SourceFile
 
 #App
--keep class org.dystopia.email.** {*;}
--keepnames class org.dystopia.email.** {*;}
+-keep class org.light.email.** {*;}
+-keepnames class org.light.email.** {*;}
 
 #AndroidX
 -keep class androidx.appcompat.widget.** {*;}

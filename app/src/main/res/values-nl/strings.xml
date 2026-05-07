@@ -63,7 +63,6 @@
     <string name="title_advanced_avatars">Contactpersoonfoto\'s tonen</string>
     <string name="title_advanced_light">Meldingslampje gebruiken</string>
     <string name="title_advanced_browse">Blader door berichten op de server</string>
-    <string name="title_advanced_swipe">Veegacties</string>
     <string name="title_advanced_compact">Compacte berichtweergave</string>
     <string name="title_advanced_reply_quote">Citeer antwoord</string>
     <string name="title_advanced_debug">Foutopsporingsmodus</string>
@@ -231,7 +230,6 @@
     <string name="title_legend_closing">Bezig met sluiten</string>
     <string name="title_hint_folder_actions">Houdt lang ingedrukt om opties te tonen</string>
     <string name="title_hint_support">Als je een vraag of een probleem hebt, gebruik dan het ondersteuningsmenu om hulp te krijgen</string>
-    <string name="title_hint_message_actions">Veeg naar links om weg te gooien; veeg naar rechts om te archiveren (indien beschikbaar)</string>
     <string name="title_hint_message_selection">Houdt een bericht lang ingedrukt om meerdere berichten te selecteren</string>
     <string name="title_hint_sync">Het downloaden van berichten kan even duren. Dit is afhankelijk van het aantal berichten, de snelheid van je internetverbinding en je e-maildienst</string>
     <string name="title_open_link">Link openen</string>

@@ -56,37 +56,6 @@
             app:layout_constraintTop_toBottomOf="@id/ibHintSupport" />
 
         <TextView
-            android:id="@+id/tvHintSwipe"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:minHeight="33dp"
-            android:padding="6dp"
-            android:text="@string/title_hint_message_actions"
-            android:textAppearance="@style/TextAppearance.AppCompat.Small"
-            android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintEnd_toStartOf="@+id/ibHintSwipe"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSupport" />
-
-        <ImageButton
-            android:id="@+id/ibHintSwipe"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/baseline_close_24"
-            app:layout_constraintBottom_toBottomOf="@id/tvHintSwipe"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="@id/tvHintSwipe" />
-
-        <View
-            android:id="@+id/vSeparatorHintSwipe"
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="?attr/colorSeparator"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tvHintSwipe" />
-
-        <TextView
             android:id="@+id/tvHintSelect"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
@@ -96,9 +65,9 @@
             android:text="@string/title_hint_message_selection"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             android:textColor="?android:attr/textColorPrimary"
-            app:layout_constraintEnd_toStartOf="@+id/ibHintSwipe"
+            app:layout_constraintEnd_toStartOf="@+id/ibHintSelect"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSwipe" />
+            app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSupport" />
 
         <ImageButton
             android:id="@+id/ibHintSelect"
@@ -174,12 +143,6 @@
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:constraint_referenced_ids="tvHintSupport,ibHintSupport,vSeparatorHintSupport" />
-
-        <androidx.constraintlayout.widget.Group
-            android:id="@+id/grpHintSwipe"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            app:constraint_referenced_ids="tvHintSwipe,ibHintSwipe,vSeparatorHintSwipe" />
 
         <androidx.constraintlayout.widget.Group
             android:id="@+id/grpHintSelect"

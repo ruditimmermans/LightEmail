@@ -252,7 +252,7 @@
           android:text="@string/title_account_color"
           android:textAppearance="@style/TextAppearance.AppCompat.Small" />
 
-      <org.dystopia.email.ViewButtonColor
+      <org.light.email.ViewButtonColor
           android:id="@+id/btnColor"
           android:layout_width="@dimen/color_pick"
           android:layout_height="@dimen/color_pick"

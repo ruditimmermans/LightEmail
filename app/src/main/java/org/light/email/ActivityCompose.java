@@ -1,0 +1,154 @@
+package org.light.email;
+
+/*
+    This file is part of FairEmail.
+
+    FairEmail is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    FairEmail is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with FairEmail.  If not, see <http://www.gnu.org/licenses/>.
+
+    Copyright 2018, Marcel Bokhorst (M66B)
+*/
+
+import android.content.Intent;
+import android.net.Uri;
+import android.os.Bundle;
+import android.text.TextUtils;
+import android.view.MenuItem;
+
+import androidx.fragment.app.FragmentManager;
+import androidx.fragment.app.FragmentTransaction;
+import androidx.lifecycle.Lifecycle;
+
+import java.util.ArrayList;
+
+public class ActivityCompose extends ActivityBase
+    implements FragmentManager.OnBackStackChangedListener {
+    static final int REQUEST_CONTACT_TO = 1;
+    static final int REQUEST_CONTACT_CC = 2;
+    static final int REQUEST_CONTACT_BCC = 3;
+    static final int REQUEST_IMAGE = 4;
+    static final int REQUEST_ATTACHMENT = 5;
+    static final int REQUEST_ENCRYPT = 6;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_compose);
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        getSupportFragmentManager().addOnBackStackChangedListener(this);
+
+        if (getSupportFragmentManager().getFragments().size() == 0) {
+            Bundle args;
+            Intent intent = getIntent();
+            String action = intent.getAction();
+            if (Intent.ACTION_VIEW.equals(action)
+                || Intent.ACTION_SENDTO.equals(action)
+                || Intent.ACTION_SEND.equals(action)
+                || Intent.ACTION_SEND_MULTIPLE.equals(action)) {
+                args = new Bundle();
+                args.putString("action", "new");
+                args.putLong("account", -1);
+
+                Uri uri = intent.getData();
+                if (uri != null && "mailto".equals(uri.getScheme())) {
+                    String to = uri.getSchemeSpecificPart();
+                    if (to != null) {
+                        args.putString("to", to);
+                    }
+                }
+
+                if (intent.hasExtra(Intent.EXTRA_EMAIL)) {
+                    String[] to = intent.getStringArrayExtra(Intent.EXTRA_EMAIL);
+                    if (to != null) {
+                        args.putString("to", TextUtils.join(", ", to));
+                    }
+                }
+
+                if (intent.hasExtra(Intent.EXTRA_CC)) {
+                    String[] cc = intent.getStringArrayExtra(Intent.EXTRA_CC);
+                    if (cc != null) {
+                        args.putString("cc", TextUtils.join(", ", cc));
+                    }
+                }
+
+                if (intent.hasExtra(Intent.EXTRA_BCC)) {
+                    String[] bcc = intent.getStringArrayExtra(Intent.EXTRA_BCC);
+                    if (bcc != null) {
+                        args.putString("bcc", TextUtils.join(", ", bcc));
+                    }
+                }
+
+                if (intent.hasExtra(Intent.EXTRA_SUBJECT)) {
+                    String subject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
+                    if (subject != null) {
+                        args.putString("subject", subject);
+                    }
+                }
+
+                if (intent.hasExtra(Intent.EXTRA_TEXT)) {
+                    String body = intent.getStringExtra(Intent.EXTRA_TEXT); // Intent.EXTRA_HTML_TEXT
+                    if (body != null) {
+                        args.putString("body", body);
+                    }
+                }
+
+                if (intent.hasExtra(Intent.EXTRA_STREAM)) {
+                    if (Intent.ACTION_SEND_MULTIPLE.equals(action)) {
+                        ArrayList<Uri> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+                        if (uris != null) {
+                            args.putParcelableArrayList("attachments", uris);
+                        }
+                    } else {
+                        Uri stream = intent.getParcelableExtra(Intent.EXTRA_STREAM);
+                        if (stream != null) {
+                            ArrayList<Uri> uris = new ArrayList<>();
+                            uris.add((Uri) intent.getParcelableExtra(Intent.EXTRA_STREAM));
+                            args.putParcelableArrayList("attachments", uris);
+                        }
+                    }
+                }
+            } else {
+                args = intent.getExtras();
+            }
+
+            FragmentCompose fragment = new FragmentCompose();
+            fragment.setArguments(args);
+
+            FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+            fragmentTransaction.replace(R.id.content_frame, fragment).addToBackStack("compose");
+            fragmentTransaction.commit();
+        }
+    }
+
+    @Override
+    public void onBackStackChanged() {
+        if (getSupportFragmentManager().getBackStackEntryCount() == 0) {
+            finish();
+        }
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                if (getLifecycle().getCurrentState().isAtLeast(Lifecycle.State.RESUMED)) {
+                    getSupportFragmentManager().popBackStack();
+                }
+                return true;
+            default:
+                return false;
+        }
+    }
+}
