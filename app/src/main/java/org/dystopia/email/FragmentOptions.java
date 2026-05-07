@@ -151,7 +151,7 @@ public class FragmentOptions extends FragmentEx {
 
         // Body text size preference (stored in sp units)
         final String[] sizes = getResources().getStringArray(R.array.body_text_size_entries);
-        int storedSp = prefs.getInt("body_text_size_sp", 16);
+        int storedSp = prefs.getInt("body_text_size_sp", 24);
         int index = 0;
         for (int i = 0; i < sizes.length; i++) {
             if (Integer.parseInt(sizes[i]) == storedSp) {

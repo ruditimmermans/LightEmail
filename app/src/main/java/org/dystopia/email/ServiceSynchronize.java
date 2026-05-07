@@ -1016,7 +1016,11 @@ public class ServiceSynchronize extends LifecycleService {
                                         Log.i(Helper.TAG, folder.name + " start idle");
                                         while (state.running) {
                                             Log.i(Helper.TAG, folder.name + " do idle");
+                                            long start = System.currentTimeMillis();
                                             ifolder.idle(false);
+                                            if (System.currentTimeMillis() - start < 5000) {
+                                                Thread.sleep(5000);
+                                            }
                                             // Log.i(Helper.TAG, folder.name + "
                                             // done idle");
                                         }
@@ -1270,7 +1274,14 @@ public class ServiceSynchronize extends LifecycleService {
                 if (state.running) {
                     try {
                         EntityLog.log(this, account.name + " backoff=" + backoff);
-                        Thread.sleep(backoff * 1000L);
+                        if (wl0.isHeld()) {
+                            wl0.release();
+                        }
+                        try {
+                            Thread.sleep(backoff * 1000L);
+                        } finally {
+                            wl0.acquire();
+                        }
 
                         if (backoff < CONNECT_BACKOFF_MAX) {
                             backoff *= 2;
@@ -2202,7 +2213,14 @@ public class ServiceSynchronize extends LifecycleService {
                             try {
                                 long backoff = RECONNECT_BACKOFF - ago;
                                 EntityLog.log(ServiceSynchronize.this, "Main backoff=" + (backoff / 1000));
-                                Thread.sleep(backoff);
+                                if (wl.isHeld()) {
+                                    wl.release();
+                                }
+                                try {
+                                    Thread.sleep(backoff);
+                                } finally {
+                                    wl.acquire();
+                                }
                             } catch (InterruptedException ex) {
                                 Log.w(Helper.TAG, "main backoff " + ex.toString());
                                 return;
@@ -2396,7 +2414,7 @@ public class ServiceSynchronize extends LifecycleService {
     private void yieldWakelock() {
         try {
             // Give interrupted thread some time to acquire wake lock
-            Thread.sleep(500L);
+            Thread.sleep(100L);
         } catch (InterruptedException ignored) {
         }
     }

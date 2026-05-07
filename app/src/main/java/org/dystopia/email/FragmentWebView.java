@@ -102,7 +102,7 @@ public class FragmentWebView extends FragmentEx {
                 protected void onLoaded(Bundle args, String html) {
                     String from = args.getString("from");
                     final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-                    int bodySp = prefs.getInt("body_text_size_sp", 16);
+                    int bodySp = prefs.getInt("body_text_size_sp", 24);
                     String styledHtml =
                         "<style>body{background-color:black;color:white;font-size:" + bodySp + "px;} ::selection { background: rgba(255, 255, 255, 0.3); }</style>"
                             + html;

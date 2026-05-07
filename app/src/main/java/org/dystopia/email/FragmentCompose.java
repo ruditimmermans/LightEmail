@@ -168,7 +168,7 @@ public class FragmentCompose extends FragmentEx {
         // Wire controls
         // Apply compose body text size from settings (same as message body)
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
-        int bodySp = prefs.getInt("body_text_size_sp", 16);
+        int bodySp = prefs.getInt("body_text_size_sp", 24);
         etBody.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, bodySp);
 
         ivIdentityAdd.setOnClickListener(
