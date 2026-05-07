@@ -1455,6 +1455,9 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                         } else if (itemId == R.id.menu_decrypt) {
                             onDecrypt(data);
                             return true;
+                        } else if (itemId == R.id.menu_delete) {
+                            onDelete(data);
+                            return true;
                         } else {
                             return false;
                         }
