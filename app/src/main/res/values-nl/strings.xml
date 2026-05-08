@@ -81,6 +81,7 @@
     <string name="title_contact">Contacten</string>
     <string name="title_contact_name">Naam</string>
     <string name="title_contact_email">E-mailadres</string>
+    <string name="title_contact_saved">Contact opgeslagen</string>
     <string name="title_no_contacts">Geen contacten gevonden</string>
     <string name="title_account_color">Accountkleur</string>
     <string name="title_domain">Domeinnaam</string>

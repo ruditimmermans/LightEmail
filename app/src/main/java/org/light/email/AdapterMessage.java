@@ -245,6 +245,12 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
             ivAddContact.setOnClickListener(this);
+            tvFrom.setOnClickListener(this);
+            tvFromEx.setOnClickListener(this);
+            tvTo.setOnClickListener(this);
+            tvReplyTo.setOnClickListener(this);
+            tvCc.setOnClickListener(this);
+            tvBcc.setOnClickListener(this);
             bnvActions.setOnNavigationItemSelectedListener(this);
             btnImages.setOnClickListener(this);
         }
@@ -253,6 +259,12 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             itemView.setOnClickListener(null);
             itemView.setOnLongClickListener(null);
             ivAddContact.setOnClickListener(null);
+            tvFrom.setOnClickListener(null);
+            tvFromEx.setOnClickListener(null);
+            tvTo.setOnClickListener(null);
+            tvReplyTo.setOnClickListener(null);
+            tvCc.setOnClickListener(null);
+            tvBcc.setOnClickListener(null);
             bnvActions.setOnNavigationItemSelectedListener(null);
             btnImages.setOnClickListener(null);
         }
@@ -614,7 +626,23 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             TupleMessageEx message = getItem(pos);
 
             if (view.getId() == R.id.ivAddContact) {
-                onAddContact(message);
+                Helper.onAddAddresses(context, message.from);
+            } else if (view.getId() == R.id.tvFrom) {
+                if (properties.isExpanded(message.id)) {
+                    Helper.onAddAddresses(context, message.from);
+                } else {
+                    onExpandMessage(pos, message);
+                }
+            } else if (view.getId() == R.id.tvFromEx) {
+                Helper.onAddAddresses(context, message.from);
+            } else if (view.getId() == R.id.tvTo) {
+                Helper.onAddAddresses(context, message.to);
+            } else if (view.getId() == R.id.tvReplyTo) {
+                Helper.onAddAddresses(context, message.reply);
+            } else if (view.getId() == R.id.tvCc) {
+                Helper.onAddAddresses(context, message.cc);
+            } else if (view.getId() == R.id.tvBcc) {
+                Helper.onAddAddresses(context, message.bcc);
             } else if (view.getId() == R.id.btnImages) {
                 onShowImages(message);
             } else if (EntityFolder.DRAFTS.equals(message.folderType) && viewType != ViewType.THREAD) {
@@ -722,60 +750,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 .show();
 
             return true;
-        }
-
-        private void onAddContact(EntityMessage message) {
-            for (Address address : message.from) {
-                InternetAddress ia = (InternetAddress) address;
-                String name = ia.getPersonal();
-                String email = ia.getAddress();
-
-                // https://developer.android.com/training/contacts-provider/modify-data
-                Intent edit = new Intent();
-                if (!TextUtils.isEmpty(name)) {
-                    edit.putExtra(ContactsContract.Intents.Insert.NAME, name);
-                }
-                if (!TextUtils.isEmpty(email)) {
-                    edit.putExtra(ContactsContract.Intents.Insert.EMAIL, email);
-                }
-
-                Cursor cursor = null;
-                try {
-                    ContentResolver resolver = context.getContentResolver();
-                    cursor =
-                        resolver.query(
-                            ContactsContract.CommonDataKinds.Email.CONTENT_URI,
-                            new String[] {
-                                ContactsContract.CommonDataKinds.Photo.CONTACT_ID,
-                                ContactsContract.Contacts.LOOKUP_KEY
-                            },
-                            ContactsContract.CommonDataKinds.Email.ADDRESS + " = ?",
-                            new String[] {email},
-                            null);
-                    if (cursor != null && cursor.moveToNext()) {
-                        int colContactId =
-                            cursor.getColumnIndex(ContactsContract.CommonDataKinds.Photo.CONTACT_ID);
-                        int colLookupKey = cursor.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY);
-
-                        long contactId = cursor.getLong(colContactId);
-                        String lookupKey = cursor.getString(colLookupKey);
-
-                        Uri lookupUri = ContactsContract.Contacts.getLookupUri(contactId, lookupKey);
-
-                        edit.setAction(Intent.ACTION_EDIT);
-                        edit.setDataAndType(lookupUri, ContactsContract.Contacts.CONTENT_ITEM_TYPE);
-                    } else {
-                        edit.setAction(Intent.ACTION_INSERT);
-                        edit.setType(ContactsContract.Contacts.CONTENT_TYPE);
-                    }
-                } finally {
-                    if (cursor != null) {
-                        cursor.close();
-                    }
-                }
-
-                context.startActivity(edit);
-            }
         }
 
         private void onShowImages(EntityMessage message) {

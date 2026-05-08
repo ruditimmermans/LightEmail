@@ -32,9 +32,12 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import java.io.IOException;
 
 // https://developer.android.com/reference/android/webkit/WebView
 
@@ -48,6 +51,7 @@ public class FragmentWebView extends FragmentEx {
         View view = inflater.inflate(R.layout.fragment_webview, container, false);
 
         final ProgressBar progressBar = view.findViewById(R.id.progressbar);
+        final TextView tvFrom = view.findViewById(R.id.tvFrom);
         final WebView webview = view.findViewById(R.id.webview);
 
         progressBar.setProgress(0);
@@ -91,22 +95,44 @@ public class FragmentWebView extends FragmentEx {
             webview.loadUrl(url);
             setSubtitle(url);
         } else if (args.containsKey("id")) {
-            new SimpleTask<String>() {
+            new SimpleTask<EntityMessage>() {
                 @Override
-                protected String onLoad(Context context, Bundle args) throws Throwable {
+                protected EntityMessage onLoad(Context context, Bundle args) throws Throwable {
                     long id = args.getLong("id");
-                    return EntityMessage.read(context, id);
+                    return DB.getInstance(context).message().getMessage(id);
                 }
 
                 @Override
-                protected void onLoaded(Bundle args, String html) {
-                    String from = args.getString("from");
-                    final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+                protected void onLoaded(Bundle args, final EntityMessage message) {
+                    final String html;
+                    try {
+                        html = message.read(getContext());
+                    } catch (IOException ex) {
+                        onException(args, ex);
+                        return;
+                    }
+
+                    final SharedPreferences prefs =
+                        PreferenceManager.getDefaultSharedPreferences(getContext());
                     int bodySp = prefs.getInt("body_text_size_sp", 24);
                     String styledHtml =
-                        "<style>body{background-color:black;color:white;font-size:" + bodySp + "px;} ::selection { background: rgba(255, 255, 255, 0.3); }</style>"
+                        "<style>body{background-color:black;color:white;font-size:"
+                            + bodySp
+                            + "px;} ::selection { background: rgba(255, 255, 255, 0.3); }</style>"
                             + html;
                     webview.loadDataWithBaseURL("email://", styledHtml, "text/html", "UTF-8", null);
+
+                    String from =
+                        MessageHelper.getFormattedAddresses(
+                            message.from, MessageHelper.ADDRESS_FULL);
+                    tvFrom.setText(from);
+                    tvFrom.setOnClickListener(
+                        new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Helper.onAddAddresses(getContext(), message.from);
+                            }
+                        });
                     setSubtitle(from);
                 }
 

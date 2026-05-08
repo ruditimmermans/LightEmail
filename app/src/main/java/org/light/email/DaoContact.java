@@ -16,6 +16,9 @@ public interface DaoContact {
     @Query("SELECT * FROM contact WHERE id = :id")
     EntityContact getContact(long id);
 
+    @Query("SELECT * FROM contact WHERE email = :email")
+    EntityContact getContactByEmail(String email);
+
     @Query("SELECT * FROM contact WHERE name LIKE :query OR email LIKE :query ORDER BY name COLLATE NOCASE")
     List<EntityContact> searchContacts(String query);
 

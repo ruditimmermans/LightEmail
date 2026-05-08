@@ -23,14 +23,18 @@ package org.light.email;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Notification;
+import android.content.ContentResolver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.TypedArray;
+import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.Menu;
@@ -40,10 +44,12 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.browser.customtabs.CustomTabsIntent;
+import androidx.lifecycle.LifecycleOwner;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.sun.mail.imap.IMAPStore;
@@ -355,5 +361,75 @@ public class Helper {
             result.add(array[i]);
         }
         return result;
+    }
+
+    public static void onAddContact(final Context context, InternetAddress ia) {
+        final String name = ia.getPersonal();
+        final String email = ia.getAddress();
+
+        if (context instanceof LifecycleOwner) {
+            new SimpleTask<Void>() {
+                @Override
+                protected Void onLoad(Context context, Bundle args) {
+                    DB db = DB.getInstance(context);
+                    EntityContact contact = db.contact().getContactByEmail(email);
+                    if (contact == null) {
+                        contact = new EntityContact();
+                        contact.name = (TextUtils.isEmpty(name) ? email : name);
+                        contact.email = email;
+                        db.contact().insertContact(contact);
+                    } else if (!TextUtils.isEmpty(name)) {
+                        contact.name = name;
+                        db.contact().updateContact(contact);
+                    }
+                    return null;
+                }
+
+                @Override
+                protected void onLoaded(Bundle args, Void data) {
+                    Toast.makeText(context, R.string.title_contact_saved, Toast.LENGTH_LONG).show();
+                }
+
+                @Override
+                protected void onException(Bundle args, Throwable ex) {
+                    Toast.makeText(context, ex.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            }.load((LifecycleOwner) context, new Bundle());
+        }
+    }
+
+    public static void onAddAddresses(final Context context, Address[] addresses) {
+        if (addresses == null || addresses.length == 0) {
+            return;
+        }
+
+        final List<InternetAddress> ias = new ArrayList<>();
+        for (Address address : addresses) {
+            if (address instanceof InternetAddress) {
+                ias.add((InternetAddress) address);
+            }
+        }
+
+        if (ias.isEmpty()) {
+            return;
+        }
+
+        if (ias.size() == 1) {
+            onAddContact(context, ias.get(0));
+        } else {
+            String[] names = new String[ias.size()];
+            for (int i = 0; i < ias.size(); i++) {
+                names[i] = ias.get(i).toString();
+            }
+
+            new AlertDialog.Builder(context)
+                .setItems(names, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        onAddContact(context, ias.get(which));
+                    }
+                })
+                .show();
+        }
     }
 }

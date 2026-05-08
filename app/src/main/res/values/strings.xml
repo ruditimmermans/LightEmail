@@ -93,6 +93,7 @@
     <string name="title_contact">Contact</string>
     <string name="title_contact_name">Name</string>
     <string name="title_contact_email">Email</string>
+    <string name="title_contact_saved">Contact saved</string>
     <string name="title_no_contacts">No contacts found</string>
     <string name="title_account_color">Account color</string>
     <string name="title_domain">Domain name</string>

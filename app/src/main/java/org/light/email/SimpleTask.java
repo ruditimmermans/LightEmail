@@ -50,6 +50,16 @@ public abstract class SimpleTask<T> implements LifecycleObserver {
 
     private ExecutorService executor = Executors.newCachedThreadPool(Helper.backgroundThreadFactory);
 
+    public void load(LifecycleOwner owner, Bundle args) {
+        if (owner instanceof Context) {
+            run((Context) owner, owner, args);
+        } else if (owner instanceof Fragment) {
+            load((Fragment) owner, args);
+        } else {
+            throw new IllegalArgumentException("Unsupported LifecycleOwner");
+        }
+    }
+
     public void load(Context context, LifecycleOwner owner, Bundle args) {
         run(context, owner, args);
     }
