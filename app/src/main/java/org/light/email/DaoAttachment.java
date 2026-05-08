@@ -47,6 +47,13 @@ public interface DaoAttachment {
     @Query("SELECT * FROM attachment WHERE message = :message AND cid = :cid")
     EntityAttachment getAttachment(long message, String cid);
 
+    @Query("SELECT a.* FROM attachment a" +
+           " JOIN message m ON m.id = a.message" +
+           " WHERE m.thread = :thread AND a.cid = :cid" +
+           " AND a.available = 1" +
+           " LIMIT 1")
+    EntityAttachment getAttachmentByThread(String thread, String cid);
+
     @Query("SELECT * FROM attachment WHERE id = :id")
     EntityAttachment getAttachment(long id);
 

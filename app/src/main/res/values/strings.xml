@@ -26,6 +26,7 @@
     </plurals>
     <string name="title_notification_failed">\'%1$s\' failed</string>
     <string name="menu_setup">Setup</string>
+    <string name="menu_contacts">Contacts</string>
     <string name="menu_answers">Reply templates</string>
     <string name="menu_operations">Operations</string>
     <string name="menu_legend">Legend</string>
@@ -87,6 +88,11 @@
     <string name="title_account_name">Account name</string>
     <string name="title_account_name_hint">Used to differentiate folders</string>
     <string name="title_account_signature">Signature text</string>
+    <string name="title_contacts">Contacts</string>
+    <string name="title_contact">Contact</string>
+    <string name="title_contact_name">Name</string>
+    <string name="title_contact_email">Email</string>
+    <string name="title_no_contacts">No contacts found</string>
     <string name="title_account_color">Account color</string>
     <string name="title_domain">Domain name</string>
     <string name="title_autoconfig">Get settings</string>

@@ -25,6 +25,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
+import android.text.Html;
 import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -83,6 +84,7 @@ public class FragmentIdentity extends FragmentEx {
     private CheckBox cbSynchronize;
     private CheckBox cbPrimary;
     private CheckBox cbStoreSent;
+    private EditText etSignature;
     private Button btnSave;
     private ProgressBar pbSave;
     private ImageButton ibDelete;
@@ -137,6 +139,7 @@ public class FragmentIdentity extends FragmentEx {
         cbSynchronize = view.findViewById(R.id.cbSynchronize);
         cbPrimary = view.findViewById(R.id.cbPrimary);
         cbStoreSent = view.findViewById(R.id.cbStoreSent);
+        etSignature = view.findViewById(R.id.etSignature);
 
         btnSave = view.findViewById(R.id.btnSave);
         pbSave = view.findViewById(R.id.pbSave);
@@ -344,6 +347,7 @@ public class FragmentIdentity extends FragmentEx {
                     args.putBoolean("synchronize", cbSynchronize.isChecked());
                     args.putBoolean("primary", cbPrimary.isChecked());
                     args.putBoolean("store_sent", cbStoreSent.isChecked());
+                    args.putString("signature", Html.toHtml(etSignature.getText()));
 
                     new SimpleTask<Void>() {
                         @Override
@@ -359,6 +363,7 @@ public class FragmentIdentity extends FragmentEx {
                             String port = args.getString("port");
                             String user = args.getString("user");
                             String password = args.getString("password");
+                            String signature = args.getString("signature");
                             int auth_type = args.getInt("auth_type");
                             boolean synchronize = args.getBoolean("synchronize");
                             boolean primary = args.getBoolean("primary");
@@ -437,6 +442,7 @@ public class FragmentIdentity extends FragmentEx {
                                 identity.synchronize = synchronize;
                                 identity.primary = (identity.synchronize && primary);
                                 identity.store_sent = store_sent;
+                                identity.signature = signature;
 
                                 if (!identity.synchronize) {
                                     identity.error = null;
@@ -546,6 +552,7 @@ public class FragmentIdentity extends FragmentEx {
         outState.putInt("account", spAccount.getSelectedItemPosition());
         outState.putInt("provider", spProvider.getSelectedItemPosition());
         outState.putString("password", tilPassword.getEditText().getText().toString());
+        outState.putString("signature", Html.toHtml(etSignature.getText()));
         outState.putInt("advanced", grpAdvanced.getVisibility());
     }
 
@@ -582,6 +589,10 @@ public class FragmentIdentity extends FragmentEx {
                             cbSynchronize.setChecked(identity == null ? true : identity.synchronize);
                             cbPrimary.setChecked(identity == null ? true : identity.primary);
                             cbStoreSent.setChecked(identity == null ? false : identity.store_sent);
+                            etSignature.setText(
+                                identity == null || identity.signature == null
+                                    ? null
+                                    : Html.fromHtml(identity.signature));
 
                             etName.requestFocus();
 
@@ -600,6 +611,7 @@ public class FragmentIdentity extends FragmentEx {
                             }
                         } else {
                             tilPassword.getEditText().setText(savedInstanceState.getString("password"));
+                            etSignature.setText(Html.fromHtml(savedInstanceState.getString("signature")));
                             grpAdvanced.setVisibility(savedInstanceState.getInt("advanced"));
                         }
 

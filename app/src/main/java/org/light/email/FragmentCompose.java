@@ -134,6 +134,7 @@ public class FragmentCompose extends FragmentEx {
     private AdapterAttachment adapter;
 
     private long working = -1;
+    private String thread = null;
     private boolean autosave = false;
 
     private OpenPgpServiceConnection pgpService;
@@ -255,81 +256,15 @@ public class FragmentCompose extends FragmentEx {
         spFrom.setEnabled(false);
         Helper.setViewsEnabled(view, false);
 
-        if (ContextCompat.checkSelfPermission(getContext(), Manifest.permission.READ_CONTACTS)
-            == PackageManager.PERMISSION_GRANTED) {
-            SimpleCursorAdapter adapter =
-                new SimpleCursorAdapter(
-                    getContext(),
-                    android.R.layout.simple_list_item_2,
-                    null,
-                    new String[] {
-                        ContactsContract.Contacts.DISPLAY_NAME, ContactsContract.CommonDataKinds.Email.DATA
-                    },
-                    new int[] {android.R.id.text1, android.R.id.text2},
-                    0);
+        AdapterEmail adapterEmail = new AdapterEmail(getContext());
 
-            etTo.setAdapter(adapter);
-            etCc.setAdapter(adapter);
-            etBcc.setAdapter(adapter);
+        etTo.setAdapter(adapterEmail);
+        etCc.setAdapter(adapterEmail);
+        etBcc.setAdapter(adapterEmail);
 
-            etTo.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
-            etCc.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
-            etBcc.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
-
-            adapter.setFilterQueryProvider(
-                new FilterQueryProvider() {
-                    public Cursor runQuery(CharSequence typed) {
-                        return getContext()
-                            .getContentResolver()
-                            .query(
-                                ContactsContract.CommonDataKinds.Email.CONTENT_URI,
-                                new String[] {
-                                    ContactsContract.RawContacts._ID,
-                                    ContactsContract.Contacts.DISPLAY_NAME,
-                                    ContactsContract.CommonDataKinds.Email.DATA
-                                },
-                                ContactsContract.CommonDataKinds.Email.DATA
-                                    + " <> ''"
-                                    + " AND ("
-                                    + ContactsContract.Contacts.DISPLAY_NAME
-                                    + " LIKE '%"
-                                    + typed
-                                    + "%'"
-                                    + " OR "
-                                    + ContactsContract.CommonDataKinds.Email.DATA
-                                    + " LIKE '%"
-                                    + typed
-                                    + "%')",
-                                null,
-                                "CASE WHEN "
-                                    + ContactsContract.Contacts.DISPLAY_NAME
-                                    + " NOT LIKE '%@%' THEN 0 ELSE 1 END"
-                                    + ", "
-                                    + ContactsContract.Contacts.DISPLAY_NAME
-                                    + ", "
-                                    + ContactsContract.CommonDataKinds.Email.DATA
-                                    + " COLLATE NOCASE");
-                    }
-                });
-
-            adapter.setCursorToStringConverter(
-                new SimpleCursorAdapter.CursorToStringConverter() {
-                    public CharSequence convertToString(Cursor cursor) {
-                        int colName = cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME);
-                        int colEmail = cursor.getColumnIndex(ContactsContract.CommonDataKinds.Email.DATA);
-                        String name = cursor.getString(colName);
-                        String email = cursor.getString(colEmail);
-                        StringBuilder sb = new StringBuilder();
-                        if (name == null) {
-                            sb.append(email);
-                        } else {
-                            sb.append(name.replace(",", "")).append(" ");
-                            sb.append("<").append(email).append(">");
-                        }
-                        return sb.toString();
-                    }
-                });
-        }
+        etTo.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
+        etCc.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
+        etBcc.setTokenizer(new MultiAutoCompleteTextView.CommaTokenizer());
 
         rvAttachment.setHasFixedSize(false);
         LinearLayoutManager llm = new LinearLayoutManager(getContext());
@@ -892,51 +827,56 @@ public class FragmentCompose extends FragmentEx {
     }
 
     private void handleAddAttachment(Intent data, final boolean image) {
-        Uri uri = data.getData();
-        if (uri == null) {
+        List<Uri> uris = new ArrayList<>();
+        if (data.getClipData() != null) {
+            for (int i = 0; i < data.getClipData().getItemCount(); i++) {
+                uris.add(data.getClipData().getItemAt(i).getUri());
+            }
+        } else if (data.getData() != null) {
+            uris.add(data.getData());
+        }
+
+        if (uris.size() == 0) {
             return;
         }
 
-        Bundle args = new Bundle();
-        args.putLong("id", working);
-        args.putParcelable("uri", data.getData());
+        for (final Uri uri : uris) {
+            Bundle args = new Bundle();
+            args.putLong("id", working);
+            args.putParcelable("uri", uri);
 
-        new SimpleTask<EntityAttachment>() {
-            @Override
-            protected EntityAttachment onLoad(Context context, Bundle args) throws IOException {
-                Long id = args.getLong("id");
-                Uri uri = args.getParcelable("uri");
-                return addAttachment(context, id, uri, image);
-            }
-
-            @Override
-            protected void onLoaded(Bundle args, EntityAttachment attachment) {
-                if (image) {
-                    File file = EntityAttachment.getFile(getContext(), attachment.id);
-                    Drawable d = Drawable.createFromPath(file.getAbsolutePath());
-                    d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
-
-                    int start = etBody.getSelectionStart();
-                    etBody.getText().insert(start, " ");
-                    SpannableString s = new SpannableString(etBody.getText());
-                    ImageSpan is =
-                        new ImageSpan(
-                            getContext(),
-                            Uri.parse("cid:" + BuildConfig.APPLICATION_ID + "." + attachment.id),
-                            ImageSpan.ALIGN_BASELINE);
-                    s.setSpan(is, start, start + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-                    String html = Html.toHtml(s);
-                    Log.i(Helper.TAG, "html=" + html);
-
-                    etBody.setText(Html.fromHtml(html, cidGetter, null));
+            new SimpleTask<EntityAttachment>() {
+                @Override
+                protected EntityAttachment onLoad(Context context, Bundle args) throws IOException {
+                    Long id = args.getLong("id");
+                    Uri uri = args.getParcelable("uri");
+                    return addAttachment(context, id, uri, image);
                 }
-            }
 
-            @Override
-            protected void onException(Bundle args, Throwable ex) {
-                Helper.unexpectedError(getContext(), ex);
-            }
-        }.load(this, args);
+                @Override
+                protected void onLoaded(Bundle args, EntityAttachment attachment) {
+                    if (image) {
+                        File file = EntityAttachment.getFile(getContext(), attachment.id);
+                        Drawable d = Drawable.createFromPath(file.getAbsolutePath());
+                        if (d != null) {
+                            d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());
+
+                            int start = etBody.getSelectionStart();
+                            etBody.getText().insert(start, " ");
+
+                            String cid = "cid:" + BuildConfig.APPLICATION_ID + "." + attachment.id;
+                            ImageSpan is = new ImageSpan(d, cid, ImageSpan.ALIGN_BASELINE);
+                            etBody.getText().setSpan(is, start, start + 1, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        }
+                    }
+                }
+
+                @Override
+                protected void onException(Bundle args, Throwable ex) {
+                    Helper.unexpectedError(getContext(), ex);
+                }
+            }.load(this, args);
+        }
     }
 
     private void handleExit() {
@@ -1205,11 +1145,33 @@ public class FragmentCompose extends FragmentEx {
                         throw new IllegalArgumentException(getString(R.string.title_no_primary_drafts));
                     }
 
+                    EntityIdentity identity = null;
+                    if (ref != null && ref.to != null && ref.to.length > 0) {
+                        String from = Helper.canonicalAddress(((InternetAddress) ref.to[0]).getAddress());
+                        for (EntityIdentity ident : db.identity().getIdentities(account.id)) {
+                            if (from.equals(Helper.canonicalAddress(ident.email))) {
+                                identity = ident;
+                                break;
+                            }
+                        }
+                    }
+                    if (identity == null) {
+                        for (EntityIdentity ident : db.identity().getIdentities(account.id)) {
+                            if (ident.primary) {
+                                identity = ident;
+                                break;
+                            }
+                        }
+                    }
+
+                    String signature = (identity == null || TextUtils.isEmpty(identity.signature) ? account.signature : identity.signature);
+
                     String body = "";
 
                     draft = new EntityMessage();
                     draft.account = account.id;
                     draft.account_name = account.name;
+                    draft.identity = (identity == null ? null : identity.id);
                     draft.folder = drafts.id;
                     draft.msgid = EntityMessage.generateMessageId();
 
@@ -1245,8 +1207,8 @@ public class FragmentCompose extends FragmentEx {
                             body = body.replaceAll("\\r?\\n", "<br />");
                         }
 
-                        if (!TextUtils.isEmpty(account.signature)) {
-                            body += account.signature;
+                        if (!TextUtils.isEmpty(signature)) {
+                            body += signature;
                         }
                     } else {
                         draft.thread = ref.thread;
@@ -1267,8 +1229,8 @@ public class FragmentCompose extends FragmentEx {
                                 List<EntityIdentity> identities = db.identity().getIdentities();
                                 for (Address address : new ArrayList<>(addresses)) {
                                     String cc = Helper.canonicalAddress(((InternetAddress) address).getAddress());
-                                    for (EntityIdentity identity : identities) {
-                                        String email = Helper.canonicalAddress(identity.email);
+                                    for (EntityIdentity ident : identities) {
+                                        String email = Helper.canonicalAddress(ident.email);
                                         if (cc.equals(email)) {
                                             addresses.remove(address);
                                         }
@@ -1304,8 +1266,8 @@ public class FragmentCompose extends FragmentEx {
                                     HtmlHelper.sanitize(ref.read(context)));
                         }
 
-                        if (!TextUtils.isEmpty(account.signature)) {
-                            body = account.signature + body;
+                        if (!TextUtils.isEmpty(signature)) {
+                            body = signature + body;
                         }
 
                         if (answer > 0 && ("reply".equals(action) || "reply_all".equals(action))) {
@@ -1384,6 +1346,7 @@ public class FragmentCompose extends FragmentEx {
             @Override
             protected void onLoaded(Bundle args, final EntityMessage draft) {
                 working = draft.id;
+                thread = draft.thread;
                 autosave = true;
 
                 final String action = getArguments().getString("action");
@@ -1740,10 +1703,27 @@ public class FragmentCompose extends FragmentEx {
             @Override
             public Drawable getDrawable(String source) {
                 if (source != null && source.startsWith("cid")) {
-                    String[] cid = source.split(":");
-                    if (cid.length == 2 && cid[1].startsWith(BuildConfig.APPLICATION_ID)) {
-                        long id = Long.parseLong(cid[1].replace(BuildConfig.APPLICATION_ID + ".", ""));
-                        File file = EntityAttachment.getFile(getContext(), id);
+                    String s = source.substring(source.indexOf(':') + 1).replaceAll("[<>]", "");
+                    String cid = "<" + s + ">";
+
+                    DB db = DB.getInstance(getContext());
+                    EntityAttachment attachment = db.attachment().getAttachment(working, cid);
+                    if (attachment == null && thread != null) {
+                        attachment = db.attachment().getAttachmentByThread(thread, cid);
+                    }
+
+                    if (attachment == null || !attachment.available) {
+                        if (s.startsWith(BuildConfig.APPLICATION_ID)) {
+                            try {
+                                long id = Long.parseLong(s.replace(BuildConfig.APPLICATION_ID + ".", ""));
+                                attachment = db.attachment().getAttachment(id);
+                            } catch (NumberFormatException ignored) {
+                            }
+                        }
+                    }
+
+                    if (attachment != null && attachment.available) {
+                        File file = EntityAttachment.getFile(getContext(), attachment.id);
                         Drawable d = Drawable.createFromPath(file.getAbsolutePath());
                         if (d != null) {
                             d.setBounds(0, 0, d.getIntrinsicWidth(), d.getIntrinsicHeight());

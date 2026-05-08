@@ -46,7 +46,7 @@ import javax.mail.internet.InternetAddress;
 // https://developer.android.com/topic/libraries/architecture/room.html
 
 @Database(
-    version = 26,
+    version = 28,
     entities = {
         EntityIdentity.class,
         EntityAccount.class,
@@ -55,7 +55,8 @@ import javax.mail.internet.InternetAddress;
         EntityAttachment.class,
         EntityOperation.class,
         EntityAnswer.class,
-        EntityLog.class
+        EntityLog.class,
+        EntityContact.class
     })
 @TypeConverters({DB.Converters.class})
 public abstract class DB extends RoomDatabase {
@@ -74,6 +75,8 @@ public abstract class DB extends RoomDatabase {
     public abstract DaoAnswer answer();
 
     public abstract DaoLog log();
+
+    public abstract DaoContact contact();
 
     private static DB sInstance;
 
@@ -365,6 +368,21 @@ public abstract class DB extends RoomDatabase {
                         ", FOREIGN KEY(`message`) REFERENCES `message`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE)");
                     db.execSQL("CREATE INDEX `index_operation_folder` ON `operation` (`folder`)");
                     db.execSQL("CREATE INDEX `index_operation_message` ON `operation` (`message`)");
+                }
+            })
+            .addMigrations(new Migration(26, 27) {
+                @Override
+                public void migrate(@NonNull SupportSQLiteDatabase db) {
+                    logMigration(startVersion, endVersion);
+                    db.execSQL("ALTER TABLE `identity` ADD COLUMN `signature` TEXT");
+                }
+            })
+            .addMigrations(new Migration(27, 28) {
+                @Override
+                public void migrate(@NonNull SupportSQLiteDatabase db) {
+                    logMigration(startVersion, endVersion);
+                    db.execSQL("CREATE TABLE IF NOT EXISTS `contact` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `email` TEXT NOT NULL)");
+                    db.execSQL("CREATE UNIQUE INDEX `index_contact_email` ON `contact` (`email`)");
                 }
             })
             .build();

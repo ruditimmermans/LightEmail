@@ -75,6 +75,7 @@ public class EntityIdentity {
     public Boolean store_sent;
     public String state;
     public String error;
+    public String signature;
 
     public JSONObject toJSON() throws JSONException {
         JSONObject json = new JSONObject();
@@ -91,6 +92,7 @@ public class EntityIdentity {
         json.put("primary", primary);
         json.put("synchronize", false);
         json.put("store_sent", store_sent);
+        json.put("signature", signature);
         return json;
     }
 
@@ -111,6 +113,9 @@ public class EntityIdentity {
         identity.primary = json.getBoolean("primary");
         identity.synchronize = json.getBoolean("synchronize");
         identity.store_sent = json.getBoolean("store_sent");
+        if (json.has("signature")) {
+            identity.signature = json.getString("signature");
+        }
         return identity;
     }
 
@@ -130,6 +135,7 @@ public class EntityIdentity {
                 && this.primary.equals(other.primary)
                 && this.synchronize.equals(other.synchronize)
                 && this.store_sent.equals(other.store_sent)
+                && (this.signature == null ? other.signature == null : this.signature.equals(other.signature))
                 && (this.state == null ? other.state == null : this.state.equals(other.state))
                 && (this.error == null ? other.error == null : this.error.equals(other.error)));
         } else {

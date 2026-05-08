@@ -19,13 +19,8 @@ package org.light.email;
     Copyright 2018, Marcel Bokhorst (M66B)
 */
 
-import androidx.room.Entity;
-import androidx.room.PrimaryKey;
 
-@Entity
 public class TupleAccountStats {
-    @PrimaryKey(autoGenerate = true)
-    public Integer id = 0;
     public Integer accounts = 0;
     public Integer operations = 0;
     public Integer unsent = 0;

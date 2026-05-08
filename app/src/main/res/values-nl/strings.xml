@@ -75,7 +75,12 @@
     <string name="title_account_name">Accountnaam</string>
     <string name="title_account_name_hint">Wordt gebruikt voor het onderscheiden van mappen</string>
     <string name="title_account_signature">Handtekening</string>
-    <string name="title_account_color">Account color</string>
+    <string name="title_contacts">Contacten</string>
+    <string name="title_contact">Contacten</string>
+    <string name="title_contact_name">Naam</string>
+    <string name="title_contact_email">E-mailadres</string>
+    <string name="title_no_contacts">Geen contacten gevonden</string>
+    <string name="title_account_color">Accountkleur</string>
     <string name="title_domain">Domeinnaam</string>
     <string name="title_autoconfig">Instellingen ophalen</string>
     <string name="title_no_settings">Instellingen niet gevonden</string>

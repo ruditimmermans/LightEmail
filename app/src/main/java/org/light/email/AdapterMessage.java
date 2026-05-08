@@ -848,9 +848,23 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                         int px = (int) (24 * scale + 0.5f);
 
                         if (source != null && source.startsWith("cid")) {
-                            String cid = "<" + source.split(":")[1] + ">";
+                            String s = source.substring(source.indexOf(':') + 1).replaceAll("[<>]", "");
+                            String cid = "<" + s + ">";
                             EntityAttachment attachment =
                                 DB.getInstance(context).attachment().getAttachment(message.id, cid);
+                            if (attachment == null && message.thread != null) {
+                                attachment = DB.getInstance(context).attachment().getAttachmentByThread(message.thread, cid);
+                            }
+                            if (attachment == null || !attachment.available) {
+                                if (s.startsWith(BuildConfig.APPLICATION_ID)) {
+                                    try {
+                                        long id = Long.parseLong(s.replace(BuildConfig.APPLICATION_ID + ".", ""));
+                                        attachment = DB.getInstance(context).attachment().getAttachment(id);
+                                    } catch (NumberFormatException ignored) {
+                                    }
+                                }
+                            }
+
                             if (attachment == null || !attachment.available) {
                                 Drawable d =
                                     context

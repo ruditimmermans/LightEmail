@@ -250,29 +250,11 @@ class AdapterAttachment(
     fun set(attachments: List<EntityAttachment>) {
         Log.i(Helper.TAG, "Set attachments=" + attachments.size)
 
-        attachments.sortedWith(compareBy { it.sequence })
-        all = attachments
-        val diff = DiffUtil.calculateDiff(MessageDiffCallback(filtered, all))
+        val next = attachments.sortedBy { it.sequence }
+        val diff = DiffUtil.calculateDiff(MessageDiffCallback(filtered, next))
         filtered.clear()
-        filtered.addAll(all)
-        diff.dispatchUpdatesTo(
-            object : ListUpdateCallback {
-                override fun onInserted(position: Int, count: Int) {
-                    Log.i(Helper.TAG, "Inserted @$position #$count")
-                }
-
-                override fun onRemoved(position: Int, count: Int) {
-                    Log.i(Helper.TAG, "Removed @$position #$count")
-                }
-
-                override fun onMoved(fromPosition: Int, toPosition: Int) {
-                    Log.i(Helper.TAG, "Moved $fromPosition>$toPosition")
-                }
-
-                override fun onChanged(position: Int, count: Int, payload: Any?) {
-                    Log.i(Helper.TAG, "Changed @$position #$count")
-                }
-            })
+        filtered.addAll(next)
+        all = next
         diff.dispatchUpdatesTo(this)
     }
 

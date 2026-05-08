@@ -51,6 +51,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import androidx.drawerlayout.widget.DrawerLayout;
+import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.lifecycle.Lifecycle;
@@ -161,6 +162,8 @@ public class ActivityView extends ActivityBase
                         onMenuFolders((long) item.getData());
                     } else if (itemId == R.string.menu_setup) {
                         onMenuSetup();
+                    } else if (itemId == R.string.menu_contacts) {
+                        onMenuContacts();
                     } else if (itemId == R.string.title_advanced) {
                         onMenuOptions();
                     } else if (itemId == R.string.menu_answers) {
@@ -236,6 +239,12 @@ public class ActivityView extends ActivityBase
                                 R.layout.item_drawer,
                                 R.drawable.baseline_settings_applications_24,
                                 R.string.title_advanced));
+                        drawerArray.add(
+                            new DrawerItem(
+                                ActivityView.this,
+                                R.layout.item_drawer,
+                                R.drawable.baseline_person_24,
+                                R.string.menu_contacts));
                         drawerArray.add(
                             new DrawerItem(
                                 ActivityView.this,
@@ -757,10 +766,18 @@ public class ActivityView extends ActivityBase
     }
 
     private void onMenuAnswers() {
+        addFragment(new FragmentAnswers(), "answers");
+    }
+
+    private void onMenuContacts() {
+        addFragment(new FragmentContacts(), "contacts");
+    }
+
+    public void addFragment(Fragment fragment, String tag) {
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction
-            .replace(R.id.content_frame, new FragmentAnswers())
-            .addToBackStack("answers");
+            .replace(R.id.content_frame, fragment)
+            .addToBackStack(tag);
         fragmentTransaction.commit();
     }
 
