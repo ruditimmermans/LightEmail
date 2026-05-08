@@ -715,7 +715,7 @@ public class ActivityView extends ActivityBase
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(
             Uri.parse(
-                "https://framagit.org/dystopia-project/simple-email/blob/HEAD/docs/FAQ.md"));
+                "https://github.com/ruditimmermans/LightEmail/blob/main/docs/FAQ.md"));
         return intent;
     }
 
