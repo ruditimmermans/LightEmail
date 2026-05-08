@@ -166,25 +166,6 @@ If the *Synchronize now* menu is dimmed, there is no connection to the account.
 
 See the previous question for more information.
 
-#### How do I enable the notification light?
-
-Before Android 8 Oreo: there is an advanced option in the setup for this.
-
-Android 8 Oreo and later: see [here](https://developer.android.com/training/notify-user/channels) about how to configure notification channels.
-
-#### Why do I get 'Couldn't connect to host' ?
-
-The message *Couldn't connect to host ...* means that LightEmail was not able to connect to the email server.
-
-Possible causes are:
-
-* A firewall is blocking connections to the server
-* The email server is refusing to accept the connection
-* The host name or port number is invalid
-* The are problems with the internet connection
-
-If you are using a VPN, the VPN provider might block the connection because it is too aggressively trying to prevent spam.
-
 #### Why do I get 'Too many simultaneous connections' ?
 
 The message *Too many simultaneous connections* is sent by the email server when there are too many connections to the same email account at the same time.
