@@ -1,6 +1,6 @@
 # LightEmail
 
-A [Free Software][free-software], minimalistic and privacy friendly email app for the Light Phone.
+A Free Software, minimalistic and privacy friendly email app for the Light Phone.
 
 You can download directly from GitHub.
 
@@ -23,13 +23,14 @@ notification to make sure you'll never miss a new email.
 
 ## Features
 
-* 100% [Free Software][free-software]
+* 100% Free Software
 * Multiple accounts (inboxes)
 * Multiple identities (outboxes)
 * Unified inbox
 * Conversation view
 * Two way synchronization
 * Offline storage and operations
+* Local Adressbook
 * Battery friendly
 * Low data usage
 * Folder management
