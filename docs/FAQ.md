@@ -22,8 +22,6 @@ a lot settings in the last versions)
 * FairEmial require purchased basic things with no transparent way to purchase
 that features
 
-please see the [CHANGELOG](https://framagit.org/dystopia-project/simple-email/blob/master/CHANGELOG.md) for more detail about the changes.
-
 #### Which permissions are needed and why?
 
 * have full network access (INTERNET): to send and receive email
@@ -118,23 +116,6 @@ not provide the IMAP [UIDPLUS extension](https://tools.ietf.org/html/rfc4315).
 This IMAP extension is required to implement two way synchronization, which is
 not an optional feature.  So, unless your provider can enable this extension,
 you cannot use LightEmail for this provider.
-
-#### ~~Why is STARTTLS for IMAP not supported?~~
-
-~~STARTTLS starts with a not encrypted connection and is therefore not secure.
-All well known IMAP servers support IMAP with a plain SSL connection, so there is no need to support STARTTLS for IMAP.
-If you encounter an IMAP server that requires STARTTLS, please let me know.~~
-
-~~For more background information, please see~~ [~~this article~~](https://www.eff.org/nl/deeplinks/2018/06/announcing-starttls-everywhere-securing-hop-hop-email-delivery)~~.~~
-
-~~tl;dr; "*Additionally, even if you configure STARTTLS perfectly and use a valid certificate, there’s still no guarantee your communication will be encrypted.*"~~
-
-#### How does encryption/decryption work?
-
-First of all you need to install and configure
-[OpenKeychain](https://f-droid.org/en/packages/org.sufficientlysecure.keychain/).
-To encrypt a message before sending, just select the menu *Encrypt*. Similarly,
-to decrypt a received message, just select the menu *Decrypt*.
 
 #### How does search on server work?
 
