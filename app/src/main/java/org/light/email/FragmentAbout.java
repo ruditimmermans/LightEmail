@@ -92,7 +92,7 @@ public class FragmentAbout extends FragmentEx {
         btnFaq.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Helper.view(getContext(), Uri.parse("https://framagit.org/dystopia-project/simple-email/blob/HEAD/docs/FAQ.md"));
+                Helper.view(getContext(), Uri.parse("https://github.com/ruditimmermans/LightEmail/blob/main/docs/FAQ.md"));
             }
         });
 
