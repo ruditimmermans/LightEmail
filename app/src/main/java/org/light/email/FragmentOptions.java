@@ -41,6 +41,7 @@ public class FragmentOptions extends FragmentEx {
     private SwitchCompat optBrowse;
     private SwitchCompat optCompact;
     private SwitchCompat optReplyQuote;
+    private SwitchCompat optSignatureAtBottom;
     private SwitchCompat optInsecure;
     private SwitchCompat optDebug;
     private Spinner spnBodyTextSize;
@@ -62,6 +63,7 @@ public class FragmentOptions extends FragmentEx {
         optBrowse = view.findViewById(R.id.optBrowse);
         optCompact = view.findViewById(R.id.optCompact);
         optReplyQuote = view.findViewById(R.id.optReplyQuote);
+        optSignatureAtBottom = view.findViewById(R.id.optSignatureAtBottom);
         optInsecure = view.findViewById(R.id.optInsecure);
         optDebug = view.findViewById(R.id.optDebug);
         spnBodyTextSize = view.findViewById(R.id.spnBodyTextSize);
@@ -127,6 +129,15 @@ public class FragmentOptions extends FragmentEx {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
                     prefs.edit().putBoolean("reply_quote", checked).apply();
+                }
+            });
+
+        optSignatureAtBottom.setChecked(prefs.getBoolean("signature_at_bottom", true));
+        optSignatureAtBottom.setOnCheckedChangeListener(
+            new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
+                    prefs.edit().putBoolean("signature_at_bottom", checked).apply();
                 }
             });
 

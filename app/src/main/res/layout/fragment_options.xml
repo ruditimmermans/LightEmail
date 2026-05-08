@@ -85,6 +85,18 @@
         tools:ignore="VisualLintButtonSize" />
 
       <androidx.appcompat.widget.SwitchCompat
+        android:id="@+id/optSignatureAtBottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="12dp"
+        android:minHeight="48dp"
+        android:text="@string/title_advanced_signature_at_bottom"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/optReplyQuote"
+        tools:ignore="VisualLintButtonSize" />
+
+      <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/optInsecure"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -93,7 +105,7 @@
         android:minHeight="48dp"
         android:text="@string/title_allow_insecure"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optReplyQuote"
+        app:layout_constraintTop_toBottomOf="@id/optSignatureAtBottom"
         tools:ignore="VisualLintButtonSize" />
 
       <androidx.appcompat.widget.SwitchCompat

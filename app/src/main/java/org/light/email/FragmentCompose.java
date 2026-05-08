@@ -192,9 +192,7 @@ public class FragmentCompose extends FragmentEx {
             new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent =
-                        new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Email.CONTENT_URI);
-                    startActivityForResult(intent, ActivityCompose.REQUEST_CONTACT_TO);
+                    onPickContact(ActivityCompose.REQUEST_CONTACT_TO);
                 }
             });
 
@@ -202,9 +200,7 @@ public class FragmentCompose extends FragmentEx {
             new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent =
-                        new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Email.CONTENT_URI);
-                    startActivityForResult(intent, ActivityCompose.REQUEST_CONTACT_CC);
+                    onPickContact(ActivityCompose.REQUEST_CONTACT_CC);
                 }
             });
 
@@ -212,9 +208,7 @@ public class FragmentCompose extends FragmentEx {
             new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    Intent intent =
-                        new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Email.CONTENT_URI);
-                    startActivityForResult(intent, ActivityCompose.REQUEST_CONTACT_BCC);
+                    onPickContact(ActivityCompose.REQUEST_CONTACT_BCC);
                 }
             });
 
@@ -733,6 +727,107 @@ public class FragmentCompose extends FragmentEx {
         return intent;
     }
 
+    private void onPickContact(final int requestCode) {
+        final DB db = DB.getInstance(getContext());
+        new SimpleTask<List<EntityContact>>() {
+            @Override
+            protected List<EntityContact> onLoad(Context context, Bundle args) {
+                return db.contact().searchContacts("%%");
+            }
+
+            @Override
+            protected void onLoaded(Bundle args, final List<EntityContact> contacts) {
+                if (contacts.size() == 0) {
+                    Snackbar.make(view, R.string.title_no_contacts, Snackbar.LENGTH_LONG).show();
+                    return;
+                }
+
+                final String[] names = new String[contacts.size()];
+                for (int i = 0; i < contacts.size(); i++) {
+                    names[i] = contacts.get(i).name + " <" + contacts.get(i).email + ">";
+                }
+
+                new DialogBuilderLifecycle(getContext(), getViewLifecycleOwner())
+                    .setItems(
+                        names,
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                EntityContact contact = contacts.get(which);
+                                addContact(requestCode, contact.name, contact.email);
+                            }
+                        })
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .show();
+            }
+        }.load(this, new Bundle());
+    }
+
+    private void addContact(int requestCode, String name, String email) {
+        Bundle args = new Bundle();
+        args.putLong("id", working);
+        args.putInt("requestCode", requestCode);
+        args.putString("name", name);
+        args.putString("email", email);
+
+        new SimpleTask<EntityMessage>() {
+            @Override
+            protected EntityMessage onLoad(Context context, Bundle args) throws Throwable {
+                long id = args.getLong("id");
+                int requestCode = args.getInt("requestCode");
+                String name = args.getString("name");
+                String email = args.getString("email");
+
+                DB db = DB.getInstance(context);
+                db.beginTransaction();
+                try {
+                    EntityMessage draft = db.message().getMessage(id);
+                    if (draft == null) {
+                        return null;
+                    }
+
+                    Address[] addresses = null;
+                    if (requestCode == ActivityCompose.REQUEST_CONTACT_TO) {
+                        addresses = draft.to;
+                    } else if (requestCode == ActivityCompose.REQUEST_CONTACT_CC) {
+                        addresses = draft.cc;
+                    } else if (requestCode == ActivityCompose.REQUEST_CONTACT_BCC) {
+                        addresses = draft.bcc;
+                    }
+
+                    List<Address> list = new ArrayList<>();
+                    if (addresses != null) {
+                        list.addAll(Arrays.asList(addresses));
+                    }
+                    list.add(new InternetAddress(email, name, StandardCharsets.UTF_8.name()));
+
+                    if (requestCode == ActivityCompose.REQUEST_CONTACT_TO) {
+                        draft.to = list.toArray(new Address[0]);
+                    } else if (requestCode == ActivityCompose.REQUEST_CONTACT_CC) {
+                        draft.cc = list.toArray(new Address[0]);
+                    } else if (requestCode == ActivityCompose.REQUEST_CONTACT_BCC) {
+                        draft.bcc = list.toArray(new Address[0]);
+                    }
+
+                    db.message().updateMessage(draft);
+                    db.setTransactionSuccessful();
+                    return draft;
+                } finally {
+                    db.endTransaction();
+                }
+            }
+
+            @Override
+            protected void onLoaded(Bundle args, EntityMessage draft) {
+                if (draft != null) {
+                    etTo.setText(MessageHelper.getAddressesCompose(draft.to));
+                    etCc.setText(MessageHelper.getAddressesCompose(draft.cc));
+                    etBcc.setText(MessageHelper.getAddressesCompose(draft.bcc));
+                }
+            }
+        }.load(this, args);
+    }
+
     private void handlePickContact(int requestCode, Intent data) {
         Uri uri = data.getData();
         if (uri == null) {
@@ -1135,6 +1230,7 @@ public class FragmentCompose extends FragmentEx {
 
                     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
                     boolean quote = prefs.getBoolean("reply_quote", true);
+                    boolean signatureAtBottom = prefs.getBoolean("signature_at_bottom", true);
 
                     EntityFolder drafts;
                     drafts = db.folder().getFolderByType(account.id, EntityFolder.DRAFTS);
@@ -1208,7 +1304,11 @@ public class FragmentCompose extends FragmentEx {
                         }
 
                         if (!TextUtils.isEmpty(signature)) {
-                            body += signature;
+                            if (signatureAtBottom) {
+                                body += signature;
+                            } else {
+                                body = signature + body;
+                            }
                         }
                     } else {
                         draft.thread = ref.thread;
@@ -1267,7 +1367,11 @@ public class FragmentCompose extends FragmentEx {
                         }
 
                         if (!TextUtils.isEmpty(signature)) {
-                            body = signature + body;
+                            if (signatureAtBottom) {
+                                body = body + signature;
+                            } else {
+                                body = signature + body;
+                            }
                         }
 
                         if (answer > 0 && ("reply".equals(action) || "reply_all".equals(action))) {

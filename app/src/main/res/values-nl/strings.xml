@@ -21,6 +21,7 @@
     </plurals>
     <string name="title_notification_failed">\'%1$s\' is mislukt</string>
     <string name="menu_setup">Installatie</string>
+    <string name="menu_contacts">Contacten</string>
     <string name="menu_answers">Antwoordsjablonen</string>
     <string name="menu_operations">Handelingen</string>
     <string name="menu_legend">Legenda</string>
@@ -66,6 +67,7 @@
     <string name="title_advanced_compact">Compacte berichtweergave</string>
     <string name="title_advanced_reply_quote">Citeer antwoord</string>
     <string name="title_advanced_debug">Foutopsporingsmodus</string>
+    <string name="title_advanced_signature_at_bottom">Handtekening onderaan</string>
     <string name="title_select">Kies…</string>
     <string name="title_identity_name">Je naam</string>
     <string name="title_identity_email">Je e-mailadres</string>

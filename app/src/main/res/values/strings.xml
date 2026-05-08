@@ -79,6 +79,7 @@
     <string name="title_advanced_compact">Compact message view</string>
     <string name="title_advanced_reply_quote">Quote reply</string>
     <string name="title_advanced_debug">Debug mode</string>
+    <string name="title_advanced_signature_at_bottom">Signature at the bottom</string>
     <string name="title_select">Select …</string>
     <string name="title_identity_name">Your name</string>
     <string name="title_identity_email">Your email address</string>
