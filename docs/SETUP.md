@@ -36,8 +36,6 @@ Similarly, to add an identity, tap on *Manage identity* and tap on the orange
 address of the emails you send and select a linked account. Tap *Save* to add
 the identity.
 
-See [this FAQ](https://framagit.org/dystopia-project/simple-email/blob/1fe638b880e9dfa8346d437e3b0c02036928cf03/docs/FAQ.md#what-are-identities) about using aliases.
-
 ## Permissions
 
 If you want to lookup email addresses, have contact photos shown, etc, you'll
@@ -51,8 +49,3 @@ off for some time to reduce battery usage.  If you want to receive new emails
 without delays, you should disable battery optimizations for LightEmail. Tap
 *Disable battery optimizations* and follow the instructions.
 
-## Questions
-
-If you have a question or problem, please [see here][faqs].
-
- [faqs]: https://framagit.org/dystopia-project/simple-email/blob/8f7296ddc2275471d4190df1dd55dee4025a5114/docs/FAQ.md

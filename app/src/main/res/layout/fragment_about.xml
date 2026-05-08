@@ -2,77 +2,131 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:fillViewport="true">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="12dp">
+        android:padding="24dp">
+
+        <ImageView
+            android:id="@+id/ivIcon"
+            android:layout_width="96dp"
+            android:layout_height="96dp"
+            android:layout_marginTop="32dp"
+            android:contentDescription="@string/app_name"
+            android:src="@mipmap/ic_launcher"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
         <TextView
             android:id="@+id/tvName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
             android:text="@string/app_name"
             android:textAppearance="@style/TextAppearance.AppCompat.Large"
+            android:textStyle="bold"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toBottomOf="@id/ivIcon" />
 
         <TextView
             android:id="@+id/tvVersion"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
             android:text="@string/default_version"
             android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            android:textColor="?android:attr/textColorSecondary"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvName" />
 
         <TextView
             android:id="@+id/tvCopyright"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="32dp"
+            android:gravity="center"
             android:text="@string/app_copyright"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            android:textColor="?android:attr/textColorSecondary"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvVersion" />
 
         <TextView
             android:id="@+id/tvEula"
-            android:autoLink="web"
-            android:linksClickable="true"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="16dp"
+            android:autoLink="web"
+            android:gravity="center"
+            android:linksClickable="true"
             android:text="@string/app_eula"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            android:textColor="?android:attr/textColorSecondary"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvCopyright" />
 
-      <Button
-        android:id="@+id/btnLog"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:backgroundTint="@color/black"
-        android:minWidth="0dp"
-        android:minHeight="0dp"
-        android:text="@string/title_log"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvEula" />
+        <LinearLayout
+            android:id="@+id/llButtons1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvEula">
 
-      <Button
-        android:id="@+id/btnDebugInfo"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
-        android:backgroundTint="@color/black"
-        android:minWidth="0dp"
-        android:minHeight="0dp"
-        android:text="@string/title_debug_info"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvEula" />
+            <Button
+                android:id="@+id/btnWebsite"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_website" />
+
+            <Button
+                android:id="@+id/btnFaq"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/menu_faq" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/llButtons2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/llButtons1"
+            app:layout_constraintVertical_bias="1.0">
+
+            <Button
+                android:id="@+id/btnLog"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_log" />
+
+            <Button
+                android:id="@+id/btnDebugInfo"
+                style="@style/Widget.AppCompat.Button.Borderless.Colored"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/title_debug_info" />
+
+        </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

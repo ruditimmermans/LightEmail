@@ -24,6 +24,7 @@ import android.app.usage.UsageStatsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -58,6 +59,8 @@ public class FragmentAbout extends FragmentEx {
     private TextView tvVersion;
     private Button btnLog;
     private Button btnDebugInfo;
+    private Button btnWebsite;
+    private Button btnFaq;
 
     @Override
     @Nullable
@@ -72,10 +75,26 @@ public class FragmentAbout extends FragmentEx {
         tvVersion = view.findViewById(R.id.tvVersion);
         btnLog = view.findViewById(R.id.btnLog);
         btnDebugInfo = view.findViewById(R.id.btnDebugInfo);
+        btnWebsite = view.findViewById(R.id.btnWebsite);
+        btnFaq = view.findViewById(R.id.btnFaq);
 
         int version = R.string.title_version;
         String versionName = getString(version, BuildConfig.VERSION_NAME);
         tvVersion.setText(versionName);
+
+        btnWebsite.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Helper.view(getContext(), Uri.parse(getString(R.string.default_link)));
+            }
+        });
+
+        btnFaq.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Helper.view(getContext(), Uri.parse("https://framagit.org/dystopia-project/simple-email/blob/HEAD/docs/FAQ.md"));
+            }
+        });
 
         btnLog.setOnClickListener(
             new View.OnClickListener() {

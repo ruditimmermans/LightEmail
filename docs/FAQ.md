@@ -15,33 +15,31 @@ simple, privacy-friendly app with a good UX/UI and minimalistic design.
 * The APK size is smaller, LightEmail is 3.x MB vs 15.x MB of FairEmail, even bigger than K-9 Mail
 * LightEmail has a community focus, all contributions are welcome
 * LightEmail will not have "pro" features
-* F-Droid friendly, no redirect to play store (potentially violating your
-  privacy) or background fetch updates
 * Notifications group per account
 * The UI was cleaned and simplified
 * LightEmail will keep simple, without unnecessaries settings (FairEmail added
-  a lot settings in the last versions)
+a lot settings in the last versions)
 * FairEmial require purchased basic things with no transparent way to purchase
-  that features
+that features
 
 please see the [CHANGELOG](https://framagit.org/dystopia-project/simple-email/blob/master/CHANGELOG.md) for more detail about the changes.
 
 #### Which permissions are needed and why?
 
 * have full network access (INTERNET): to send and receive email
-* view network connections (ACCESS_NETWORK_STATE): to monitor internet
-  connectivity changes
-* allow show notifications (POST_NOTIFICATIONS): to show new message
-  notifications on Android 13 and later
-* run at startup (RECEIVE_BOOT_COMPLETED): to start monitoring on device start
-* foreground service (FOREGROUND_SERVICE/_DATA_SYNC): to run a foreground service on
-  Android 9 Pie and later, see also the next question
-* prevent device from sleeping (WAKE_LOCK): to keep the device awake while
-  synchronizing messages
-* Optional: read your contacts (READ_CONTACTS): to autocomplete addresses and to
-  show photos
-* Optional: find accounts on the device (GET_ACCOUNTS): to use
-  [OAuth](https://en.wikipedia.org/wiki/OAuth) instead of passwords
+* view network connections (ACCESS\_NETWORK\_STATE): to monitor internet
+connectivity changes
+* allow show notifications (POST\_NOTIFICATIONS): to show new message
+notifications on Android 13 and later
+* run at startup (RECEIVE\_BOOT\_COMPLETED): to start monitoring on device start
+* foreground service (FOREGROUND\_SERVICE/\_DATA\_SYNC): to run a foreground service on
+Android 9 Pie and later, see also the next question
+* prevent device from sleeping (WAKE\_LOCK): to keep the device awake while
+synchronizing messages
+* Optional: read your contacts (READ\_CONTACTS): to autocomplete addresses and to
+show photos
+* Optional: find accounts on the device (GET\_ACCOUNTS): to use
+[OAuth](https://en.wikipedia.org/wiki/OAuth) instead of passwords
 
 #### Why is there a permanent notification shown?
 
@@ -123,11 +121,11 @@ you cannot use LightEmail for this provider.
 
 #### ~~Why is STARTTLS for IMAP not supported?~~
 
-~~STARTTLS starts with a not encrypted connection and is therefore not secure.~~
-~~All well known IMAP servers support IMAP with a plain SSL connection, so there is no need to support STARTTLS for IMAP.~~
-~~If you encounter an IMAP server that requires STARTTLS, please let me know.~~
+~~STARTTLS starts with a not encrypted connection and is therefore not secure.
+All well known IMAP servers support IMAP with a plain SSL connection, so there is no need to support STARTTLS for IMAP.
+If you encounter an IMAP server that requires STARTTLS, please let me know.~~
 
-~~For more background information, please see [this article](https://www.eff.org/nl/deeplinks/2018/06/announcing-starttls-everywhere-securing-hop-hop-email-delivery).~~
+~~For more background information, please see~~ [~~this article~~](https://www.eff.org/nl/deeplinks/2018/06/announcing-starttls-everywhere-securing-hop-hop-email-delivery)~~.~~
 
 ~~tl;dr; "*Additionally, even if you configure STARTTLS perfectly and use a valid certificate, there’s still no guarantee your communication will be encrypted.*"~~
 
@@ -153,12 +151,12 @@ See [here](https://support.microsoft.com/en-us/help/12409/microsoft-account-app-
 #### Can you add ... ?
 
 * More themes/black theme: the goal is to keep the app as simple as possible, so
-  no more themes will not be added.
+no more themes will not be added.
 * Previewing message text in notification/widget: this is not always possible
-  because the message text is initially not downloaded for larger messages.
+because the message text is initially not downloaded for larger messages.
 * Executing filter rules: filter rules should be executed on the server because
-  a battery powered device with possibly an unstable internet connection is not
-  suitable for this.
+a battery powered device with possibly an unstable internet connection is not
+suitable for this.
 
 #### Why are messages not being synchronized?
 
@@ -230,16 +228,5 @@ likely the [storage access framework](https://developer.android.com/guide/topics
 a standard Android component, is not present,
 for example because your custom ROM does not include it or because it was removed.
 LightEmail does not request storage permissions, so this framework is required to select files and folders.
-No app, except maybe file managers, targetting Android 4.4 KitKat or later should ask for storage permissions because it would allow access to *all* files.
 
-#### Can I help to translate LightEmail in my own language?
 
-Yes, you can translate the texts of LightEmail in your own language, please open a [pull requests][pull-requests] with the changes,
-we are looking for web service to automated the process.
-
-<br>
-
-If you have another question, want to request a feature or report a bug, please open a [issue][], send a [email](distopico@riseup.net) or open [PR][pull-requests].
-
- [issue]: https://framagit.org/dystopia-project/simple-email/issues
- [pull-requests]: https://framagit.org/dystopia-project/simple-email/merge_requests
