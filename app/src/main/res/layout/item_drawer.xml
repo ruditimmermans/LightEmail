@@ -13,6 +13,9 @@
         android:contentDescription="@null"
         android:gravity="center_vertical"
         android:src="@drawable/baseline_mail_outline_24"
+        android:background="@drawable/bg_circle_white"
+        android:padding="6dp"
+        app:tint="@android:color/black"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />

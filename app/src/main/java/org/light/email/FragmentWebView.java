@@ -116,10 +116,22 @@ public class FragmentWebView extends FragmentEx {
                         PreferenceManager.getDefaultSharedPreferences(getContext());
                     int bodySp = prefs.getInt("body_text_size_sp", 24);
                     String styledHtml =
-                        "<style>body{background-color:black;color:white;font-size:"
-                            + bodySp
-                            + "px;} ::selection { background: rgba(255, 255, 255, 0.3); }</style>"
-                            + html;
+                        "<!DOCTYPE html><html><head>"
+                            + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
+                            + "<style>"
+                            + ":root { color-scheme: dark; }"
+                            + "body { background-color: black; color: white; font-family: sans-serif; font-size: " + bodySp + "px; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; margin: 16px; }"
+                            + "img { max-width: 100% !important; height: auto !important; }"
+                            + "table { max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse; }"
+                            + "td { padding: 4px; }"
+                            + "pre { white-space: pre-wrap; word-wrap: break-word; background-color: #333; padding: 8px; border-radius: 4px; }"
+                            + "blockquote { border-left: 3px solid #555; margin: 8px 0; padding-left: 12px; color: #bbb; }"
+                            + "a { color: #80b3ff; text-decoration: none; }"
+                            + "hr { border: 0; border-top: 1px solid #444; margin: 16px 0; }"
+                            + "::selection { background: rgba(255, 255, 255, 0.4); }"
+                            + "</style></head><body>"
+                            + html
+                            + "</body></html>";
                     webview.loadDataWithBaseURL("email://", styledHtml, "text/html", "UTF-8", null);
 
                     String from =
