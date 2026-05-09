@@ -23,11 +23,9 @@ notification to make sure you'll never miss a new email.
 
 ## Features
 
-* 100% Free Software
 * Multiple accounts (inboxes)
 * Multiple identities (outboxes)
 * Unified inbox
-* Conversation view
 * Two way synchronization
 * Offline storage and operations
 * Local Adressbook
