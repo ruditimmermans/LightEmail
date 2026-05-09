@@ -67,6 +67,7 @@ import com.sun.mail.imap.IMAPStore;
 import com.sun.mail.util.FolderClosedIOException;
 import com.sun.mail.util.MailConnectException;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
@@ -510,10 +511,7 @@ public class ServiceSynchronize extends LifecycleService {
             gbuilder.setGroupAlertBehavior(Notification.GROUP_ALERT_CHILDREN);
         }
 
-        if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O && prefs.getBoolean("light", false)) {
-            gbuilder.setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_LIGHTS);
-            gbuilder.setLights(0xff00ff00, 1000, 1000);
-        }
+
 
         DateFormat df = SimpleDateFormat.getDateTimeInstance(SimpleDateFormat.SHORT, SimpleDateFormat.SHORT);
         StringBuilder sb = new StringBuilder();
@@ -1345,6 +1343,8 @@ public class ServiceSynchronize extends LifecycleService {
                                 doSend(message, db);
                             } else if (EntityOperation.HEADERS.equals(op.name)) {
                                 doHeaders(folder, ifolder, message, db);
+                            } else if (EntityOperation.RAW.equals(op.name)) {
+                                doRaw(folder, ifolder, message, db);
                             } else if (EntityOperation.BODY.equals(op.name)) {
                                 doBody(folder, ifolder, message, db);
                             } else if (EntityOperation.ATTACHMENT.equals(op.name)) {
@@ -1597,6 +1597,19 @@ public class ServiceSynchronize extends LifecycleService {
             sb.append(header.getName()).append(": ").append(header.getValue()).append("\n");
         }
         db.message().setMessageHeaders(message.id, sb.toString());
+    }
+
+    private void doRaw(EntityFolder folder, IMAPFolder ifolder, EntityMessage message, DB db)
+        throws MessagingException, IOException {
+        Message imessage = ifolder.getMessageByUID(message.uid);
+        if (imessage == null) {
+            throw new MessageRemovedException();
+        }
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        imessage.writeTo(os);
+        message.writeRaw(this, os.toString("UTF-8"));
+        db.message().setMessageRaw(message.id, true);
     }
 
     private void doBody(EntityFolder folder, IMAPFolder ifolder, EntityMessage message, DB db)

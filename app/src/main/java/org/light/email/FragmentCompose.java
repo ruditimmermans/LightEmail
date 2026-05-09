@@ -1230,7 +1230,7 @@ public class FragmentCompose extends FragmentEx {
 
                     SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
                     boolean quote = prefs.getBoolean("reply_quote", true);
-                    boolean signatureAtBottom = prefs.getBoolean("signature_at_bottom", true);
+                    boolean signatureAtBottom = prefs.getBoolean("signature_at_bottom", false);
 
                     EntityFolder drafts;
                     drafts = db.folder().getFolderByType(account.id, EntityFolder.DRAFTS);

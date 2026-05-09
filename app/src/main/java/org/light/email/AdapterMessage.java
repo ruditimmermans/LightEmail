@@ -141,6 +141,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private View itemView;
         private View vwColor;
         private ImageView ivExpander;
+        private ImageView ivShowHtml;
         private ImageView ivFlagged;
         private ImageView ivAvatar;
         private TextView tvFrom;
@@ -191,6 +192,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             this.itemView = itemView.findViewById(R.id.clItem);
             vwColor = itemView.findViewById(R.id.vwColor);
             ivExpander = itemView.findViewById(R.id.ivExpander);
+            ivShowHtml = itemView.findViewById(R.id.ivShowHtml);
             ivFlagged = itemView.findViewById(R.id.ivFlagged);
             ivAvatar = itemView.findViewById(R.id.ivAvatar);
             tvFrom = itemView.findViewById(R.id.tvFrom);
@@ -245,6 +247,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private void wire() {
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
+            ivShowHtml.setOnClickListener(this);
             ivAddContact.setOnClickListener(this);
             tvFrom.setOnClickListener(this);
             tvFromEx.setOnClickListener(this);
@@ -259,6 +262,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private void unwire() {
             itemView.setOnClickListener(null);
             itemView.setOnLongClickListener(null);
+            ivShowHtml.setOnClickListener(null);
             ivAddContact.setOnClickListener(null);
             tvFrom.setOnClickListener(null);
             tvFromEx.setOnClickListener(null);
@@ -273,6 +277,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private void clear() {
             vwColor.setVisibility(View.GONE);
             ivExpander.setVisibility(View.GONE);
+            ivShowHtml.setVisibility(View.GONE);
             ivFlagged.setVisibility(View.GONE);
             ivAvatar.setVisibility(View.GONE);
             tvFrom.setText(null);
@@ -339,6 +344,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             } else {
                 ivFlagged.setVisibility(message.count - message.unflagged > 0 ? View.VISIBLE : View.GONE);
             }
+            ivShowHtml.setVisibility(message.content ? View.VISIBLE : View.GONE);
 
             Address[] addresses = null;
             if (EntityFolder.DRAFTS.equals(message.folderType)
@@ -625,7 +631,11 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
             TupleMessageEx message = getItem(pos);
 
-            if (view.getId() == R.id.ivAddContact) {
+            if (view.getId() == R.id.ivShowHtml) {
+                ActionData data = new ActionData();
+                data.message = message;
+                onShowHtml(data);
+            } else if (view.getId() == R.id.ivAddContact) {
                 Helper.onAddAddresses(context, message.from);
             } else if (view.getId() == R.id.tvFrom) {
                 if (properties.isExpanded(message.id)) {
@@ -1388,6 +1398,39 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                     .putExtra("from", MessageHelper.getFormattedAddresses(data.message.from, MessageHelper.ADDRESS_FULL)));
         }
 
+        private void onViewRaw(ActionData data) {
+            if (data.message.raw) {
+                LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
+                lbm.sendBroadcast(
+                    new Intent(ActivityView.ACTION_VIEW_FULL)
+                        .putExtra("id", data.message.id)
+                        .putExtra("raw", true)
+                        .putExtra("from", MessageHelper.getFormattedAddresses(data.message.from, MessageHelper.ADDRESS_FULL)));
+            } else {
+                Bundle args = new Bundle();
+                args.putLong("id", data.message.id);
+
+                new SimpleTask<Void>() {
+                    @Override
+                    protected Void onLoad(Context context, Bundle args) {
+                        Long id = args.getLong("id");
+                        DB db = DB.getInstance(context);
+                        EntityMessage message = db.message().getMessage(id);
+                        EntityOperation.queue(db, message, EntityOperation.RAW);
+                        EntityOperation.process(context);
+                        return null;
+                    }
+
+                    @Override
+                    protected void onException(Bundle args, Throwable ex) {
+                        Helper.unexpectedError(context, ex);
+                    }
+                }.load(context, owner, args);
+
+                Toast.makeText(context, R.string.title_queued, Toast.LENGTH_LONG).show();
+            }
+        }
+
         private void onDecrypt(ActionData data) {
             LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
             lbm.sendBroadcast(
@@ -1442,6 +1485,11 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
             popupMenu
                 .getMenu()
+                .findItem(R.id.menu_view_raw)
+                .setEnabled(data.message.uid != null);
+
+            popupMenu
+                .getMenu()
                 .findItem(R.id.menu_decrypt)
                 .setEnabled(data.message.to != null && data.message.to.length > 0);
 
@@ -1476,6 +1524,9 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                             return true;
                         } else if (itemId == R.id.menu_show_html) {
                             onShowHtml(data);
+                            return true;
+                        } else if (itemId == R.id.menu_view_raw) {
+                            onViewRaw(data);
                             return true;
                         } else if (itemId == R.id.menu_decrypt) {
                             onDecrypt(data);

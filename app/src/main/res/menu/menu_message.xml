@@ -40,6 +40,10 @@
         android:title="@string/title_show_html" />
 
     <item
+        android:id="@+id/menu_view_raw"
+        android:title="@string/title_view_raw" />
+
+    <item
         android:id="@+id/menu_decrypt"
         android:title="@string/title_decrypt" />
 

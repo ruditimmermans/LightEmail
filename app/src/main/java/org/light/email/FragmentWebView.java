@@ -24,6 +24,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -105,8 +106,13 @@ public class FragmentWebView extends FragmentEx {
                 @Override
                 protected void onLoaded(Bundle args, final EntityMessage message) {
                     final String html;
+                    final boolean raw = args.getBoolean("raw");
                     try {
-                        html = message.read(getContext());
+                        if (raw) {
+                            html = "<pre>" + TextUtils.htmlEncode(message.readRaw(getContext())) + "</pre>";
+                        } else {
+                            html = message.read(getContext());
+                        }
                     } catch (IOException ex) {
                         onException(args, ex);
                         return;

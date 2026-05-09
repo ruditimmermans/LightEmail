@@ -245,7 +245,7 @@ public class ActivityView extends ActivityBase
                             new DrawerItem(
                                 ActivityView.this,
                                 R.layout.item_drawer,
-                                R.drawable.baseline_person_24,
+                                R.drawable.baseline_people_24,
                                 R.string.menu_contacts));
                         drawerArray.add(
                             new DrawerItem(
@@ -286,7 +286,7 @@ public class ActivityView extends ActivityBase
                             new DrawerItem(
                                 ActivityView.this,
                                 R.layout.item_drawer,
-                                R.drawable.baseline_account_box_24,
+                                R.drawable.baseline_lock_24,
                                 R.string.menu_privacy));
 
                         drawerArray.add(

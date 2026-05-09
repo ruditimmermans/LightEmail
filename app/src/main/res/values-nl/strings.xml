@@ -161,6 +161,7 @@
     <string name="title_reply_all">Allen beantwoorden</string>
     <string name="title_show_headers">Berichtkoppen tonen</string>
     <string name="title_show_html">Oorspronkelijke e-mail tonen</string>
+    <string name="title_view_raw">Raw e-mail tonen</string>
     <string name="title_trash">Prullenbak</string>
     <string name="title_delete">Verwijderen</string>
     <string name="title_more">Meer</string>

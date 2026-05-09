@@ -37,18 +37,6 @@
         tools:ignore="VisualLintButtonSize" />
 
       <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optLight"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_light"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optAvatars"
-        tools:ignore="VisualLintButtonSize" />
-
-      <androidx.appcompat.widget.SwitchCompat
         android:id="@+id/optBrowse"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -57,19 +45,7 @@
         android:minHeight="48dp"
         android:text="@string/title_advanced_browse"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optLight"
-        tools:ignore="VisualLintButtonSize" />
-
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optCompact"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_compact"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optBrowse"
+        app:layout_constraintTop_toBottomOf="@id/optAvatars"
         tools:ignore="VisualLintButtonSize" />
 
       <androidx.appcompat.widget.SwitchCompat
@@ -81,7 +57,7 @@
         android:minHeight="48dp"
         android:text="@string/title_advanced_reply_quote"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optCompact"
+        app:layout_constraintTop_toBottomOf="@id/optBrowse"
         tools:ignore="VisualLintButtonSize" />
 
       <androidx.appcompat.widget.SwitchCompat
@@ -108,18 +84,6 @@
         app:layout_constraintTop_toBottomOf="@id/optSignatureAtBottom"
         tools:ignore="VisualLintButtonSize" />
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optDebug"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_debug"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optInsecure"
-        tools:ignore="VisualLintButtonSize" />
-
         <TextView
             android:id="@+id/tvBodyTextSizeLabel"
             android:layout_width="match_parent"
@@ -129,7 +93,7 @@
             android:text="@string/title_message_text_size"
             style="@style/TextAppearance.AppCompat.Body1"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optDebug" />
+            app:layout_constraintTop_toBottomOf="@id/optInsecure" />
 
       <Spinner
         android:id="@+id/spnBodyTextSize"

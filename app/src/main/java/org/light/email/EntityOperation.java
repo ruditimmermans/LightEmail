@@ -76,6 +76,7 @@ public class EntityOperation {
     public static final String SEND = "send";
     public static final String HEADERS = "headers";
     public static final String BODY = "body";
+    public static final String RAW = "raw";
     public static final String ATTACHMENT = "attachment";
     public static final String FLAG = "flag";
     public static final String SYNC = "sync";

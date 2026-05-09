@@ -37,13 +37,10 @@ import androidx.annotation.Nullable;
 public class FragmentOptions extends FragmentEx {
     private SwitchCompat optSyncEnabled;
     private SwitchCompat optAvatars;
-    private SwitchCompat optLight;
     private SwitchCompat optBrowse;
-    private SwitchCompat optCompact;
     private SwitchCompat optReplyQuote;
     private SwitchCompat optSignatureAtBottom;
     private SwitchCompat optInsecure;
-    private SwitchCompat optDebug;
     private Spinner spnBodyTextSize;
 
     @Override
@@ -59,13 +56,10 @@ public class FragmentOptions extends FragmentEx {
         // Get controls
         optSyncEnabled = view.findViewById(R.id.optSyncEnabled);
         optAvatars = view.findViewById(R.id.optAvatars);
-        optLight = view.findViewById(R.id.optLight);
         optBrowse = view.findViewById(R.id.optBrowse);
-        optCompact = view.findViewById(R.id.optCompact);
         optReplyQuote = view.findViewById(R.id.optReplyQuote);
         optSignatureAtBottom = view.findViewById(R.id.optSignatureAtBottom);
         optInsecure = view.findViewById(R.id.optInsecure);
-        optDebug = view.findViewById(R.id.optDebug);
         spnBodyTextSize = view.findViewById(R.id.spnBodyTextSize);
 
         // Wire controls
@@ -95,15 +89,6 @@ public class FragmentOptions extends FragmentEx {
                 }
             });
 
-        optLight.setChecked(prefs.getBoolean("light", false));
-        optLight.setOnCheckedChangeListener(
-            new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
-                    prefs.edit().putBoolean("light", checked).apply();
-                }
-            });
-
         optBrowse.setChecked(prefs.getBoolean("browse", false));
         optBrowse.setOnCheckedChangeListener(
             new CompoundButton.OnCheckedChangeListener() {
@@ -114,15 +99,6 @@ public class FragmentOptions extends FragmentEx {
             });
 
 
-        optCompact.setChecked(prefs.getBoolean("compact", false));
-        optCompact.setOnCheckedChangeListener(
-            new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
-                    prefs.edit().putBoolean("compact", checked).apply();
-                }
-            });
-
         optReplyQuote.setChecked(prefs.getBoolean("reply_quote", true));
         optReplyQuote.setOnCheckedChangeListener(
             new CompoundButton.OnCheckedChangeListener() {
@@ -132,7 +108,7 @@ public class FragmentOptions extends FragmentEx {
                 }
             });
 
-        optSignatureAtBottom.setChecked(prefs.getBoolean("signature_at_bottom", true));
+        optSignatureAtBottom.setChecked(prefs.getBoolean("signature_at_bottom", false));
         optSignatureAtBottom.setOnCheckedChangeListener(
             new CompoundButton.OnCheckedChangeListener() {
                 @Override
@@ -147,16 +123,6 @@ public class FragmentOptions extends FragmentEx {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
                     prefs.edit().putBoolean("insecure", checked).apply();
-                }
-            });
-
-        optDebug.setChecked(prefs.getBoolean("debug", false));
-        optDebug.setOnCheckedChangeListener(
-            new CompoundButton.OnCheckedChangeListener() {
-                @Override
-                public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
-                    prefs.edit().putBoolean("debug", checked).apply();
-                    ServiceSynchronize.reload(getContext(), "debug=" + checked);
                 }
             });
 
@@ -184,11 +150,6 @@ public class FragmentOptions extends FragmentEx {
                     @Override
                     public void onNothingSelected(AdapterView<?> parent) {}
                 });
-
-        optLight.setVisibility(
-            android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.O
-                ? View.VISIBLE
-                : View.GONE);
 
         return view;
     }

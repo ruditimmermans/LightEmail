@@ -119,6 +119,8 @@ public class EntityMessage implements Serializable {
     public Integer size;
     @NonNull
     public Boolean content = false;
+    @NonNull
+    public Boolean raw = false;
     public Long sent; // compose = null
     @NonNull
     public Long received; // compose = stored
@@ -159,11 +161,26 @@ public class EntityMessage implements Serializable {
         return new File(dir, id.toString());
     }
 
+    static File getFileRaw(Context context, Long id) {
+        File dir = new File(context.getFilesDir(), "raw");
+        dir.mkdir();
+        return new File(dir, id.toString());
+    }
+
     void write(Context context, String body) throws IOException {
-        File file = getFile(context, id);
+        write(context, getFile(context, id), body);
+    }
+
+    void writeRaw(Context context, String body) throws IOException {
+        write(context, getFileRaw(context, id), body);
+    }
+
+    private void write(Context context, File file, String body) throws IOException {
         BufferedWriter out = null;
         try {
-            out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
+            out =
+                new BufferedWriter(
+                    new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8));
             out.write(body == null ? "" : body);
         } finally {
             if (out != null) {
@@ -177,14 +194,19 @@ public class EntityMessage implements Serializable {
     }
 
     String read(Context context) throws IOException {
-        return read(context, this.id);
+        return read(context, getFile(context, this.id));
     }
 
-    static String read(Context context, Long id) throws IOException {
-        File file = getFile(context, id);
+    String readRaw(Context context) throws IOException {
+        return read(context, getFileRaw(context, this.id));
+    }
+
+    private static String read(Context context, File file) throws IOException {
         BufferedReader in = null;
         try {
-            in = new BufferedReader(new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
+            in =
+                new BufferedReader(
+                    new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8));
             StringBuilder body = new StringBuilder();
             String line;
             while ((line = in.readLine()) != null) {
@@ -201,6 +223,10 @@ public class EntityMessage implements Serializable {
                 }
             }
         }
+    }
+
+    static String read(Context context, Long id) throws IOException {
+        return read(context, getFile(context, id));
     }
 
     @Override
