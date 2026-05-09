@@ -92,8 +92,12 @@ public class FragmentOperations extends FragmentEx {
 
                         adapter.set(operations);
 
-                        pbWait.setVisibility(View.GONE);
-                        grpReady.setVisibility(View.VISIBLE);
+                        if (pbWait.getVisibility() != View.GONE) {
+                            pbWait.setVisibility(View.GONE);
+                        }
+                        if (grpReady.getVisibility() != View.VISIBLE) {
+                            grpReady.setVisibility(View.VISIBLE);
+                        }
                     }
                 });
     }

@@ -801,15 +801,25 @@ class FragmentMessages : FragmentEx() {
             if (!searching) {
                 binding?.swipeRefresh?.isRefreshing = false
             }
-            binding?.grpReady?.visibility = View.VISIBLE
+            if (binding?.grpReady?.visibility != View.VISIBLE) {
+                binding?.grpReady?.visibility = View.VISIBLE
+            }
             if (messages.size == 0) {
                 if (searchCallback == null) {
-                    binding?.tvNoEmail?.visibility = View.VISIBLE
+                    if (binding?.tvNoEmail?.visibility != View.VISIBLE) {
+                        binding?.tvNoEmail?.visibility = View.VISIBLE
+                    }
                 }
-                binding?.rvFolder?.visibility = View.GONE
+                if (binding?.rvFolder?.visibility != View.GONE) {
+                    binding?.rvFolder?.visibility = View.GONE
+                }
             } else {
-                binding?.tvNoEmail?.visibility = View.GONE
-                binding?.rvFolder?.visibility = View.VISIBLE
+                if (binding?.tvNoEmail?.visibility != View.GONE) {
+                    binding?.tvNoEmail?.visibility = View.GONE
+                }
+                if (binding?.rvFolder?.visibility != View.VISIBLE) {
+                    binding?.rvFolder?.visibility = View.VISIBLE
+                }
             }
         })
     }

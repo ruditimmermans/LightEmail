@@ -48,7 +48,7 @@ public abstract class SimpleTask<T> implements LifecycleObserver {
     private Bundle args;
     private Result stored;
 
-    private ExecutorService executor = Executors.newCachedThreadPool(Helper.backgroundThreadFactory);
+    private static ExecutorService executor = Executors.newCachedThreadPool(Helper.backgroundThreadFactory);
 
     public void load(LifecycleOwner owner, Bundle args) {
         if (owner instanceof Context) {

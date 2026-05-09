@@ -103,6 +103,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.mail.Address;
 import javax.mail.internet.InternetAddress;
@@ -394,15 +395,14 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             if (message.content
                 && !show_expanded
                 && (!compact || viewType == ViewType.THREAD)) {
-                try {
-                    String body = message.read(context);
-                    Document doc = Jsoup.parse(body);
-                    String plainText = doc.body().text();
-                    int limit = compact ? 60 : 120;
-                    tvSummary.setText(plainText.substring(0, Math.min(plainText.length(), limit)) + "...");
+                String summary = summaries.get(message.id);
+                if (summary != null) {
+                    tvSummary.setText(summary);
                     tvSummary.setVisibility(View.VISIBLE);
-                } catch (IOException ex) {
-                    Log.e(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
+                } else {
+                    Bundle args = new Bundle();
+                    args.putLong("id", message.id);
+                    summaryTask.load(context, owner, args);
                 }
             }
 
@@ -811,6 +811,32 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                     Helper.unexpectedError(context, ex);
                 }
             };
+
+        private SimpleTask<String> summaryTask = new SimpleTask<String>() {
+            @Override
+            protected String onLoad(Context context, Bundle args) throws IOException {
+                long id = args.getLong("id");
+                String body = EntityMessage.read(context, id);
+                Document doc = Jsoup.parse(body);
+                String plainText = doc.body().text();
+                int limit = compact ? 60 : 120;
+                return plainText.substring(0, Math.min(plainText.length(), limit)) + "...";
+            }
+
+            @Override
+            protected void onLoaded(Bundle args, String summary) {
+                long id = args.getLong("id");
+                summaries.put(id, summary);
+                int pos = getAdapterPosition();
+                if (pos != RecyclerView.NO_POSITION) {
+                    TupleMessageEx message = getItem(pos);
+                    if (message != null && message.id.equals(id)) {
+                        tvSummary.setText(summary);
+                        tvSummary.setVisibility(View.VISIBLE);
+                    }
+                }
+            }
+        };
 
         private Spanned decodeHtml(final EntityMessage message, String body) {
             return Html.fromHtml(
@@ -1270,7 +1296,10 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 @Override
                 protected void onLoaded(Bundle args, Void ignored) {
                     properties.setExpanded(data.message.id, false);
-                    notifyDataSetChanged();
+                    int pos = getAdapterPosition();
+                    if (pos != RecyclerView.NO_POSITION) {
+                        notifyItemChanged(pos);
+                    }
                 }
             }.load(context, owner, args);
         }
@@ -1303,16 +1332,24 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         }
 
         private void onShowDetails(ActionData data) {
+            int pos = getAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) {
+                return;
+            }
             boolean show_details = !properties.showDetails(data.message.id);
             properties.setDetails(data.message.id, show_details);
             if (show_details) {
                 grpDetails.setVisibility(View.VISIBLE);
             } else {
-                notifyDataSetChanged();
+                notifyItemChanged(pos);
             }
         }
 
         private void onShowHeaders(ActionData data) {
+            int pos = getAdapterPosition();
+            if (pos == RecyclerView.NO_POSITION) {
+                return;
+            }
             boolean show_headers = !properties.showHeaders(data.message.id);
             properties.setHeaders(data.message.id, show_headers);
             if (show_headers) {
@@ -1339,7 +1376,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                     }
                 }.load(context, owner, args);
             } else {
-                notifyDataSetChanged();
+                notifyItemChanged(pos);
             }
         }
 
@@ -1606,6 +1643,8 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             return itemDetails;
         }
     }
+
+    private Map<Long, String> summaries = new java.util.HashMap<>();
 
     AdapterMessage(
         Context context,
