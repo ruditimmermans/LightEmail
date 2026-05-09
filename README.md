@@ -40,10 +40,6 @@ notification to make sure you'll never miss a new email.
 
 ## Screenshots
 <img width="2572" height="1048" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/metadata/en-US/images/phoneScreenshots/Combined.png" />
-<img width="200" height="355" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/metadata/en-US/images/phoneScreenshots/1.png" /> 
-<img width="200" height="355" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/metadata/en-US/images/phoneScreenshots/2.png" /> 
-<img width="200" height="355" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/metadata/en-US/images/phoneScreenshots/3.png" /> 
-<img width="200" height="355" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/metadata/en-US/images/phoneScreenshots/4.png" />
 </p>
 
 ## Secure
