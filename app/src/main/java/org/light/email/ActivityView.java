@@ -119,6 +119,8 @@ public class ActivityView extends ActivityBase
     static final String ACTION_EDIT_ANSWER = BuildConfig.APPLICATION_ID + ".EDIT_ANSWER";
     static final String ACTION_STORE_ATTACHMENT = BuildConfig.APPLICATION_ID + ".STORE_ATTACHMENT";
     static final String ACTION_DECRYPT = BuildConfig.APPLICATION_ID + ".DECRYPT";
+    static final String ACTION_EDIT_ACCOUNT = BuildConfig.APPLICATION_ID + ".EDIT_ACCOUNT";
+    static final String ACTION_EDIT_IDENTITY = BuildConfig.APPLICATION_ID + ".EDIT_IDENTITY";
 
     static final String UPDATE_LATEST_API =
         "https://framagit.org/api/v4/projects/dystopia-project%2Fsimple-email/repository/tags";
@@ -363,6 +365,8 @@ public class ActivityView extends ActivityBase
         iff.addAction(ACTION_EDIT_ANSWER);
         iff.addAction(ACTION_STORE_ATTACHMENT);
         iff.addAction(ACTION_DECRYPT);
+        iff.addAction(ACTION_EDIT_ACCOUNT);
+        iff.addAction(ACTION_EDIT_IDENTITY);
         lbm.registerReceiver(receiver, iff);
 
         if (!pgpService.isBound()) {
@@ -758,11 +762,11 @@ public class ActivityView extends ActivityBase
     }
 
     private void onMenuSetup() {
-        startActivity(new Intent(ActivityView.this, ActivitySetup.class));
+        addFragment(new FragmentSetup(), "setup");
     }
 
     private void onMenuOptions() {
-        startActivity(new Intent(ActivityView.this, ActivitySetup.class).putExtra("options", true));
+        addFragment(new FragmentOptions(), "options");
     }
 
     private void onMenuAnswers() {
@@ -894,6 +898,10 @@ public class ActivityView extends ActivityBase
                     onStoreAttachment(intent);
                 } else if (ACTION_DECRYPT.equals(intent.getAction())) {
                     onDecrypt(intent);
+                } else if (ACTION_EDIT_ACCOUNT.equals(intent.getAction())) {
+                    onEditAccount(intent);
+                } else if (ACTION_EDIT_IDENTITY.equals(intent.getAction())) {
+                    onEditIdentity(intent);
                 }
             }
         };
@@ -950,6 +958,22 @@ public class ActivityView extends ActivityBase
         fragment.setArguments(intent.getExtras());
         FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
         fragmentTransaction.replace(R.id.content_frame, fragment).addToBackStack("answer");
+        fragmentTransaction.commit();
+    }
+
+    private void onEditAccount(Intent intent) {
+        FragmentAccount fragment = new FragmentAccount();
+        fragment.setArguments(intent.getExtras());
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.content_frame, fragment).addToBackStack("account");
+        fragmentTransaction.commit();
+    }
+
+    private void onEditIdentity(Intent intent) {
+        FragmentIdentity fragment = new FragmentIdentity();
+        fragment.setArguments(intent.getExtras());
+        FragmentTransaction fragmentTransaction = getSupportFragmentManager().beginTransaction();
+        fragmentTransaction.replace(R.id.content_frame, fragment).addToBackStack("identity");
         fragmentTransaction.commit();
     }
 
