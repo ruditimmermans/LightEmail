@@ -1,41 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <providers>
-  <provider
-      name="Disroot.org"
-      link="https://howto.disroot.org/en/tutorials/email">
-        <imap
-            host="disroot.org"
-            port="993" />
-        <smtp
-            host="disroot.org"
-            port="587"
-            starttls="true" />
-    </provider>
-    <provider
-        name="Riseup"
-        link="https://riseup.net/en/email">
-        <imap
-            host="mail.riseup.net"
-            port="993" />
-        <smtp
-            host="mail.riseup.net"
-            port="587"
-            starttls="true" />
-    </provider>
-    <provider
-        name="Vivaldi"
-        link="https://help.vivaldi.com/article-category/webmail/">
-        <imap
-            host="imap.vivaldi.net"
-            port="993" />
-        <smtp
-            host="smtp.vivaldi.net"
-            port="587"
-            starttls="true" />
-    </provider>
     <provider
         name="Gmail"
-        link="https://support.google.com/mail/answer/7126229"
+        link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq6"
         type="com.google">
         <imap
             host="imap.gmail.com"
@@ -47,19 +14,19 @@
     </provider>
     <provider
         name="Outlook"
-        link="https://support.office.com/en-us/article/pop-imap-and-smtp-settings-for-outlook-com-d088b986-291d-42b8-9564-9c414e2aa040">
+        link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq14">
         <imap
-            host="imap-mail.outlook.com"
+            host="outlook.office365.com"
             port="993" />
         <smtp
-            host="smtp-mail.outlook.com"
+            host="smtp.office365.com"
             port="587"
             starttls="true" />
     </provider>
     <!-- needs subscription -->
     <provider
         name="Mailbox.org"
-        link="https://userforum-en.mailbox.org/knowledge-base/article/setup-other-e-mail-clients-manually">
+        link="https://kb.mailbox.org/display/BMBOKB/E-Mail-Einrichtung+mit+Mozilla+Thunderbird">
         <imap
             host="imap.mailbox.org"
             port="993" />
@@ -71,7 +38,7 @@
     <!-- no IMAP IDLE -->
     <provider
         name="Yahoo!"
-        link="https://help.yahoo.com/kb/SLN4075.html">
+        link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq88">
         <imap
             host="imap.mail.yahoo.com"
             port="993" />
@@ -92,17 +59,6 @@
             starttls="false" />
     </provider>
     <provider
-        name="Free.fr"
-        link="https://www.free.fr/assistance/597.html">
-        <imap
-            host="imap.free.fr"
-            port="993" />
-        <smtp
-            host="smtp.free.fr"
-            port="465"
-            starttls="false" />
-    </provider>
-    <provider
         name="FastMail"
         link="https://www.fastmail.com/help/technical/servernamesandports.html">
         <imap
@@ -114,37 +70,6 @@
             starttls="false" />
     </provider>
     <!-- no IMAP IDLE -->
-    <provider
-        name="Sfr.fr"
-        link="https://assistance.sfr.fr/service-et-accessoire/sfr-mail/serveurs-messagerie-sfr.html">
-        <imap
-            host="imap.sfr.fr"
-            port="993" />
-        <smtp
-            host="smtp.sfr.fr"
-            port="465"
-            starttls="false" />
-    </provider>
-    <provider
-        name="Infomaniak"
-        link="https://www.infomaniak.com/fr/support/faq/1075/configurer-une-adresse-email-configuration-logiciel-de-messagerie-parametres-courrier">
-        <imap
-            host="mail.infomaniak.com"
-            port="993" />
-        <smtp
-            host="mail.infomaniak.com"
-            port="587"
-            starttls="true" />
-    </provider>
-    <provider name="OVH.net">
-        <imap
-            host="ssl0.ovh.net"
-            port="993" />
-        <smtp
-            host="ssl0.ovh.net"
-            port="465"
-            starttls="false" />
-    </provider>
     <provider
         name="Gmx.com"
         link="https://support.gmx.com/pop-imap/imap/index.html#breadcrumb_help_pop-imap_imap_server">
@@ -179,17 +104,6 @@
             starttls="false" />
     </provider>
     <provider
-        name="Web.de"
-        link="https://hilfe.web.de/pop-imap/imap/imap-serverdaten.html">
-        <imap
-            host="imap.web.de"
-            port="993" />
-        <smtp
-            host="smtp.web.de"
-            port="587"
-            starttls="true" />
-    </provider>
-    <provider
         name="Telstra"
         link="https://www.telstra.com.au/support/category/email/set-up/imap-pop-and-smtp-information-for-manual-email-set-up">
         <imap
@@ -212,19 +126,8 @@
             starttls="false" />
     </provider>
     <provider
-        name="1und1.de"
-        link="https://hilfe.webmailer.1und1.de/mailprogramme/imap.html">
-        <imap
-            host="imap.1und1.de"
-            port="993" />
-        <smtp
-            host="smtp.1und1.de"
-            port="465"
-            starttls="false" />
-    </provider>
-    <provider
-      name="Mailfence.com"
-      link="https://clean.email/blog/email-settings/mailfence-email-settings">
+      name="Mailfence"
+      link="https://mailfence.com/en/faq.jsp">
       <imap
         host="imap.mailfence.com"
         port="993" />
