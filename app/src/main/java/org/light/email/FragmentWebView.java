@@ -120,7 +120,7 @@ public class FragmentWebView extends FragmentEx {
 
                     final SharedPreferences prefs =
                         PreferenceManager.getDefaultSharedPreferences(getContext());
-                    int bodySp = prefs.getInt("body_text_size_sp", 24);
+                    int bodySp = prefs.getInt("body_text_size_sp", 22);
                     String styledHtml =
                         "<!DOCTYPE html><html><head>"
                             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"

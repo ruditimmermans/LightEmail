@@ -4,104 +4,213 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".ActivityView">
+    android:background="@android:color/black"
+    tools:context="org.light.email.FragmentOptions">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_margin="@dimen/layout_margin">
+        android:padding="16dp">
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optSyncEnabled"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_enabled_sync"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:ignore="VisualLintButtonSize" />
+        <TextView
+            android:id="@+id/tvAdvancedHeader"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="@string/title_advanced"
+            android:textAllCaps="true"
+            android:textColor="@android:color/white"
+            android:textStyle="bold"
+            android:textAppearance="@style/TextAppearance.AppCompat.Small"
+            app:layout_constraintTop_toTopOf="parent" />
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optAvatars"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_avatars"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optSyncEnabled"
-        tools:ignore="VisualLintButtonSize" />
+        <!-- Sync Enabled -->
+        <ImageView
+            android:id="@+id/ivSync"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_sync_24"
+            app:layout_constraintBottom_toBottomOf="@+id/optSyncEnabled"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/optSyncEnabled"
+            app:tint="@android:color/white" />
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optBrowse"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_browse"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optAvatars"
-        tools:ignore="VisualLintButtonSize" />
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/optSyncEnabled"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:minHeight="48dp"
+            android:text="@string/title_advanced_enabled_sync"
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivSync"
+            app:layout_constraintTop_toBottomOf="@id/tvAdvancedHeader" />
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optReplyQuote"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_reply_quote"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optBrowse"
-        tools:ignore="VisualLintButtonSize" />
+        <!-- Avatars -->
+        <ImageView
+            android:id="@+id/ivAvatars"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_people_24"
+            app:layout_constraintBottom_toBottomOf="@+id/optAvatars"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/optAvatars"
+            app:tint="@android:color/white" />
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optSignatureAtBottom"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_advanced_signature_at_bottom"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optReplyQuote"
-        tools:ignore="VisualLintButtonSize" />
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/optAvatars"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:minHeight="48dp"
+            android:text="@string/title_advanced_avatars"
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivAvatars"
+            app:layout_constraintTop_toBottomOf="@id/optSyncEnabled" />
 
-      <androidx.appcompat.widget.SwitchCompat
-        android:id="@+id/optInsecure"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="12dp"
-        android:layout_marginTop="12dp"
-        android:minHeight="48dp"
-        android:text="@string/title_allow_insecure"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/optSignatureAtBottom"
-        tools:ignore="VisualLintButtonSize" />
+        <!-- Browse -->
+        <ImageView
+            android:id="@+id/ivBrowse"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_message_24"
+            app:layout_constraintBottom_toBottomOf="@+id/optBrowse"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/optBrowse"
+            app:tint="@android:color/white" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/optBrowse"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:minHeight="48dp"
+            android:text="@string/title_advanced_browse"
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivBrowse"
+            app:layout_constraintTop_toBottomOf="@id/optAvatars" />
+
+        <!-- Reply Quote -->
+        <ImageView
+            android:id="@+id/ivReplyQuote"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_reply_24"
+            app:layout_constraintBottom_toBottomOf="@+id/optReplyQuote"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/optReplyQuote"
+            app:tint="@android:color/white" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/optReplyQuote"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:minHeight="48dp"
+            android:text="@string/title_advanced_reply_quote"
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivReplyQuote"
+            app:layout_constraintTop_toBottomOf="@id/optBrowse" />
+
+        <!-- Signature -->
+        <ImageView
+            android:id="@+id/ivSignature"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_edit_24"
+            app:layout_constraintBottom_toBottomOf="@+id/optSignatureAtBottom"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/optSignatureAtBottom"
+            app:tint="@android:color/white" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/optSignatureAtBottom"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:minHeight="48dp"
+            android:text="@string/title_advanced_signature_at_bottom"
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivSignature"
+            app:layout_constraintTop_toBottomOf="@id/optReplyQuote" />
+
+        <!-- Insecure -->
+        <ImageView
+            android:id="@+id/ivInsecure"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_lock_24"
+            app:layout_constraintBottom_toBottomOf="@+id/optInsecure"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/optInsecure"
+            app:tint="@android:color/white" />
+
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/optInsecure"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="24dp"
+            android:minHeight="48dp"
+            android:text="@string/title_allow_insecure"
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/ivInsecure"
+            app:layout_constraintTop_toBottomOf="@id/optSignatureAtBottom" />
+
+        <View
+            android:id="@+id/vSeparator"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@android:color/white"
+            app:layout_constraintTop_toBottomOf="@id/optInsecure" />
+
+        <!-- Text Size -->
+        <ImageView
+            android:id="@+id/ivTextSize"
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/baseline_list_24"
+            app:layout_constraintBottom_toBottomOf="@+id/spnBodyTextSize"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/spnBodyTextSize"
+            app:tint="@android:color/white" />
 
         <TextView
             android:id="@+id/tvBodyTextSizeLabel"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginStart="24dp"
             android:text="@string/title_message_text_size"
-            style="@style/TextAppearance.AppCompat.Body1"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/optInsecure" />
+            android:textColor="@android:color/white"
+            android:textAppearance="@style/TextAppearance.AppCompat.Medium"
+            app:layout_constraintBottom_toBottomOf="@+id/spnBodyTextSize"
+            app:layout_constraintEnd_toStartOf="@+id/spnBodyTextSize"
+            app:layout_constraintStart_toEndOf="@id/ivTextSize"
+            app:layout_constraintTop_toTopOf="@+id/spnBodyTextSize" />
 
-      <Spinner
-        android:id="@+id/spnBodyTextSize"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:entries="@array/body_text_size_entries"
-        android:minHeight="48dp"
-        app:layout_constraintBaseline_toBaselineOf="@id/tvBodyTextSizeLabel"
-        app:layout_constraintEnd_toEndOf="parent" />
+        <Spinner
+            android:id="@+id/spnBodyTextSize"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:minHeight="48dp"
+            android:entries="@array/body_text_size_entries"
+            android:backgroundTint="@android:color/white"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/vSeparator" />
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </ScrollView>

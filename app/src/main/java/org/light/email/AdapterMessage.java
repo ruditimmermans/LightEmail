@@ -516,7 +516,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 tvHeaders.setText(show_headers ? message.headers : null);
 
                 SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-                int bodySp = prefs.getInt("body_text_size_sp", 24);
+                int bodySp = prefs.getInt("body_text_size_sp", 22);
                 tvBody.setTextSize(android.util.TypedValue.COMPLEX_UNIT_SP, bodySp);
 
                 vSeparatorBody.setVisibility(View.VISIBLE);
