@@ -54,12 +54,6 @@ notification to make sure you'll never miss a new email.
 * No advertisements
 * No analytics and no tracking
 
-## Efficient
-
-* [IMAP IDLE](https://en.wikipedia.org/wiki/IMAP_IDLE) (push messages) supported
-* Built with latest development tools and libraries
-* Android 6 Marshmallow or later required
-
 ## Attribution
 
 LightEmail uses:
