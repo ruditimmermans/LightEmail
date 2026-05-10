@@ -60,10 +60,6 @@ notification to make sure you'll never miss a new email.
 * Built with latest development tools and libraries
 * Android 6 Marshmallow or later required
 
-## Compatibility
-
-LightEmail requires at least Android 6 Marshmallow.
-
 ## Attribution
 
 LightEmail uses:
