@@ -53,3 +53,4 @@ proguard/
 # Node
 node_modules
 package-lock.json
+/gradle/gradle-daemon-jvm.properties
