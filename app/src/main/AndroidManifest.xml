@@ -12,6 +12,14 @@
     <uses-permission android:name="android.permission.USE_CREDENTIALS" android:maxSdkVersion="22" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
+
     <uses-feature
         android:name="android.software.app_widgets"
         android:required="false" />

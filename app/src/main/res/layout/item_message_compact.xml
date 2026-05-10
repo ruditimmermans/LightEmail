@@ -83,20 +83,9 @@
         android:maxLines="1"
         android:text="@string/default_time"
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
-        app:layout_constraintEnd_toStartOf="@+id/ivFlagged"
+        app:layout_constraintEnd_toEndOf="@+id/paddingEnd"
         app:layout_constraintTop_toTopOf="@id/tvFrom"
       tools:ignore="VisualLintSystemUi" />
-
-    <ImageView
-        android:id="@+id/ivFlagged"
-        android:layout_width="21dp"
-        android:layout_height="21dp"
-        android:layout_marginEnd="6dp"
-        android:src="@drawable/baseline_star_24"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="@id/tvTime"
-        app:layout_constraintEnd_toEndOf="@+id/paddingEnd"
-        app:layout_constraintTop_toTopOf="@id/tvTime" />
 
     <ImageView
         android:id="@+id/ivAttachments"

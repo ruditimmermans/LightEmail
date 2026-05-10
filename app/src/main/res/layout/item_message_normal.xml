@@ -95,31 +95,8 @@
             android:text="@string/default_time"
             android:textAppearance="@style/TextAppearance.AppCompat.Small"
             app:layout_constraintBottom_toBottomOf="@id/tvFrom"
-            app:layout_constraintEnd_toStartOf="@+id/ivShowHtml"
-            app:layout_constraintTop_toTopOf="@id/tvFrom" />
-
-        <ImageView
-            android:id="@+id/ivShowHtml"
-            android:layout_width="21dp"
-            android:layout_height="21dp"
-            android:layout_marginEnd="6dp"
-            android:contentDescription="@string/title_show_html"
-            android:src="@drawable/baseline_mail_outline_24"
-            android:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="@id/tvTime"
-            app:layout_constraintEnd_toStartOf="@+id/ivFlagged"
-            app:layout_constraintTop_toTopOf="@id/tvTime" />
-
-        <ImageView
-            android:id="@+id/ivFlagged"
-            android:layout_width="21dp"
-            android:layout_height="21dp"
-            android:layout_marginEnd="6dp"
-            android:src="@drawable/baseline_star_24"
-            android:visibility="visible"
-            app:layout_constraintBottom_toBottomOf="@id/tvTime"
             app:layout_constraintEnd_toEndOf="@+id/paddingEnd"
-            app:layout_constraintTop_toTopOf="@id/tvTime" />
+            app:layout_constraintTop_toTopOf="@id/tvFrom" />
 
         <ImageView
             android:id="@+id/ivAttachments"

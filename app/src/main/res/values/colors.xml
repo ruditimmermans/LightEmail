@@ -12,7 +12,8 @@
 
     <color name="darkColorUnread">#FFFFFF</color>
     <color name="darkColorItemSelected">#000000</color>
-    <color name="darkColorSeparator">#FFFFFF</color>
+    <color name="darkColorSecondaryText">#B3FFFFFF</color>
+    <color name="darkColorSeparator">#33FFFFFF</color>
     <color name="darkColorWarning">#FFFFFF</color>
     <color name="darkColorDrawerScrim">#000000</color>
     <color name="darkColorDrawerText">#FFFFFF</color>

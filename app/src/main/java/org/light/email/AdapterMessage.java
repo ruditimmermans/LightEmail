@@ -141,8 +141,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private View itemView;
         private View vwColor;
         private ImageView ivExpander;
-        private ImageView ivShowHtml;
-        private ImageView ivFlagged;
         private ImageView ivAvatar;
         private TextView tvFrom;
         private TextView tvSummary;
@@ -192,8 +190,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             this.itemView = itemView.findViewById(R.id.clItem);
             vwColor = itemView.findViewById(R.id.vwColor);
             ivExpander = itemView.findViewById(R.id.ivExpander);
-            ivShowHtml = itemView.findViewById(R.id.ivShowHtml);
-            ivFlagged = itemView.findViewById(R.id.ivFlagged);
             ivAvatar = itemView.findViewById(R.id.ivAvatar);
             tvFrom = itemView.findViewById(R.id.tvFrom);
             tvSummary = itemView.findViewById(R.id.tvSummary);
@@ -247,7 +243,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private void wire() {
             itemView.setOnClickListener(this);
             itemView.setOnLongClickListener(this);
-            ivShowHtml.setOnClickListener(this);
             ivAddContact.setOnClickListener(this);
             tvFrom.setOnClickListener(this);
             tvFromEx.setOnClickListener(this);
@@ -262,7 +257,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private void unwire() {
             itemView.setOnClickListener(null);
             itemView.setOnLongClickListener(null);
-            ivShowHtml.setOnClickListener(null);
             ivAddContact.setOnClickListener(null);
             tvFrom.setOnClickListener(null);
             tvFromEx.setOnClickListener(null);
@@ -277,8 +271,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
         private void clear() {
             vwColor.setVisibility(View.GONE);
             ivExpander.setVisibility(View.GONE);
-            ivShowHtml.setVisibility(View.GONE);
-            ivFlagged.setVisibility(View.GONE);
             ivAvatar.setVisibility(View.GONE);
             tvFrom.setText(null);
             ivAddContact.setVisibility(View.GONE);
@@ -338,13 +330,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
             ivExpander.setImageResource(
                 show_expanded ? R.drawable.baseline_expand_less_24 : R.drawable.baseline_expand_more_24);
             ivExpander.setVisibility(View.VISIBLE);
-
-            if (viewType == ViewType.THREAD) {
-                ivFlagged.setVisibility(message.unflagged == 1 ? View.GONE : View.VISIBLE);
-            } else {
-                ivFlagged.setVisibility(message.count - message.unflagged > 0 ? View.VISIBLE : View.GONE);
-            }
-            ivShowHtml.setVisibility(message.content ? View.VISIBLE : View.GONE);
 
             Address[] addresses = null;
             if (EntityFolder.DRAFTS.equals(message.folderType)
@@ -586,6 +571,11 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                                             .setEnabled(message.content);
                                         bnvActions.getMenu().findItem(R.id.action_reply).setVisible(!inOutbox);
 
+                                        bnvActions
+                                            .getMenu()
+                                            .findItem(R.id.action_show_html)
+                                            .setVisible(message.content && !inOutbox);
+
                                         bnvActions.setVisibility(View.VISIBLE);
                                         vSeparatorBody.setVisibility(View.GONE);
 
@@ -631,11 +621,7 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
 
             TupleMessageEx message = getItem(pos);
 
-            if (view.getId() == R.id.ivShowHtml) {
-                ActionData data = new ActionData();
-                data.message = message;
-                onShowHtml(data);
-            } else if (view.getId() == R.id.ivAddContact) {
+            if (view.getId() == R.id.ivAddContact) {
                 Helper.onAddAddresses(context, message.from);
             } else if (view.getId() == R.id.tvFrom) {
                 if (properties.isExpanded(message.id)) {
@@ -1092,6 +1078,9 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 return true;
             } else if (itemId == R.id.action_reply) {
                 onReply(data);
+                return true;
+            } else if (itemId == R.id.action_show_html) {
+                onShowHtml(data);
                 return true;
             } else {
                 return false;

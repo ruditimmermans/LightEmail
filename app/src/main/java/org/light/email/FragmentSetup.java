@@ -21,7 +21,6 @@ package org.light.email;
 */
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -30,7 +29,6 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetFileDescriptor;
 import android.graphics.drawable.Drawable;
-import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -88,8 +86,6 @@ public class FragmentSetup extends FragmentEx {
     private Button btnDoze;
     private TextView tvDozeDone;
 
-    private Button btnData;
-
     private Button btnNotifications;
 
     private Button btnOptions;
@@ -132,8 +128,6 @@ public class FragmentSetup extends FragmentEx {
         tvDozeDone = view.findViewById(R.id.tvDozeDone);
 
         btnNotifications = view.findViewById(R.id.btnNotifications);
-
-        btnData = view.findViewById(R.id.btnData);
 
         btnOptions = view.findViewById(R.id.btnOptions);
 
@@ -204,22 +198,6 @@ public class FragmentSetup extends FragmentEx {
                 }
             });
 
-        btnData.setOnClickListener(
-            new View.OnClickListener() {
-                @Override
-                @TargetApi(Build.VERSION_CODES.N)
-                public void onClick(View v) {
-                    try {
-                        startActivity(
-                            new Intent(
-                                Settings.ACTION_IGNORE_BACKGROUND_DATA_RESTRICTIONS_SETTINGS,
-                                Uri.parse("package:" + BuildConfig.APPLICATION_ID)));
-                    } catch (Throwable ex) {
-                        Log.e(Helper.TAG, ex + "\n" + Log.getStackTraceString(ex));
-                    }
-                }
-            });
-
         PackageManager pm = getContext().getPackageManager();
         btnNotifications.setVisibility(
             getIntentNotifications(getContext()).resolveActivity(pm) == null
@@ -248,7 +226,7 @@ public class FragmentSetup extends FragmentEx {
             });
 
         // Initialize
-        ibHelp.setVisibility(View.GONE);
+        // ibHelp.setVisibility(View.GONE);
 
         tvAccountDone.setText(null);
         tvAccountDone.setCompoundDrawables(null, null, null, null);
@@ -262,9 +240,6 @@ public class FragmentSetup extends FragmentEx {
 
         btnDoze.setEnabled(false);
         tvDozeDone.setText(null);
-        tvDozeDone.setCompoundDrawables(null, null, null, null);
-
-        btnData.setVisibility(View.GONE);
 
         int[] grantResults = new int[permissions.length];
         for (int i = 0; i < permissions.length; i++) {
@@ -312,8 +287,9 @@ public class FragmentSetup extends FragmentEx {
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
 
-        PackageManager pm = getContext().getPackageManager();
-        ibHelp.setVisibility(getIntentHelp().resolveActivity(pm) == null ? View.GONE : View.VISIBLE);
+        // PackageManager pm = getContext().getPackageManager();
+        // ibHelp.setVisibility(getIntentHelp().resolveActivity(pm) == null ? View.GONE : View.VISIBLE);
+        ibHelp.setVisibility(View.VISIBLE);
 
         DB db = DB.getInstance(getContext());
 
@@ -364,14 +340,6 @@ public class FragmentSetup extends FragmentEx {
         btnDoze.setEnabled(!ignoring);
         tvDozeDone.setText(ignoring ? R.string.title_setup_done : R.string.title_setup_to_do);
         tvDozeDone.setCompoundDrawablesWithIntrinsicBounds(ignoring ? check : null, null, null, null);
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            ConnectivityManager cm = getContext().getSystemService(ConnectivityManager.class);
-            boolean saving =
-                (cm.getRestrictBackgroundStatus()
-                    == ConnectivityManager.RESTRICT_BACKGROUND_STATUS_ENABLED);
-            btnData.setVisibility(saving ? View.VISIBLE : View.GONE);
-        }
     }
 
     @Override
@@ -505,7 +473,7 @@ public class FragmentSetup extends FragmentEx {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(
             Uri.parse(
-                "https://raw.githubusercontent.com/ruditimmermans/LightEmail/refs/heads/main/SETUP.md"));
+                "https://github.com/ruditimmermans/LightEmail/blob/main/SETUP.md"));
         return intent;
     }
 
