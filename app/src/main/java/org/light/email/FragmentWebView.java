@@ -37,6 +37,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewFeature;
 
 import java.io.IOException;
 
@@ -63,6 +65,12 @@ public class FragmentWebView extends FragmentEx {
         settings.setJavaScriptEnabled(true);
         settings.setUseWideViewPort(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+
+        if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+            WebSettingsCompat.setAlgorithmicDarkeningAllowed(settings, true);
+        } else if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            WebSettingsCompat.setForceDark(settings, WebSettingsCompat.FORCE_DARK_ON);
+        }
 
         final SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
 
@@ -125,8 +133,9 @@ public class FragmentWebView extends FragmentEx {
                         "<!DOCTYPE html><html><head>"
                             + "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">"
                             + "<style>"
-                            + ":root { color-scheme: dark; }"
+                            + ":root { color-scheme: light dark; }"
                             + "body { background-color: black; color: white; font-family: sans-serif; font-size: " + bodySp + "px; line-height: 1.5; word-wrap: break-word; overflow-wrap: break-word; margin: 16px; }"
+                            + "[style*=\"background-color: white\"], [style*=\"background-color:white\"], [style*=\"background-color: #fff\"], [style*=\"background-color:#fff\"], [style*=\"background-color: #ffffff\"], [style*=\"background-color:#ffffff\"], [bgcolor=\"white\"], [bgcolor=\"#ffffff\"], [bgcolor=\"#fff\"] { color: black !important; }"
                             + "img { max-width: 100% !important; height: auto !important; }"
                             + "table { max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse; }"
                             + "td { padding: 4px; }"

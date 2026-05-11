@@ -3,7 +3,7 @@ apply plugin: "kotlin-android"
 apply from: "${rootDir}/dirlocal.gradle"
 
 base {
-    archivesName = "LightEmail-v2.0"
+    archivesName = "LightEmail-v2.1"
 }
 
 android {
@@ -23,8 +23,8 @@ android {
         applicationId "org.light.email"
         minSdkVersion 21
         targetSdkVersion 36
-        versionCode 11
-        versionName "2.0"
+        versionCode 12
+        versionName "2.1"
 
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         javaCompileOptions {
@@ -110,9 +110,12 @@ dependencies {
     def dnsjava_version = "3.6.4"
     def openpgp_version = "12.0"
     def colorpicker_version = "0.0.15"
+    def webkit_version = "1.12.1"
 
     // https://mvnrepository.com/artifact/androidx.appcompat/appcompat
     implementation "androidx.appcompat:appcompat:$appcompat_version"
+    // https://mvnrepository.com/artifact/androidx.webkit/webkit
+    implementation "androidx.webkit:webkit:$webkit_version"
     // https://mvnrepository.com/artifact/androidx.fragment/fragment-ktx
     implementation "androidx.fragment:fragment-ktx:$fragment_version"
     // https://mvnrepository.com/artifact/androidx.annotation/annotation
