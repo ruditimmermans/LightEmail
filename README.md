@@ -54,6 +54,10 @@ notification to make sure you'll never miss a new email.
 * No advertisements
 * No analytics and no tracking
 
+## GitHub
+The latest releases can be found here: releases. You may need to enable downloading apps from unknown sources to install it.
+You can also use the app Obtainium or others like it to automatically update to the newest release on GitHub.
+
 ## Attribution
 
 LightEmail uses:
