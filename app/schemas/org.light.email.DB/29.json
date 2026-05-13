@@ -1,8 +1,8 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 28,
-    "identityHash": "60235d5712ddd99bc5aacc68c9dbab79",
+    "version": 29,
+    "identityHash": "8c9c7111f161598dfe6a1449cb64c91b",
     "entities": [
       {
         "tableName": "identity",
@@ -156,7 +156,7 @@
       },
       {
         "tableName": "account",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT, `signature` TEXT, `host` TEXT NOT NULL, `starttls` INTEGER NOT NULL, `insecure` INTEGER NOT NULL, `port` INTEGER NOT NULL, `user` TEXT NOT NULL, `password` TEXT NOT NULL, `auth_type` INTEGER NOT NULL, `maxtls` TEXT, `synchronize` INTEGER NOT NULL, `primary` INTEGER NOT NULL, `color` INTEGER, `store_sent` INTEGER NOT NULL, `poll_interval` INTEGER NOT NULL, `seen_until` INTEGER, `state` TEXT, `error` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT, `signature` TEXT, `host` TEXT NOT NULL, `protocol` TEXT NOT NULL, `starttls` INTEGER NOT NULL, `insecure` INTEGER NOT NULL, `port` INTEGER NOT NULL, `user` TEXT NOT NULL, `password` TEXT NOT NULL, `auth_type` INTEGER NOT NULL, `maxtls` TEXT, `synchronize` INTEGER NOT NULL, `primary` INTEGER NOT NULL, `color` INTEGER, `store_sent` INTEGER NOT NULL, `poll_interval` INTEGER NOT NULL, `seen_until` INTEGER, `state` TEXT, `error` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -179,6 +179,12 @@
           {
             "fieldPath": "host",
             "columnName": "host",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "protocol",
+            "columnName": "protocol",
             "affinity": "TEXT",
             "notNull": true
           },
@@ -1131,7 +1137,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '60235d5712ddd99bc5aacc68c9dbab79')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8c9c7111f161598dfe6a1449cb64c91b')"
     ]
   }
 }

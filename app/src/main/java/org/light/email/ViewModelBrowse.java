@@ -33,12 +33,14 @@ import java.util.Arrays;
 import java.util.Properties;
 
 import javax.mail.FetchProfile;
+import javax.mail.Flags;
 import javax.mail.Folder;
 import javax.mail.FolderClosedException;
 import javax.mail.Message;
 import javax.mail.MessageRemovedException;
 import javax.mail.MessagingException;
 import javax.mail.Session;
+import javax.mail.Store;
 import javax.mail.UIDFolder;
 import javax.mail.search.BodyTerm;
 import javax.mail.search.FromStringTerm;
@@ -52,8 +54,8 @@ public class ViewModelBrowse extends ViewModel {
     private String search;
     private int pageSize;
 
-    private IMAPStore istore = null;
-    private IMAPFolder ifolder = null;
+    private Store istore = null;
+    private Folder ifolder = null;
     private Message[] imessages = null;
 
     private int index = -1;
@@ -94,11 +96,11 @@ public class ViewModelBrowse extends ViewModel {
             Session isession = Session.getInstance(props, null);
 
             Log.i(Helper.TAG, "Boundary connecting account=" + account.name);
-            istore = (IMAPStore) isession.getStore(account.starttls ? "imap" : "imaps");
+            istore = isession.getStore("pop3".equals(account.protocol) ? (account.starttls ? "pop3" : "pop3s") : (account.starttls ? "imap" : "imaps"));
             Helper.connect(context, istore, account);
 
             Log.i(Helper.TAG, "Boundary opening folder=" + folder.name);
-            ifolder = (IMAPFolder) istore.getFolder(folder.name);
+            ifolder = istore.getFolder(folder.name);
             ifolder.open(Folder.READ_WRITE);
 
             Log.i(Helper.TAG, "Boundary searching=" + search);
@@ -129,7 +131,9 @@ public class ViewModelBrowse extends ViewModel {
             fp.add(FetchProfile.Item.ENVELOPE);
             fp.add(FetchProfile.Item.FLAGS);
             fp.add(FetchProfile.Item.CONTENT_INFO); // body structure
-            fp.add(UIDFolder.FetchProfileItem.UID);
+            if (ifolder instanceof IMAPFolder) {
+                fp.add(UIDFolder.FetchProfileItem.UID);
+            }
             fp.add(IMAPFolder.FetchProfileItem.HEADERS);
             fp.add(FetchProfile.Item.SIZE);
             fp.add(IMAPFolder.FetchProfileItem.INTERNALDATE);
@@ -140,12 +144,12 @@ public class ViewModelBrowse extends ViewModel {
 
                 for (int j = isub.length - 1; j >= 0; j--) {
                     try {
-                        long uid = ifolder.getUID(isub[j]);
+                        long uid = ServiceSynchronize.getUID(ifolder, isub[j]);
                         Log.i(Helper.TAG, "Boundary sync uid=" + uid);
                         EntityMessage message = db.message().getMessageByUid(fid, uid, search != null);
                         if (message == null) {
                             ServiceSynchronize.synchronizeMessage(
-                                context, folder, ifolder, (IMAPMessage) isub[j], search != null);
+                                context, folder, ifolder, isub[j], search != null);
                             count++;
                         }
                     } catch (MessageRemovedException ex) {

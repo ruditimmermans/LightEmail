@@ -103,6 +103,9 @@
     <string name="title_smtp">SMTP</string>
     <string name="title_provider">Provider</string>
     <string name="title_custom">Custom</string>
+    <string name="title_protocol">Protocol</string>
+    <string name="title_pop3">POP3</string>
+    <string name="title_pop3_no_folders">Folders cannot be managed for POP3 accounts</string>
     <string name="title_host">Host name</string>
     <string name="title_starttls">STARTTLS</string>
     <string name="title_allow_insecure">Allow insecure connections</string>
@@ -277,8 +280,8 @@
     <string name="title_color">Color</string>
     <string name="title_cancel">Cancel</string>
     <string name="title_message_text_size">Message text size</string>
-    <string name="text_gmail_note"><![CDATA[Requires have non-oAuth authentication enabled. <font color=\'#0055C7\'>More info</font>]]></string>
-    <string name="message_gmail_note">Since January 2020, Gmail restricted the OAuth scopes, and now requires authorization to authenticate, we are looking for the best way to fix OAuth authentication without private libraries.&lt;br/&gt;&lt;br/&gt; As a temporary solution you need to allow normal authentication or what Google calls &lt;i&gt;\"less secure apps\"&lt;/i&gt;.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Instructions here:&lt;/b&gt; https://support.google.com/accounts/answer/6010255&lt;br/&gt;</string>
+    <string name="text_gmail_note"><![CDATA[Requires OAuth or an App Password. <font color=\'#0055C7\'>More info</font>]]></string>
+    <string name="message_gmail_note">Google has disabled \"less secure apps\". To use Gmail, you must either:&lt;br/&gt;&lt;br/&gt;1. Use **OAuth2** by clicking the \"Select account\" button above (recommended).&lt;br/&gt;2. Use an **App Password** if you have 2-Step Verification enabled.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;How to create an App Password:&lt;/b&gt; https://support.google.com/accounts/answer/185833</string>
     <string name="title_attachment_downloading">Downloading attachment: %1$s</string>
     <string name="title_no_subject">No subject</string>
 </resources>

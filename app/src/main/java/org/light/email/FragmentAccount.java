@@ -25,6 +25,7 @@ import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.accounts.AccountManagerCallback;
 import android.accounts.AccountManagerFuture;
+import android.accounts.AuthenticatorDescription;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -55,6 +56,8 @@ import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.Spinner;
@@ -72,6 +75,8 @@ import com.google.android.material.snackbar.Snackbar;
 import com.google.android.material.textfield.TextInputLayout;
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPStore;
+import com.sun.mail.pop3.POP3Folder;
+import com.sun.mail.pop3.POP3Store;
 
 import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Record;
@@ -111,6 +116,7 @@ public class FragmentAccount extends FragmentEx {
 
     private Button btnAuthorize;
     private TextView tvGmailNote;
+    private LinearLayout llAuthorize;
     private Button btnAdvanced;
 
     private TextView tvName;
@@ -145,6 +151,9 @@ public class FragmentAccount extends FragmentEx {
     private Group grpAuthorize;
     private Group grpAdvanced;
     private Group grpFolders;
+
+    private RadioButton rbImap;
+    private RadioButton rbPop3;
 
     private long id = -1;
     private int color = Color.TRANSPARENT;
@@ -182,6 +191,11 @@ public class FragmentAccount extends FragmentEx {
         // Get controls
         spProvider = view.findViewById(R.id.spProvider);
 
+        // Protocol selection
+        RadioGroup rgProtocol = view.findViewById(R.id.rgProtocol);
+        rbImap = view.findViewById(R.id.rbImap);
+        rbPop3 = view.findViewById(R.id.rbPop3);
+
         etDomain = view.findViewById(R.id.etDomain);
         btnAutoConfig = view.findViewById(R.id.btnAutoConfig);
 
@@ -195,6 +209,7 @@ public class FragmentAccount extends FragmentEx {
 
         btnAuthorize = view.findViewById(R.id.btnAuthorize);
         tvGmailNote = view.findViewById(R.id.tvGmailNote);
+        llAuthorize = view.findViewById(R.id.llAuthorize);
         btnAdvanced = view.findViewById(R.id.btnAdvanced);
 
         etName = view.findViewById(R.id.etName);
@@ -231,6 +246,17 @@ public class FragmentAccount extends FragmentEx {
 
         // Wire controls
 
+        // Protocol selection listener
+        rgProtocol.setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(RadioGroup group, int checkedId) {
+                Provider provider = (Provider) spProvider.getSelectedItem();
+                if (provider != null) {
+                    updateProviderSettings(provider, checkedId == R.id.rbPop3);
+                }
+            }
+        });
+
         spProvider.setOnItemSelectedListener(
             new AdapterView.OnItemSelectedListener() {
                 @Override
@@ -241,17 +267,22 @@ public class FragmentAccount extends FragmentEx {
                     cbInsecure.setVisibility(position == 1 && insecure ? View.VISIBLE : View.GONE);
                     grpAuthorize.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
 
-                    // TODO: since December 31, 2019 Gmail retricted the oAuth
-                    // gmail scopes and it require privative google play services java libraries
-                    // so, only with "insecure" app enabled is supported
-                    // see: https://developers.google.com/terms/api-services-user-data-policy#additional-requirements-for-specific-api-scopes
-                    //
-                    // maybe with webview and a web library?
-                    btnAuthorize.setVisibility(View.GONE);
-                    tvGmailNote.setVisibility(View.GONE);
-                    if (provider.type != null) {
-                        tvGmailNote.setVisibility(View.VISIBLE);
+                    // Show protocol selection only for Gmail and Outlook
+                    boolean is_google = "Gmail".equalsIgnoreCase(provider.name);
+                    boolean is_outlook = "Outlook".equalsIgnoreCase(provider.name);
+                    boolean supported = isSupported(provider);
+
+                    // Show/hide protocol selection
+                    FragmentAccount.this.view.findViewById(R.id.tvProtocol).setVisibility((is_google || is_outlook) ? View.VISIBLE : View.GONE);
+                    rgProtocol.setVisibility((is_google || is_outlook) ? View.VISIBLE : View.GONE);
+
+                    btnAuthorize.setVisibility(supported ? View.VISIBLE : View.GONE);
+                    tvGmailNote.setVisibility((is_google || is_outlook) ? View.VISIBLE : View.GONE);
+                    llAuthorize.setVisibility(supported || is_google || is_outlook ? View.VISIBLE : View.GONE);
+                    if (is_google) {
                         tvGmailNote.setText(Html.fromHtml(getString(R.string.text_gmail_note)));
+                    } else if (is_outlook) {
+                        tvGmailNote.setText(Html.fromHtml(provider.documentation));
                     }
 
                     btnAdvanced.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
@@ -270,9 +301,8 @@ public class FragmentAccount extends FragmentEx {
                     }
                     adapterView.setTag(position);
 
-                    etHost.setText(provider.imap_host);
-                    etPort.setText(
-                        provider.imap_host == null ? null : Integer.toString(provider.imap_port));
+                    // Update provider settings based on selected protocol
+                    updateProviderSettings(provider, rgProtocol.getCheckedRadioButtonId() == R.id.rbPop3);
 
                     etUser.setText(null);
                     tilPassword.getEditText().setText(null);
@@ -339,7 +369,7 @@ public class FragmentAccount extends FragmentEx {
             new CompoundButton.OnCheckedChangeListener() {
                 @Override
                 public void onCheckedChanged(CompoundButton compoundButton, boolean checked) {
-                    etPort.setHint(checked ? "143" : "993");
+                    updatePortHint();
                 }
             });
 
@@ -383,7 +413,16 @@ public class FragmentAccount extends FragmentEx {
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    Spanned htmlMessage = Html.fromHtml(getString(R.string.message_gmail_note));
+                    Provider provider = (Provider) spProvider.getSelectedItem();
+                    Spanned htmlMessage;
+                    if ("Gmail".equalsIgnoreCase(provider.name)) {
+                        htmlMessage = Html.fromHtml(getString(R.string.message_gmail_note));
+                    } else if ("Outlook".equalsIgnoreCase(provider.name)) {
+                        htmlMessage = Html.fromHtml(provider.documentation);
+                    } else {
+                        return;
+                    }
+
                     final SpannableString dialogMessage = new SpannableString(htmlMessage);
                     Linkify.addLinks(dialogMessage, Linkify.WEB_URLS);
 
@@ -462,8 +501,16 @@ public class FragmentAccount extends FragmentEx {
                     args.putBoolean("insecure", cbInsecure.isChecked());
                     args.putString("port", etPort.getText().toString());
                     args.putString("user", etUser.getText().toString());
-                    args.putString("password", tilPassword.getEditText().getText().toString());
-                    args.putInt("auth_type", provider.getAuthType());
+                    args.putString("protocol", rbPop3.isChecked() ? "pop3" : "imap");
+                    String password = tilPassword.getEditText().getText().toString();
+                    args.putString("password", password);
+                    int auth_type = provider.getAuthType();
+                    if (authorized == null &&
+                        (auth_type == Helper.AUTH_TYPE_GMAIL || auth_type == Helper.AUTH_TYPE_OUTLOOK)) {
+                        auth_type = Helper.AUTH_TYPE_PASSWORD;
+                    }
+                    args.putInt("auth_type", auth_type);
+                    args.putString("maxtls", provider.maxtls);
 
                     new SimpleTask<CheckResult>() {
                         @Override
@@ -473,15 +520,21 @@ public class FragmentAccount extends FragmentEx {
                             boolean starttls = args.getBoolean("starttls");
                             boolean insecure = args.getBoolean("insecure");
                             String port = args.getString("port");
+                            String protocol = args.getString("protocol");
                             String user = args.getString("user");
                             String password = args.getString("password");
                             int auth_type = args.getInt("auth_type");
+                            String maxtls = args.getString("maxtls");
 
                             if (TextUtils.isEmpty(host)) {
                                 throw new Throwable(getContext().getString(R.string.title_no_host));
                             }
                             if (TextUtils.isEmpty(port)) {
-                                port = (starttls ? "143" : "993");
+                                if ("pop3".equals(protocol)) {
+                                    port = (starttls ? "110" : "995");
+                                } else {
+                                    port = (starttls ? "143" : "993");
+                                }
                             }
                             if (TextUtils.isEmpty(user)) {
                                 throw new Throwable(getContext().getString(R.string.title_no_user));
@@ -493,100 +546,158 @@ public class FragmentAccount extends FragmentEx {
                             CheckResult result = new CheckResult();
                             result.folders = new ArrayList<>();
 
-                            // Check IMAP server / get folders
-                            Properties props = MessageHelper.getSessionProperties(auth_type, insecure);
+                            // Check IMAP/POP3 server / get folders
+                            Properties props = MessageHelper.getSessionProperties(auth_type, insecure, maxtls);
                             Session isession = Session.getInstance(props, null);
                             isession.setDebug(true);
                             IMAPStore istore = null;
 
+                            // Determine protocol
+                            boolean isPop3 = "pop3".equals(protocol);
+
                             try {
-                                istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
-                                String originalPassword = password;
-                                try {
-                                    if (auth_type == Helper.AUTH_TYPE_GMAIL) {
-                                        password = Helper.refreshToken(context, "com.google", user, password);
-                                    }
-                                    istore.connect(host, Integer.parseInt(port), user, password);
-                                } catch (AuthenticationFailedException ex) {
-                                    // Try normal imap access with gmail allowed "insecure" app enabled
-                                    if (auth_type == Helper.AUTH_TYPE_GMAIL) {
-                                        auth_type = Helper.AUTH_TYPE_PASSWORD;
-                                        args.putInt("auth_type", auth_type);
-                                        props = MessageHelper.getSessionProperties(auth_type, insecure);
-                                        isession = Session.getInstance(props, null);
-                                        istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
-                                        istore.connect(host, Integer.parseInt(port), user, originalPassword);
-                                    } else {
-                                        throw ex;
-                                    }
-                                }
-
-                                if (!istore.hasCapability("UIDPLUS")) {
-                                    throw new MessagingException(getContext().getString(R.string.title_no_uidplus));
-                                }
-
-                                result.idle = istore.hasCapability("IDLE");
-
-                                for (Folder ifolder : istore.getDefaultFolder().list("*")) {
-                                    String type = null;
-
-                                    // First check folder attributes
-                                    boolean selectable = true;
-                                    String[] attrs = ((IMAPFolder) ifolder).getAttributes();
-                                    for (String attr : attrs) {
-                                        if ("\\Noselect".equals(attr)) {
-                                            selectable = false;
+                                if (isPop3) {
+                                    // Handle POP3 connection and create basic folder structure
+                                    POP3Store pop3Store = (POP3Store) isession.getStore(starttls ? "pop3" : "pop3s");
+                                    String originalPassword = password;
+                                    try {
+                                        String type = Helper.getAccountType(auth_type);
+                                        if (type != null) {
+                                            password = Helper.refreshToken(context, type, user, password);
                                         }
-                                        if (attr.startsWith("\\")) {
-                                            int index = EntityFolder.SYSTEM_FOLDER_ATTR.indexOf(attr.substring(1));
-                                            if (index >= 0) {
-                                                type = EntityFolder.SYSTEM_FOLDER_TYPE.get(index);
-                                                break;
+                                        pop3Store.connect(host, Integer.parseInt(port), user, password);
+
+                                        // POP3 doesn't have folders like IMAP, but we need to create a basic structure
+                                        // for compatibility with the existing UI
+                                        POP3Folder pop3Inbox = (POP3Folder) pop3Store.getFolder("INBOX");
+                                        if (pop3Inbox.exists()) {
+                                            // Create a basic folder structure for POP3 compatibility
+                                            EntityFolder inbox = new EntityFolder();
+                                            inbox.name = "INBOX";
+                                            inbox.type = EntityFolder.INBOX;
+                                            inbox.display = "INBOX";
+                                            inbox.synchronize = true;
+                                            result.folders.add(inbox);
+                                        }
+
+                                        // POP3 doesn't support IDLE or UIDPLUS
+                                        result.idle = false;
+
+                                    } catch (AuthenticationFailedException ex) {
+                                        // Try normal pop3 access with gmail/outlook allowed "insecure" app enabled
+                                        String type = Helper.getAccountType(auth_type);
+                                        if (type != null) {
+                                            auth_type = Helper.AUTH_TYPE_PASSWORD;
+                                            args.putInt("auth_type", auth_type);
+                                            props = MessageHelper.getSessionProperties(auth_type, insecure, maxtls);
+                                            isession = Session.getInstance(props, null);
+                                            pop3Store = (POP3Store) isession.getStore(starttls ? "pop3" : "pop3s");
+                                            pop3Store.connect(host, Integer.parseInt(port), user, originalPassword);
+
+                                            // Create basic folder structure for fallback
+                                            EntityFolder inbox = new EntityFolder();
+                                            inbox.name = "INBOX";
+                                            inbox.type = EntityFolder.INBOX;
+                                            inbox.display = "INBOX";
+                                            inbox.synchronize = true;
+                                            result.folders.add(inbox);
+                                            result.idle = false;
+                                        } else {
+                                            throw ex;
+                                        }
+                                    }
+                                } else {
+                                    // IMAP handling
+                                    istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
+                                    String originalPassword = password;
+                                    try {
+                                        String type = Helper.getAccountType(auth_type);
+                                        if (type != null) {
+                                            password = Helper.refreshToken(context, type, user, password);
+                                        }
+                                        istore.connect(host, Integer.parseInt(port), user, password);
+                                    } catch (AuthenticationFailedException ex) {
+                                        // Try normal imap access with gmail/outlook allowed "insecure" app enabled
+                                        String type = Helper.getAccountType(auth_type);
+                                        if (type != null) {
+                                            auth_type = Helper.AUTH_TYPE_PASSWORD;
+                                            args.putInt("auth_type", auth_type);
+                                            props = MessageHelper.getSessionProperties(auth_type, insecure, maxtls);
+                                            isession = Session.getInstance(props, null);
+                                            istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
+                                            istore.connect(host, Integer.parseInt(port), user, originalPassword);
+                                        } else {
+                                            throw ex;
+                                        }
+                                    }
+
+                                    if (!istore.hasCapability("UIDPLUS")) {
+                                        throw new MessagingException(getContext().getString(R.string.title_no_uidplus));
+                                    }
+
+                                    result.idle = istore.hasCapability("IDLE");
+
+                                    // IMAP folder listing
+                                    for (Folder ifolder : istore.getDefaultFolder().list("*")) {
+                                        String type = null;
+
+                                        // First check folder attributes
+                                        boolean selectable = true;
+                                        String[] attrs = ((IMAPFolder) ifolder).getAttributes();
+                                        for (String attr : attrs) {
+                                            if ("\\Noselect".equals(attr)) {
+                                                selectable = false;
                                             }
-                                        }
-                                    }
-
-                                    if (selectable) {
-                                        // Next check folder full name
-                                        if (type == null) {
-                                            String fullname = ifolder.getFullName();
-                                            for (String attr : EntityFolder.SYSTEM_FOLDER_ATTR) {
-                                                if (attr.equals(fullname)) {
-                                                    int index = EntityFolder.SYSTEM_FOLDER_ATTR.indexOf(attr);
+                                            if (attr.startsWith("\\")) {
+                                                int index = EntityFolder.SYSTEM_FOLDER_ATTR.indexOf(attr.substring(1));
+                                                if (index >= 0) {
                                                     type = EntityFolder.SYSTEM_FOLDER_TYPE.get(index);
                                                     break;
                                                 }
                                             }
                                         }
 
-                                        // Create entry
-                                        DB db = DB.getInstance(context);
-                                        EntityFolder folder = db.folder().getFolderByName(id, ifolder.getFullName());
-                                        if (folder == null) {
-                                            folder = new EntityFolder();
-                                            folder.name = ifolder.getFullName();
-                                            folder.type = (type == null ? EntityFolder.USER : type);
-                                            folder.synchronize =
-                                                (type != null && EntityFolder.SYSTEM_FOLDER_SYNC.contains(type));
-                                            folder.after =
-                                                (type == null
-                                                    ? EntityFolder.DEFAULT_USER_SYNC
-                                                    : EntityFolder.DEFAULT_SYSTEM_SYNC);
-                                        }
-                                        result.folders.add(folder);
+                                        if (selectable) {
+                                            // Next check folder full name
+                                            if (type == null) {
+                                                String fullname = ifolder.getFullName();
+                                                for (String attr : EntityFolder.SYSTEM_FOLDER_ATTR) {
+                                                    if (attr.equals(fullname)) {
+                                                        int index = EntityFolder.SYSTEM_FOLDER_ATTR.indexOf(attr);
+                                                        type = EntityFolder.SYSTEM_FOLDER_TYPE.get(index);
+                                                        break;
+                                                    }
+                                                }
+                                            }
 
-                                        Log.i(
-                                            Helper.TAG,
-                                            folder.name
-                                                + " id="
-                                                + folder.id
-                                                + " type="
-                                                + folder.type
-                                                + " attr="
-                                                + TextUtils.join(",", attrs));
+                                            // Create entry
+                                            DB db = DB.getInstance(context);
+                                            EntityFolder folder = db.folder().getFolderByName(id, ifolder.getFullName());
+                                            if (folder == null) {
+                                                folder = new EntityFolder();
+                                                folder.name = ifolder.getFullName();
+                                                folder.type = (type == null ? EntityFolder.USER : type);
+                                                folder.synchronize =
+                                                    (type != null && EntityFolder.SYSTEM_FOLDER_SYNC.contains(type));
+                                                folder.after =
+                                                    (type == null
+                                                        ? EntityFolder.DEFAULT_USER_SYNC
+                                                        : EntityFolder.DEFAULT_SYSTEM_SYNC);
+                                            }
+                                            result.folders.add(folder);
+
+                                            Log.i(
+                                                Helper.TAG,
+                                                folder.name
+                                                    + " id="
+                                                    + folder.id
+                                                    + " type="
+                                                    + folder.type
+                                                    + " attr="
+                                                    + TextUtils.join(",", attrs));
+                                        }
                                     }
                                 }
-
                             } finally {
                                 if (istore != null) {
                                     istore.close();
@@ -677,10 +788,12 @@ public class FragmentAccount extends FragmentEx {
                     args.putBoolean("insecure", cbInsecure.isChecked());
                     args.putString("port", etPort.getText().toString());
                     args.putString("user", etUser.getText().toString());
+                    args.putString("protocol", rbPop3.isChecked() ? "pop3" : "imap");
                     args.putString("password", tilPassword.getEditText().getText().toString());
                     args.putInt(
                         "auth_type",
                         authorized == null ? Helper.AUTH_TYPE_PASSWORD : provider.getAuthType());
+                    args.putString("maxtls", provider.maxtls);
 
                     args.putString("name", etName.getText().toString());
                     args.putInt("color", color);
@@ -703,9 +816,11 @@ public class FragmentAccount extends FragmentEx {
                             boolean starttls = args.getBoolean("starttls");
                             boolean insecure = args.getBoolean("insecure");
                             String port = args.getString("port");
+                            String protocol = args.getString("protocol");
                             String user = args.getString("user");
                             String password = args.getString("password");
                             int auth_type = args.getInt("auth_type");
+                            String maxtls = args.getString("maxtls");
 
                             String name = args.getString("name");
                             Integer color = args.getInt("color");
@@ -725,7 +840,11 @@ public class FragmentAccount extends FragmentEx {
                                 throw new Throwable(getContext().getString(R.string.title_no_host));
                             }
                             if (TextUtils.isEmpty(port)) {
-                                port = (starttls ? "143" : "993");
+                                if ("pop3".equals(protocol)) {
+                                    port = (starttls ? "110" : "995");
+                                } else {
+                                    port = (starttls ? "143" : "993");
+                                }
                             }
                             if (TextUtils.isEmpty(user)) {
                                 throw new Throwable(getContext().getString(R.string.title_no_user));
@@ -743,33 +862,75 @@ public class FragmentAccount extends FragmentEx {
                                 color = null;
                             }
 
-                            // Check IMAP server
+                            // Check IMAP/POP3 server
                             if (synchronize) {
                                 Session isession =
                                     Session.getInstance(
-                                        MessageHelper.getSessionProperties(auth_type, insecure), null);
+                                        MessageHelper.getSessionProperties(auth_type, insecure, maxtls), null);
                                 isession.setDebug(true);
-                                IMAPStore istore = null;
-                                try {
-                                    istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
+
+                                boolean isPop3 = "pop3".equals(protocol);
+
+                                if (isPop3) {
+                                    POP3Store pop3Store = null;
                                     try {
-                                        istore.connect(host, Integer.parseInt(port), user, password);
-                                    } catch (AuthenticationFailedException ex) {
-                                        if (auth_type == Helper.AUTH_TYPE_GMAIL) {
-                                            password = Helper.refreshToken(context, "com.google", user, password);
-                                            istore.connect(host, Integer.parseInt(port), user, password);
-                                        } else {
-                                            throw ex;
+                                        pop3Store = (POP3Store) isession.getStore(starttls ? "pop3" : "pop3s");
+                                        String originalPassword = password;
+                                        try {
+                                            String type = Helper.getAccountType(auth_type);
+                                            if (type != null) {
+                                                password = Helper.refreshToken(context, type, user, password);
+                                            }
+                                            pop3Store.connect(host, Integer.parseInt(port), user, password);
+                                        } catch (AuthenticationFailedException ex) {
+                                            String type = Helper.getAccountType(auth_type);
+                                            if (type != null) {
+                                                auth_type = Helper.AUTH_TYPE_PASSWORD;
+                                                isession = Session.getInstance(MessageHelper.getSessionProperties(auth_type, insecure, maxtls), null);
+                                                pop3Store = (POP3Store) isession.getStore(starttls ? "pop3" : "pop3s");
+                                                pop3Store.connect(host, Integer.parseInt(port), user, originalPassword);
+                                                password = originalPassword;
+                                            } else {
+                                                throw ex;
+                                            }
+                                        }
+                                    } finally {
+                                        if (pop3Store != null) {
+                                            pop3Store.close();
                                         }
                                     }
+                                } else {
+                                    IMAPStore istore = null;
+                                    try {
+                                        istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
+                                        String originalPassword = password;
+                                        try {
+                                            String type = Helper.getAccountType(auth_type);
+                                            if (type != null) {
+                                                password = Helper.refreshToken(context, type, user, password);
+                                            }
+                                            istore.connect(host, Integer.parseInt(port), user, password);
+                                        } catch (AuthenticationFailedException ex) {
+                                            String type = Helper.getAccountType(auth_type);
+                                            if (type != null) {
+                                                auth_type = Helper.AUTH_TYPE_PASSWORD;
+                                                isession = Session.getInstance(MessageHelper.getSessionProperties(auth_type, insecure, maxtls), null);
+                                                istore = (IMAPStore) isession.getStore(starttls ? "imap" : "imaps");
+                                                istore.connect(host, Integer.parseInt(port), user, originalPassword);
+                                                password = originalPassword;
+                                            } else {
+                                                throw ex;
+                                            }
+                                        }
 
-                                    if (!istore.hasCapability("UIDPLUS")) {
-                                        throw new MessagingException(
-                                            getContext().getString(R.string.title_no_uidplus));
-                                    }
-                                } finally {
-                                    if (istore != null) {
-                                        istore.close();
+                                        if (!istore.hasCapability("UIDPLUS")) {
+                                            throw new MessagingException(
+                                                getContext().getString(R.string.title_no_uidplus));
+                                        }
+                                    } finally {
+                                        if (istore != null) {
+                                            istore.close();
+                                        }
                                     }
                                 }
                             }
@@ -789,12 +950,14 @@ public class FragmentAccount extends FragmentEx {
                                 }
 
                                 account.host = host;
+                                account.protocol = protocol;
                                 account.starttls = starttls;
                                 account.insecure = insecure;
                                 account.port = Integer.parseInt(port);
                                 account.user = user;
                                 account.password = password;
                                 account.auth_type = auth_type;
+                                account.maxtls = maxtls;
 
                                 account.name = name;
                                 account.color = color;
@@ -1029,8 +1192,10 @@ public class FragmentAccount extends FragmentEx {
                                 boolean found = false;
                                 for (int pos = 2; pos < providers.size(); pos++) {
                                     Provider provider = providers.get(pos);
-                                    if (provider.imap_host.equals(account.host)
-                                        && provider.imap_port == account.port) {
+                                    if ((provider.imap_host != null && provider.imap_host.equals(account.host)
+                                        && provider.imap_port == account.port) ||
+                                        (provider.pop3_host != null && provider.pop3_host.equals(account.host)
+                                        && provider.pop3_port == account.port)) {
                                         found = true;
                                         spProvider.setTag(pos);
                                         spProvider.setSelection(pos);
@@ -1148,16 +1313,63 @@ public class FragmentAccount extends FragmentEx {
         }
     }
 
+    private boolean isSupported(Provider provider) {
+        if (provider == null || provider.type == null) {
+            return false;
+        }
+        Context context = getContext();
+        if (context == null) {
+            return false;
+        }
+        AccountManager am = AccountManager.get(context);
+        for (AuthenticatorDescription auth : am.getAuthenticatorTypes()) {
+            if (provider.type.equals(auth.type)) {
+                return true;
+            }
+            if ("com.microsoft".equals(provider.type) ||
+                "office365".equals(provider.type) ||
+                "office365pcke".equals(provider.type) ||
+                "outlookgraph".equals(provider.type) ||
+                "outlook".equals(provider.type)) {
+                if ("com.microsoft".equals(auth.type) ||
+                    "com.microsoft.office.outlook".equals(auth.type) ||
+                    "com.microsoft.azure.authenticator".equals(auth.type) ||
+                    "office365".equals(auth.type) ||
+                    "com.google.android.gm.exchange".equals(auth.type) ||
+                    "com.android.email".equals(auth.type) ||
+                    "com.android.exchange".equals(auth.type)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     private void selectAccount() {
         Log.i(Helper.TAG, "Select account");
         Provider provider = (Provider) spProvider.getSelectedItem();
         if (provider.type != null) {
+            List<String> types = new ArrayList<>();
+            types.add(provider.type);
+            if ("com.microsoft".equals(provider.type) ||
+                "office365".equals(provider.type) ||
+                "office365pcke".equals(provider.type) ||
+                "outlookgraph".equals(provider.type) ||
+                "outlook".equals(provider.type)) {
+                types.add("com.microsoft");
+                types.add("com.microsoft.office.outlook");
+                types.add("com.microsoft.azure.authenticator");
+                types.add("office365");
+                types.add("com.google.android.gm.exchange");
+                types.add("com.android.exchange");
+            }
+
             Intent intent = null;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 intent = newChooseAccountIntent(
                     null,
                     null,
-                    new String[] {provider.type},
+                    types.toArray(new String[0]),
                     null,
                     null,
                     null,
@@ -1167,7 +1379,7 @@ public class FragmentAccount extends FragmentEx {
                 intent = newChooseAccountIntent(
                     null,
                     null,
-                    new String[] {provider.type},
+                    types.toArray(new String[0]),
                     false,
                     null,
                     null,
@@ -1295,5 +1507,42 @@ public class FragmentAccount extends FragmentEx {
     private class CheckResult {
         List<EntityFolder> folders;
         boolean idle;
+    }
+
+    private void updateProviderSettings(Provider provider, boolean usePop3) {
+        if (provider == null) return;
+
+        // Update host and port based on protocol selection
+        if (usePop3) {
+            if (provider.pop3_host != null) {
+                etHost.setText(provider.pop3_host);
+                etPort.setText(Integer.toString(provider.pop3_port));
+                cbStartTls.setChecked(provider.pop3_port == 110);
+            } else {
+                etHost.setText("");
+                etPort.setText("");
+                cbStartTls.setChecked(false);
+            }
+        } else {
+            if (provider.imap_host != null) {
+                etHost.setText(provider.imap_host);
+                etPort.setText(Integer.toString(provider.imap_port));
+                cbStartTls.setChecked(provider.imap_port == 143);
+            } else {
+                etHost.setText("");
+                etPort.setText("");
+                cbStartTls.setChecked(false);
+            }
+        }
+        updatePortHint();
+    }
+
+    private void updatePortHint() {
+        boolean checked = cbStartTls.isChecked();
+        if (rbPop3.isChecked()) {
+            etPort.setHint(checked ? "110" : "995");
+        } else {
+            etPort.setHint(checked ? "143" : "993");
+        }
     }
 }

@@ -11,7 +11,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
     <uses-permission android:name="android.permission.USE_CREDENTIALS" android:maxSdkVersion="22" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
+  
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />

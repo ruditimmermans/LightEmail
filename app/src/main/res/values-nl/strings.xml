@@ -121,6 +121,8 @@
     <string name="title_account_delete">Dit account permanent verwijderen\?</string>
     <string name="title_identity_delete">Deze identiteit permanent verwijderen\?</string>
     <string name="title_pop">POP wordt niet ondersteund</string>
+    <string name="title_pop3">POP3</string>
+    <string name="title_pop3_no_folders">Mappen kunnen niet worden beheerd voor POP3-accounts</string>
     <string name="title_insecure">Onveilige verbindingen worden niet ondersteund</string>
     <string name="title_synchronize_now">Nu synchroniseren</string>
     <string name="title_delete_local">Lokale berichten verwijderen</string>
@@ -263,8 +265,8 @@
     <string name="title_no_identities_yet">Je hebt nog geen ingestelde identiteiten</string>
     <string name="title_try_subject">Probeer LightEmail</string>
     <string name="title_try_text">Uitnodiging aan:</string>
-    <string name="message_gmail_note">Since January 2020 Gmail restricted the oAuth scopes, now requires authorization to be able to authenticate, we are looking the best way to fix oAuth authentication without privative libraries.&lt;br/&gt;&lt;br/&gt; As a temporary solution you need to allow normal authentication or how Google says &lt;i&gt;\"less secure apps\"&lt;/i&gt;.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Instructions here:&lt;/b&gt; https://support.google.com/accounts/answer/6010255&lt;/br&gt;</string>
-    <string name="text_gmail_note">Vereist niet-oAuth-authenticatie. <font color="#0055C7">Meer informatie</font></string>
+    <string name="message_gmail_note">Google heeft \"minder veilige apps\" uitgeschakeld. Om Gmail te gebruiken moet je ofwel:&lt;br/&gt;&lt;br/&gt;1. **OAuth2** gebruiken door op de knop \"Kies account\" hierboven te klikken (aanbevolen).&lt;br/&gt;2. Een **App-wachtwoord** gebruiken als je 2-stapsverificatie hebt ingeschakeld.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Hoe maak je een App-wachtwoord:&lt;/b&gt; https://support.google.com/accounts/answer/185833</string>
+    <string name="text_gmail_note"><![CDATA[Vereist OAuth of een app-wachtwoord. <font color=\'#0055C7\'>Meer info</font>]]></string>
     <string name="title_cancel">Annuleren</string>
     <string name="title_color">Kleur</string>
     <string name="title_reset">Standaardwaarden</string>

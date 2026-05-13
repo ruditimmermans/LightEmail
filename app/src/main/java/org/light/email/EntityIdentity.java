@@ -67,6 +67,7 @@ public class EntityIdentity {
     public String password;
     @NonNull
     public Integer auth_type;
+    public String maxtls;
     @NonNull
     public Boolean primary;
     @NonNull
@@ -89,6 +90,7 @@ public class EntityIdentity {
         json.put("user", user);
         json.put("password", "");
         json.put("auth_type", auth_type);
+        json.put("maxtls", maxtls);
         json.put("primary", primary);
         json.put("synchronize", false);
         json.put("store_sent", store_sent);
@@ -110,6 +112,9 @@ public class EntityIdentity {
         identity.user = json.getString("user");
         identity.password = json.getString("password");
         identity.auth_type = json.getInt("auth_type");
+        if (json.has("maxtls")) {
+            identity.maxtls = json.getString("maxtls");
+        }
         identity.primary = json.getBoolean("primary");
         identity.synchronize = json.getBoolean("synchronize");
         identity.store_sent = json.getBoolean("store_sent");
@@ -132,6 +137,8 @@ public class EntityIdentity {
                 && this.starttls.equals(other.starttls)
                 && this.user.equals(other.user)
                 && this.password.equals(other.password)
+                && this.auth_type.equals(other.auth_type)
+                && (this.maxtls == null ? other.maxtls == null : this.maxtls.equals(other.maxtls))
                 && this.primary.equals(other.primary)
                 && this.synchronize.equals(other.synchronize)
                 && this.store_sent.equals(other.store_sent)

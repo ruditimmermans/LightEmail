@@ -38,7 +38,9 @@ public class EntityAccount {
     public String name;
     public String signature;
     @NonNull
-    public String host; // IMAP
+    public String host;
+    @NonNull
+    public String protocol;
     @NonNull
     public Boolean starttls;
     @NonNull
@@ -51,6 +53,7 @@ public class EntityAccount {
     public String password;
     @NonNull
     public Integer auth_type;
+    public String maxtls;
     @NonNull
     public Boolean synchronize;
     @NonNull
@@ -72,11 +75,13 @@ public class EntityAccount {
                 && (this.signature == null
                 ? other.signature == null
                 : this.signature.equals(other.signature))
+                && (this.protocol == null ? other.protocol == null : this.protocol.equals(other.protocol))
                 && this.host.equals(other.host)
                 && this.port.equals(other.port)
                 && this.user.equals(other.user)
                 && this.password.equals(other.password)
                 && this.auth_type.equals(other.auth_type)
+                && (this.maxtls == null ? other.maxtls == null : this.maxtls.equals(other.maxtls))
                 && this.synchronize.equals(other.synchronize)
                 && this.primary.equals(other.primary)
                 && (this.color == null ? other.color == null : this.color.equals(other.color))
@@ -93,12 +98,14 @@ public class EntityAccount {
         json.put("name", name);
         json.put("signature", signature);
         json.put("host", host);
+        json.put("protocol", protocol);
         json.put("starttls", starttls);
         json.put("insecure", insecure);
         json.put("port", port);
         json.put("user", user);
         json.put("password", "");
         json.put("auth_type", auth_type);
+        json.put("maxtls", maxtls);
         json.put("synchronize", false);
         json.put("primary", primary);
         if (color != null) {
@@ -117,12 +124,16 @@ public class EntityAccount {
             account.signature = json.getString("signature");
         }
         account.host = json.getString("host");
+        account.protocol = json.has("protocol") ? json.getString("protocol") : "imap";
         account.starttls = (json.has("starttls") && json.getBoolean("starttls"));
         account.insecure = (json.has("insecure") && json.getBoolean("insecure"));
         account.port = json.getInt("port");
         account.user = json.getString("user");
         account.password = json.getString("password");
         account.auth_type = json.getInt("auth_type");
+        if (json.has("maxtls")) {
+            account.maxtls = json.getString("maxtls");
+        }
         account.synchronize = json.getBoolean("synchronize");
         account.primary = json.getBoolean("primary");
         if (json.has("color")) {
