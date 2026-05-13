@@ -45,7 +45,6 @@ import java.util.Properties;
 
 import javax.mail.Folder;
 import javax.mail.Session;
-import javax.mail.Store;
 
 public class FragmentFolder extends FragmentEx {
     private ViewGroup view;
@@ -134,7 +133,7 @@ public class FragmentFolder extends FragmentEx {
                                     ? EntityFolder.DEFAULT_USER_SYNC
                                     : Integer.parseInt(after));
 
-                            Store istore = null;
+                            IMAPStore istore = null;
                             DB db = DB.getInstance(getContext());
                             try {
                                 db.beginTransaction();
@@ -145,20 +144,16 @@ public class FragmentFolder extends FragmentEx {
                                     EntityAccount account =
                                         db.account().getAccount(folder == null ? aid : folder.account);
 
-                                    if ("pop3".equals(account.protocol)) {
-                                        throw new IllegalArgumentException(getString(R.string.title_pop3_no_folders));
-                                    }
-
                                     Properties props =
                                         MessageHelper.getSessionProperties(account.auth_type, account.insecure);
                                     Session isession = Session.getInstance(props, null);
-                                    istore = isession.getStore(account.starttls ? "imap" : "imaps");
+                                    istore = (IMAPStore) isession.getStore(account.starttls ? "imap" : "imaps");
                                     Helper.connect(context, istore, account);
 
                                     if (folder == null) {
                                         Log.i(Helper.TAG, "Creating folder=" + name);
 
-                                        Folder ifolder = istore.getFolder(name);
+                                        IMAPFolder ifolder = (IMAPFolder) istore.getFolder(name);
                                         if (ifolder.exists()) {
                                             throw new IllegalArgumentException(
                                                 getString(R.string.title_folder_exists, name));
@@ -178,8 +173,8 @@ public class FragmentFolder extends FragmentEx {
                                     } else {
                                         Log.i(Helper.TAG, "Renaming folder=" + name);
 
-                                        Folder iold = istore.getFolder(folder.name);
-                                        Folder ifolder = istore.getFolder(name);
+                                        IMAPFolder iold = (IMAPFolder) istore.getFolder(folder.name);
+                                        IMAPFolder ifolder = (IMAPFolder) istore.getFolder(name);
                                         if (ifolder.exists()) {
                                             throw new IllegalArgumentException(
                                                 getString(R.string.title_folder_exists, name));
@@ -265,10 +260,6 @@ public class FragmentFolder extends FragmentEx {
                                                 EntityFolder folder = db.folder().getFolder(id);
                                                 EntityAccount account = db.account().getAccount(folder.account);
 
-                                                if ("pop3".equals(account.protocol)) {
-                                                    throw new IllegalArgumentException(getString(R.string.title_pop3_no_folders));
-                                                }
-
                                                 Properties props =
                                                     MessageHelper.getSessionProperties(
                                                         account.auth_type, account.insecure);
@@ -278,7 +269,7 @@ public class FragmentFolder extends FragmentEx {
                                                         isession.getStore(account.starttls ? "imap" : "imaps");
                                                 Helper.connect(context, istore, account);
 
-                                                Folder ifolder = istore.getFolder(folder.name);
+                                                IMAPFolder ifolder = (IMAPFolder) istore.getFolder(folder.name);
                                                 ifolder.delete(false);
 
                                                 db.folder().deleteFolder(id);

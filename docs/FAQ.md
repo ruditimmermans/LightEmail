@@ -77,10 +77,13 @@ Without [IMAP IDLE](https://en.wikipedia.org/wiki/IMAP_IDLE) emails need to be p
 
 #### How can I login to Gmail / G suite?
 
-To use Gmail with two factor authentication (2FA) enabled, you have two options:
+Since January 2020 Gmail restricted the oAuth scopes, now requires authorization
+to be able to authenticate, we are looking the best way to fix oAuth
+authentication without privative libraries.
 
-1. **OAuth2 (Recommended):** Click the "Select account" button during account setup to use your Google account already added to your Android device.
-2. **App Password:** Create a 16-digit app password in your Google account settings. See [here](https://support.google.com/accounts/answer/185833) for instructions.
+As a temporary solution you need to allow normal authentication (non-oAuth) or
+how Google says "less secure apps".  See here for instructions:
+[https://support.google.com/accounts/answer/6010255](https://support.google.com/accounts/answer/6010255)
 
 #### Why are messages in the outbox not moved to the sent folder?
 
@@ -123,10 +126,8 @@ Search on server is a pro feature.
 
 #### How can I setup Outlook with 2FA?
 
-To use Outlook with two factor authentication (2FA) enabled, you have two options:
-
-1. **OAuth2 (Recommended):** Click the "Select account" button during account setup to use your Microsoft/Outlook account already added to your Android device.
-2. **App Password:** Create an app password in your Microsoft account settings. See [here](https://support.microsoft.com/en-us/help/12409/microsoft-account-app-passwords-two-step-verification) for instructions.
+To use Outlook with two factor authentication enabled, you need to create an app password.
+See [here](https://support.microsoft.com/en-us/help/12409/microsoft-account-app-passwords-two-step-verification) for the details.
 
 #### Can you add ... ?
 

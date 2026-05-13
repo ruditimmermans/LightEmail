@@ -2,54 +2,126 @@
 <providers>
     <provider
         name="Gmail"
-        documentation="&lt;b&gt;Gmail now requires Modern Authentication (OAuth2) or an App Password.&lt;/b&gt;"
-        documentation.nl="&lt;b&gt;Gmail vereist nu moderne authenticatie (OAuth2) of een app-wachtwoord.&lt;/b&gt;"
-      type="com.google"
-        appPassword="true"
-        domain="gmail\\.com"
-        order="1">
+        link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq6"
+        type="com.google">
         <imap
             host="imap.gmail.com"
             port="993" />
-        <pop3
-            host="pop.gmail.com"
-            port="995" />
         <smtp
             host="smtp.gmail.com"
             port="465"
             starttls="false" />
     </provider>
-  <provider
-  name="Outlook"
-  documentation="&lt;b&gt;Microsoft now requires Modern Authentication (OAuth2) or an App Password.&lt;/b&gt;"
-  documentation.nl="&lt;b&gt;Microsoft vereist nu moderne authenticatie (OAuth2) of een app-wachtwoord.&lt;/b&gt;"
-  domain="(outlook|hotmail|live|msn|windowslive)\\..*"
-  type="outlook"
-  maxtls="1.2"
-  noop="true"
-  order="2"
-  partial="false"
-  useip="false">
-  <imap
-    host="outlook.office365.com"
-    port="993"
-    starttls="false" />
-  <pop3
-    host="outlook.office365.com"
-    port="995" />
-  <smtp
-    host="smtp.office365.com"
-    port="587"
-    starttls="true" />
-</provider>
     <provider
-        name="Posteo"
+        name="Outlook"
+        link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq14">
+        <imap
+            host="outlook.office365.com"
+            port="993" />
+        <smtp
+            host="smtp.office365.com"
+            port="587"
+            starttls="true" />
+    </provider>
+    <!-- needs subscription -->
+    <provider
+        name="Mailbox.org"
+        link="https://kb.mailbox.org/display/BMBOKB/E-Mail-Einrichtung+mit+Mozilla+Thunderbird">
+        <imap
+            host="imap.mailbox.org"
+            port="993" />
+        <smtp
+            host="smtp.mailbox.org"
+            port="465"
+            starttls="false" />
+    </provider>
+    <!-- no IMAP IDLE -->
+    <provider
+        name="Yahoo!"
+        link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq88">
+        <imap
+            host="imap.mail.yahoo.com"
+            port="993" />
+        <smtp
+            host="smtp.mail.yahoo.com"
+            port="465"
+            starttls="false" />
+    </provider>
+    <provider
+        name="Posteo.de"
         link="https://posteo.de/en/help/how-do-i-set-up-posteo-in-an-email-client-pop3-imap-and-smtp">
         <imap
             host="posteo.de"
             port="993" />
         <smtp
             host="posteo.de"
+            port="465"
+            starttls="false" />
+    </provider>
+    <provider
+        name="FastMail"
+        link="https://www.fastmail.com/help/technical/servernamesandports.html">
+        <imap
+            host="imap.fastmail.com"
+            port="993" />
+        <smtp
+            host="smtp.fastmail.com"
+            port="465"
+            starttls="false" />
+    </provider>
+    <!-- no IMAP IDLE -->
+    <provider
+        name="Gmx.com"
+        link="https://support.gmx.com/pop-imap/imap/index.html#breadcrumb_help_pop-imap_imap_server">
+        <imap
+            host="imap.gmx.com"
+            port="993" />
+        <smtp
+            host="mail.gmx.com"
+            port="587"
+            starttls="true" />
+    </provider>
+    <provider
+        name="Mail.de"
+        link="https://mail.de/hilfe/pop3-imap-einstellungen">
+        <imap
+            host="imap.mail.de"
+            port="993" />
+        <smtp
+            host="smtp.mail.de"
+            port="465"
+            starttls="false" />
+    </provider>
+    <provider
+        name="Yandex"
+        link="https://yandex.com/support/mail/mail-clients.html#imap">
+        <imap
+            host="imap.yandex.com"
+            port="993" />
+        <smtp
+            host="smtp.yandex.com"
+            port="465"
+            starttls="false" />
+    </provider>
+    <provider
+        name="Telstra"
+        link="https://www.telstra.com.au/support/category/email/set-up/imap-pop-and-smtp-information-for-manual-email-set-up">
+        <imap
+            host="imap.telstra.com"
+            port="993" />
+        <smtp
+            host="smtp.telstra.com"
+            port="465"
+            starttls="false" />
+    </provider>
+    <provider
+        name="T-Online.de"
+        link="https://www.telekom.de/hilfe/festnetz-internet-tv/e-mail/e-mail-server-e-mail-protokolle-und-e-mail-einrichtung/imap/einrichtung-imap">
+        <imap
+            host="secureimap.t-online.de"
+            port="993" />
+        <smtp
+            host="securesmtp.t-online.de"
             port="465"
             starttls="false" />
     </provider>

@@ -22,7 +22,6 @@ package org.light.email;
 
 import android.accounts.Account;
 import android.accounts.AccountManager;
-import android.accounts.AccountManagerFuture;
 import android.app.Notification;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -73,7 +72,6 @@ import java.util.concurrent.ThreadFactory;
 import javax.mail.Address;
 import javax.mail.AuthenticationFailedException;
 import javax.mail.MessagingException;
-import javax.mail.Store;
 import javax.mail.internet.InternetAddress;
 
 import static android.os.Process.THREAD_PRIORITY_BACKGROUND;
@@ -85,7 +83,6 @@ public class Helper {
 
     static final int AUTH_TYPE_PASSWORD = 1;
     static final int AUTH_TYPE_GMAIL = 2;
-    static final int AUTH_TYPE_OUTLOOK = 3;
 
     static ThreadFactory backgroundThreadFactory =
         new ThreadFactory() {
@@ -270,17 +267,16 @@ public class Helper {
         return filename.substring(index + 1);
     }
 
-    static void connect(Context context, Store store, EntityAccount account)
+    static void connect(Context context, IMAPStore istore, EntityAccount account)
         throws MessagingException {
         try {
-            store.connect(account.host, account.port, account.user, account.password);
+            istore.connect(account.host, account.port, account.user, account.password);
         } catch (AuthenticationFailedException ex) {
-            String type = getAccountType(account.auth_type);
-            if (type != null) {
+            if (account.auth_type == Helper.AUTH_TYPE_GMAIL) {
                 account.password =
-                    Helper.refreshToken(context, type, account.user, account.password);
+                    Helper.refreshToken(context, "com.google", account.user, account.password);
                 DB.getInstance(context).account().setAccountPassword(account.id, account.password);
-                store.connect(account.host, account.port, account.user, account.password);
+                istore.connect(account.host, account.port, account.user, account.password);
             } else {
                 throw ex;
             }
@@ -290,104 +286,14 @@ public class Helper {
     static String refreshToken(Context context, String type, String name, String current) {
         try {
             AccountManager am = AccountManager.get(context);
-            List<String> types = new ArrayList<>();
-            types.add(type);
-
-            // Handle Gmail OAuth types
-            if ("com.google".equals(type)) {
-                types.add("com.google.android.gm.exchange");
-                types.add("com.android.exchange");
-            }
-
-            // Handle Outlook/Microsoft OAuth types
-            if ("com.microsoft".equals(type) ||
-                "com.microsoft.office.outlook".equals(type) ||
-                "com.microsoft.azure.authenticator".equals(type) ||
-                "office365".equals(type) ||
-                "office365pcke".equals(type) ||
-                "outlookgraph".equals(type) ||
-                "outlook".equals(type)) {
-                if (!types.contains("com.microsoft")) {
-                    types.add("com.microsoft");
-                }
-                if (!types.contains("com.microsoft.office.outlook")) {
-                    types.add("com.microsoft.office.outlook");
-                }
-                if (!types.contains("com.microsoft.azure.authenticator")) {
-                    types.add("com.microsoft.azure.authenticator");
-                }
-                if (!types.contains("office365")) {
-                    types.add("office365");
-                }
-                if (!types.contains("office365pcke")) {
-                    types.add("office365pcke");
-                }
-                if (!types.contains("outlookgraph")) {
-                    types.add("outlookgraph");
-                }
-                if (!types.contains("outlook")) {
-                    types.add("outlook");
-                }
-                if (!types.contains("com.google.android.gm.exchange")) {
-                    types.add("com.google.android.gm.exchange");
-                }
-                if (!types.contains("com.android.exchange")) {
-                    types.add("com.android.exchange");
-                }
-            }
-
-            for (String t : types) {
-                Account[] accounts = am.getAccountsByType(t);
-                Log.i(Helper.TAG, "Looking for accounts with type=" + t + ", found " + accounts.length + " accounts");
-                for (Account account : accounts) {
-                    if (name.equalsIgnoreCase(account.name)) {
-                        Log.i(Helper.TAG, "Found matching account: " + account.name + " for type=" + t);
-                        Log.i(Helper.TAG, "Refreshing token type=" + t);
-                        am.invalidateAuthToken(t, current);
-
-                        // Use modern getAuthToken API for Android 14 compatibility
-                        Bundle options = new Bundle();
-                        String authTokenType = getAuthTokenType(t);
-
-                        // Try non-blocking approach first for better Android 14 compatibility
-                        try {
-                            AccountManagerFuture<Bundle> future = am.getAuthToken(
-                                account,
-                                authTokenType,
-                                options,
-                                false,  // notifyAuthFailure
-                                null,   // callback
-                                null    // handler
-                            );
-
-                            Bundle result = future.getResult();
-                            if (result != null) {
-                                String refreshed = result.getString(AccountManager.KEY_AUTHTOKEN);
-                                Log.i(Helper.TAG, "Token refresh result: " + (refreshed != null ? "success" : "null token"));
-                                if (refreshed != null && !refreshed.equals(current)) {
-                                    Log.i(Helper.TAG, "Refreshed token successfully, length=" + refreshed.length());
-                                    return refreshed;
-                                } else if (refreshed != null) {
-                                    Log.i(Helper.TAG, "Token refreshed but same as current");
-                                }
-                            } else {
-                                Log.i(Helper.TAG, "Token refresh result is null");
-                            }
-                        } catch (Exception ex) {
-                            Log.w(Helper.TAG, "Modern getAuthToken failed, falling back: " + ex);
-
-                            // Fallback to deprecated method for older Android versions
-                            try {
-                                String refreshed = am.blockingGetAuthToken(account, authTokenType, true);
-                                if (refreshed != null && !refreshed.equals(current)) {
-                                    Log.i(Helper.TAG, "Refreshed token successfully (fallback)");
-                                    return refreshed;
-                                }
-                            } catch (Exception fallbackEx) {
-                                Log.w(Helper.TAG, "Fallback getAuthToken also failed: " + fallbackEx);
-                            }
-                        }
-                    }
+            Account[] accounts = am.getAccountsByType(type);
+            for (Account account : accounts) {
+                if (name.equals(account.name)) {
+                    Log.i(Helper.TAG, "Refreshing token");
+                    am.invalidateAuthToken(type, current);
+                    String refreshed = am.blockingGetAuthToken(account, getAuthTokenType(type), true);
+                    Log.i(Helper.TAG, "Refreshed token");
+                    return refreshed;
                 }
             }
         } catch (Throwable ex) {
@@ -399,30 +305,6 @@ public class Helper {
     static String getAuthTokenType(String type) {
         if ("com.google".equals(type)) {
             return "oauth2:https://mail.google.com/";
-        }
-        if ("com.microsoft".equals(type) ||
-            "com.microsoft.office.outlook".equals(type) ||
-            "com.microsoft.azure.authenticator".equals(type) ||
-            "office365".equals(type) ||
-            "office365pcke".equals(type) ||
-            "outlookgraph".equals(type) ||
-            "outlook".equals(type)) {
-            return "oauth2:https://outlook.office.com/IMAP.AccessAsUser.All https://outlook.office.com/SMTP.Send offline_access";
-        }
-        if ("com.google.android.gm.exchange".equals(type) ||
-            "com.android.email".equals(type) ||
-            "com.android.exchange".equals(type)) {
-            return "mail";
-        }
-        return null;
-    }
-
-    static String getAccountType(int auth_type) {
-        if (auth_type == AUTH_TYPE_GMAIL) {
-            return "com.google";
-        }
-        if (auth_type == AUTH_TYPE_OUTLOOK) {
-            return "outlook";
         }
         return null;
     }

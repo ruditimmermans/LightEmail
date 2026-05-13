@@ -31,42 +31,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvProvider" />
 
-    <!-- protocol selection -->
-
-    <TextView
-        android:id="@+id/tvProtocol"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:text="@string/title_protocol"
-        android:textAppearance="@style/TextAppearance.AppCompat.Medium"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/spProvider" />
-
-    <RadioGroup
-        android:id="@+id/rgProtocol"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:orientation="horizontal"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvProtocol">
-
-        <RadioButton
-            android:id="@+id/rbImap"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="24dp"
-            android:text="@string/title_imap"
-            android:checked="true" />
-
-        <RadioButton
-            android:id="@+id/rbPop3"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/title_pop3" />
-    </RadioGroup>
-
     <!-- auto config -->
 
     <TextView
@@ -77,7 +41,7 @@
         android:text="@string/title_domain"
         android:textAppearance="@style/TextAppearance.AppCompat.Medium"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/rgProtocol" />
+        app:layout_constraintTop_toBottomOf="@id/spProvider" />
 
     <EditText
         android:id="@+id/etDomain"
@@ -90,17 +54,16 @@
         app:layout_constraintTop_toBottomOf="@id/tvDomain" />
 
     <Button
-      android:id="@+id/btnAutoConfig"
-      style="@style/buttonStyleSmall"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="12dp"
-      android:background="@color/black"
-      android:minWidth="0dp"
-      android:minHeight="0dp"
-      android:text="@string/title_autoconfig"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/etDomain" />
+        android:id="@+id/btnAutoConfig"
+        style="@style/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:text="@string/title_autoconfig"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etDomain" />
 
     <!-- IMAP -->
 
@@ -196,38 +159,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvPort" />
 
-    <LinearLayout
-        android:id="@+id/llAuthorize"
-        android:layout_width="match_parent"
+    <Button
+        android:id="@+id/btnAuthorize"
+        style="@style/buttonStyleSmall"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/margin_md"
-        android:background="@android:color/black"
-        android:orientation="vertical"
-        android:padding="@dimen/margin_md"
-        android:visibility="gone"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:text="@string/title_authorize"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/etPort">
+        app:layout_constraintTop_toBottomOf="@id/etPort" />
 
-      <Button
-          android:id="@+id/btnAuthorize"
-          style="@style/buttonStyleSmall"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:minWidth="0dp"
-          android:minHeight="0dp"
-          android:text="@string/title_authorize"
-          android:textColor="@android:color/white"
-          android:backgroundTint="#444444" />
-
-      <TextView
-          android:id="@+id/tvGmailNote"
-          android:layout_width="wrap_content"
-          android:layout_height="wrap_content"
-          android:paddingTop="@dimen/margin_md"
-          android:text="@string/text_gmail_note"
-          android:textColor="@android:color/white"
-          android:textAppearance="@style/TextAppearance.AppCompat.Small" />
-    </LinearLayout>
+    <TextView
+        android:id="@+id/tvGmailNote"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:paddingTop="@dimen/margin_lg"
+        android:paddingBottom="@dimen/margin_lg"
+        android:text="@string/text_gmail_note"
+        android:textAppearance="@style/TextAppearance.AppCompat.Small"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etPort" />
 
     <!-- user -->
 
@@ -239,7 +194,7 @@
         android:text="@string/title_user"
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/llAuthorize" />
+        app:layout_constraintTop_toBottomOf="@id/tvGmailNote" />
 
     <EditText
         android:id="@+id/etUser"
@@ -312,17 +267,16 @@
     </LinearLayout>
 
     <Button
-      android:id="@+id/btnAdvanced"
-      style="@style/buttonStyleSmall"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="@dimen/margin_md"
-      android:background="@color/black"
-      android:minWidth="0dp"
-      android:minHeight="0dp"
-      android:text="@string/title_setup_advanced"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/llContainerColor" />
+        android:id="@+id/btnAdvanced"
+        style="@style/buttonStyleSmall"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_md"
+        android:minWidth="0dp"
+        android:minHeight="0dp"
+        android:text="@string/title_setup_advanced"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/llContainerColor" />
 
     <!-- advanced -->
 
@@ -411,14 +365,13 @@
     <!-- check -->
 
     <Button
-      android:id="@+id/btnCheck"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="@dimen/margin_md"
-      android:background="@color/black"
-      android:text="@string/title_check"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/etInterval" />
+        android:id="@+id/btnCheck"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_md"
+        android:text="@string/title_check"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etInterval" />
 
     <ProgressBar
         android:id="@+id/pbCheck"
@@ -432,14 +385,13 @@
         app:layout_constraintTop_toTopOf="@id/btnCheck" />
 
     <ImageButton
-      android:id="@+id/ibDelete"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="@dimen/margin_md"
-      android:background="@color/black"
-      android:src="@drawable/baseline_delete_24"
-      app:layout_constraintEnd_toEndOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/etInterval" />
+        android:id="@+id/ibDelete"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_md"
+        android:src="@drawable/baseline_delete_24"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/etInterval" />
 
     <TextView
         android:id="@+id/tvIdle"
@@ -556,14 +508,13 @@
     <!-- save -->
 
     <Button
-      android:id="@+id/btnSave"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_marginTop="@dimen/margin_md"
-      android:background="@color/black"
-      android:text="@string/title_save"
-      app:layout_constraintStart_toStartOf="parent"
-      app:layout_constraintTop_toBottomOf="@id/spJunk" />
+        android:id="@+id/btnSave"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/margin_md"
+        android:text="@string/title_save"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/spJunk" />
 
     <ProgressBar
         android:id="@+id/pbSave"
@@ -591,7 +542,7 @@
         android:id="@+id/grpServer"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:constraint_referenced_ids="tvProtocol,rgProtocol,tvDomain,etDomain,btnAutoConfig,tvImap,tvPop,tvInsecure,tvHost,etHost,tvPort,etPort" />
+        app:constraint_referenced_ids="tvDomain,etDomain,btnAutoConfig,tvImap,tvPop,tvInsecure,tvHost,etHost,tvPort,etPort" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/grpAuthorize"

@@ -64,10 +64,6 @@ import javax.mail.AuthenticationFailedException;
 import javax.mail.Session;
 import javax.mail.Transport;
 
-/**
- * Fragment for editing or creating an email identity (alias).
- * This fragment provides UI to configure SMTP settings, linked accounts, and other identity-specific options.
- */
 public class FragmentIdentity extends FragmentEx {
     private ViewGroup view;
     private EditText etName;
@@ -97,10 +93,6 @@ public class FragmentIdentity extends FragmentEx {
 
     private long id = -1;
 
-    /**
-     * Initializes the fragment and retrieves the identity ID from arguments.
-     * @param savedInstanceState If the fragment is being re-created from a previous saved state, this is the state.
-     */
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -110,10 +102,6 @@ public class FragmentIdentity extends FragmentEx {
         id = (args == null ? -1 : args.getLong("id", -1));
     }
 
-    /**
-     * Creates and returns the view hierarchy associated with the fragment.
-     * Sets up UI controls, listeners, and handles initial UI state.
-     */
     @Override
     @Nullable
     public View onCreateView(
@@ -187,10 +175,7 @@ public class FragmentIdentity extends FragmentEx {
                         boolean found = false;
                         for (int pos = 1; pos < spProvider.getAdapter().getCount(); pos++) {
                             Provider provider = (Provider) spProvider.getItemAtPosition(pos);
-                            if ((provider.imap_host != null && provider.imap_host.equals(account.host)
-                                        && provider.imap_port == account.port) ||
-                                        (provider.pop3_host != null && provider.pop3_host.equals(account.host)
-                                        && provider.pop3_port == account.port)) {
+                            if (provider.imap_host.equals(account.host) && provider.imap_port == account.port) {
                                 found = true;
 
                                 spProvider.setSelection(pos);
@@ -364,9 +349,6 @@ public class FragmentIdentity extends FragmentEx {
                     args.putBoolean("store_sent", cbStoreSent.isChecked());
                     args.putString("signature", Html.toHtml(etSignature.getText()));
 
-                    Provider provider = (Provider) spProvider.getSelectedItem();
-                    args.putString("maxtls", provider == null ? null : provider.maxtls);
-
                     new SimpleTask<Void>() {
                         @Override
                         protected Void onLoad(Context context, Bundle args) throws Throwable {
@@ -383,7 +365,6 @@ public class FragmentIdentity extends FragmentEx {
                             String password = args.getString("password");
                             String signature = args.getString("signature");
                             int auth_type = args.getInt("auth_type");
-                            String maxtls = args.getString("maxtls");
                             boolean synchronize = args.getBoolean("synchronize");
                             boolean primary = args.getBoolean("primary");
                             boolean store_sent = args.getBoolean("store_sent");
@@ -418,7 +399,7 @@ public class FragmentIdentity extends FragmentEx {
 
                             // Check SMTP server
                             if (synchronize) {
-                                Properties props = MessageHelper.getSessionProperties(auth_type, insecure, maxtls);
+                                Properties props = MessageHelper.getSessionProperties(auth_type, insecure);
                                 Session isession = Session.getInstance(props, null);
                                 isession.setDebug(true);
                                 Transport itransport = isession.getTransport(starttls ? "smtp" : "smtps");
@@ -426,9 +407,8 @@ public class FragmentIdentity extends FragmentEx {
                                     try {
                                         itransport.connect(host, Integer.parseInt(port), user, password);
                                     } catch (AuthenticationFailedException ex) {
-                                        String type = Helper.getAccountType(auth_type);
-                                        if (type != null) {
-                                            password = Helper.refreshToken(context, type, user, password);
+                                        if (auth_type == Helper.AUTH_TYPE_GMAIL) {
+                                            password = Helper.refreshToken(context, "com.google", user, password);
                                             itransport.connect(host, Integer.parseInt(port), user, password);
                                         } else {
                                             throw ex;
@@ -459,7 +439,6 @@ public class FragmentIdentity extends FragmentEx {
                                 identity.user = user;
                                 identity.password = password;
                                 identity.auth_type = auth_type;
-                                identity.maxtls = maxtls;
                                 identity.synchronize = synchronize;
                                 identity.primary = (identity.synchronize && primary);
                                 identity.store_sent = store_sent;
@@ -577,11 +556,6 @@ public class FragmentIdentity extends FragmentEx {
         outState.putInt("advanced", grpAdvanced.getVisibility());
     }
 
-    /**
-     * Called when the fragment's activity has been created and its view hierarchy instantiated.
-     * Observes database changes and populates UI with identity and account data.
-     * @param savedInstanceState If the fragment is being re-created from a previous saved state, this is the state.
-     */
     @Override
     public void onActivityCreated(@Nullable final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);

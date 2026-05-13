@@ -52,18 +52,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvAccount" />
 
-      <Button
-        android:id="@+id/btnAdvanced"
-        style="@style/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:background="@color/black"
-        android:minWidth="0dp"
-        android:minHeight="0dp"
-        android:text="@string/title_setup_advanced"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/spAccount" />
+        <Button
+            android:id="@+id/btnAdvanced"
+            style="@style/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:text="@string/title_setup_advanced"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/spAccount" />
 
         <!-- email -->
 
@@ -154,18 +153,17 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tvDomain" />
 
-      <Button
-        android:id="@+id/btnAutoConfig"
-        style="@style/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:background="@color/black"
-        android:minWidth="0dp"
-        android:minHeight="0dp"
-        android:text="@string/title_autoconfig"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/etDomain" />
+        <Button
+            android:id="@+id/btnAutoConfig"
+            style="@style/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:minHeight="0dp"
+            android:minWidth="0dp"
+            android:text="@string/title_autoconfig"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/etDomain" />
 
         <TextView
             android:id="@+id/tvSmtp"

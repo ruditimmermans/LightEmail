@@ -91,11 +91,6 @@ import javax.mail.Session;
 import javax.mail.internet.MimeMessage;
 import javax.net.ssl.HttpsURLConnection;
 
-/**
- * Main activity for viewing email messages, folders, and navigating through the app.
- * This activity manages a navigation drawer and handles various view actions like
- * viewing threads, messages, and attachments.
- */
 public class ActivityView extends ActivityBase
     implements FragmentManager.OnBackStackChangedListener {
     private View view;
@@ -131,10 +126,6 @@ public class ActivityView extends ActivityBase
         "https://framagit.org/api/v4/projects/dystopia-project%2Fsimple-email/repository/tags";
     static final long UPDATE_INTERVAL = 12 * 3600 * 1000L; // milliseconds
 
-    /**
-     * Initializes the activity, sets up the UI, navigation drawer, and observes account changes.
-     * @param savedInstanceState If the activity is being re-initialized after previously being shut down then this Bundle contains the data it most recently supplied in onSaveInstanceState.
-     */
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -361,9 +352,6 @@ public class ActivityView extends ActivityBase
         setIntent(intent);
     }
 
-    /**
-     * Registers local broadcast receivers and handles intents when the activity resumes.
-     */
     @Override
     protected void onResume() {
         super.onResume();
@@ -1139,12 +1127,6 @@ public class ActivityView extends ActivityBase
         }.load(ActivityView.this, args);
     }
 
-    /**
-     * Handles results from launched activities, such as file creation or OpenPGP decryption.
-     * @param requestCode The integer request code originally supplied to startActivityForResult(), allowing you to identify who this result came from.
-     * @param resultCode The integer result code returned by the child activity through its setResult().
-     * @param data An Intent, which can return result data to the caller (various data can be attached to Intent "extras").
-     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         Log.i(
