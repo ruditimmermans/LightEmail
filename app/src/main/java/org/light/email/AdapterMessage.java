@@ -1387,47 +1387,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                     .putExtra("from", MessageHelper.getFormattedAddresses(data.message.from, MessageHelper.ADDRESS_FULL)));
         }
 
-        private void onViewRaw(ActionData data) {
-            if (data.message.raw) {
-                LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
-                lbm.sendBroadcast(
-                    new Intent(ActivityView.ACTION_VIEW_FULL)
-                        .putExtra("id", data.message.id)
-                        .putExtra("raw", true)
-                        .putExtra("from", MessageHelper.getFormattedAddresses(data.message.from, MessageHelper.ADDRESS_FULL)));
-            } else {
-                Bundle args = new Bundle();
-                args.putLong("id", data.message.id);
-
-                new SimpleTask<Void>() {
-                    @Override
-                    protected Void onLoad(Context context, Bundle args) {
-                        Long id = args.getLong("id");
-                        DB db = DB.getInstance(context);
-                        EntityMessage message = db.message().getMessage(id);
-                        EntityOperation.queue(db, message, EntityOperation.RAW);
-                        EntityOperation.process(context);
-                        return null;
-                    }
-
-                    @Override
-                    protected void onException(Bundle args, Throwable ex) {
-                        Helper.unexpectedError(context, ex);
-                    }
-                }.load(context, owner, args);
-
-                Toast.makeText(context, R.string.title_queued, Toast.LENGTH_LONG).show();
-            }
-        }
-
-        private void onDecrypt(ActionData data) {
-            LocalBroadcastManager lbm = LocalBroadcastManager.getInstance(context);
-            lbm.sendBroadcast(
-                new Intent(ActivityView.ACTION_DECRYPT)
-                    .putExtra("id", data.message.id)
-                    .putExtra("to", ((InternetAddress) data.message.to[0]).getAddress()));
-        }
-
         private void onMore(final ActionData data) {
             boolean inOutbox = EntityFolder.OUTBOX.equals(data.message.folderType);
             boolean show_details = properties.showDetails(data.message.id);
@@ -1455,12 +1414,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 .findItem(R.id.menu_unseen)
                 .setVisible(data.message.uid != null && !inOutbox);
 
-            popupMenu.getMenu().findItem(R.id.menu_flag).setChecked(data.message.unflagged != 1);
-            popupMenu
-                .getMenu()
-                .findItem(R.id.menu_flag)
-                .setVisible(data.message.uid != null && !inOutbox);
-
             popupMenu.getMenu().findItem(R.id.menu_show_details).setChecked(show_details);
             popupMenu.getMenu().findItem(R.id.menu_show_details).setVisible(data.message.uid != null);
 
@@ -1471,16 +1424,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                 .getMenu()
                 .findItem(R.id.menu_show_html)
                 .setEnabled(data.message.content && Helper.classExists("android.webkit.WebView"));
-
-            popupMenu
-                .getMenu()
-                .findItem(R.id.menu_view_raw)
-                .setEnabled(data.message.uid != null);
-
-            popupMenu
-                .getMenu()
-                .findItem(R.id.menu_decrypt)
-                .setEnabled(data.message.to != null && data.message.to.length > 0);
 
             popupMenu.setOnMenuItemClickListener(
                 new PopupMenu.OnMenuItemClickListener() {
@@ -1502,9 +1445,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                         } else if (itemId == R.id.menu_unseen) {
                             onUnseen(data);
                             return true;
-                        } else if (itemId == R.id.menu_flag) {
-                            onFlag(data);
-                            return true;
                         } else if (itemId == R.id.menu_show_details) {
                             onShowDetails(data);
                             return true;
@@ -1513,12 +1453,6 @@ public class AdapterMessage extends PagedListAdapter<TupleMessageEx, AdapterMess
                             return true;
                         } else if (itemId == R.id.menu_show_html) {
                             onShowHtml(data);
-                            return true;
-                        } else if (itemId == R.id.menu_view_raw) {
-                            onViewRaw(data);
-                            return true;
-                        } else if (itemId == R.id.menu_decrypt) {
-                            onDecrypt(data);
                             return true;
                         } else if (itemId == R.id.menu_delete) {
                             onDelete(data);

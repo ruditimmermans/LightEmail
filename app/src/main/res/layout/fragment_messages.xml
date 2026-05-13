@@ -97,18 +97,20 @@
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSelect" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvFolder"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:scrollbarStyle="outsideOverlay"
-            android:scrollbars="vertical"
-            app:layout_constraintBottom_toTopOf="@+id/vSeparatorBottom"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSelect" />
+      <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvFolder"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scrollbarStyle="outsideOverlay"
+        android:scrollbars="vertical"
+        app:layout_constraintBottom_toTopOf="@+id/vSeparatorBottom"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/vSeparatorHintSelect"
+        app:layout_constraintVertical_bias="0.0" />
 
-        <ProgressBar
+      <ProgressBar
             android:id="@+id/pbWait"
             style="@style/Base.Widget.AppCompat.ProgressBar"
             android:layout_width="@dimen/normal_size"
@@ -156,20 +158,22 @@
             android:layout_height="0dp"
             app:constraint_referenced_ids="rvFolder" />
 
-      </androidx.constraintlayout.widget.ConstraintLayout>
+      <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabMove"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|center_vertical"
+        android:layout_margin="16dp"
+        android:src="@drawable/baseline_folder_24"
+        android:tint="@color/colorActionForeground"
+        app:backgroundTint="@color/black"
+        tools:layout_editor_absoluteX="339dp"
+        tools:layout_editor_absoluteY="598dp" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
   <com.google.android.material.floatingactionbutton.FloatingActionButton
-    android:id="@+id/fabMove"
-    android:layout_width="wrap_content"
-    android:layout_height="wrap_content"
-    android:layout_gravity="end|center_vertical"
-    android:layout_margin="16dp"
-    android:src="@drawable/baseline_folder_24"
-    android:tint="@color/colorActionForeground"
-    app:backgroundTint="@color/black" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

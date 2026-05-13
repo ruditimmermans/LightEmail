@@ -21,11 +21,6 @@
         android:title="@string/title_unseen" />
 
     <item
-        android:id="@+id/menu_flag"
-        android:checkable="true"
-        android:title="@string/title_flag" />
-
-    <item
         android:id="@+id/menu_show_details"
         android:checkable="true"
         android:title="@string/title_show_details" />
@@ -38,14 +33,6 @@
     <item
         android:id="@+id/menu_show_html"
         android:title="@string/title_show_html" />
-
-    <item
-        android:id="@+id/menu_view_raw"
-        android:title="@string/title_view_raw" />
-
-    <item
-        android:id="@+id/menu_decrypt"
-        android:title="@string/title_decrypt" />
 
     <item
         android:id="@+id/menu_delete"
