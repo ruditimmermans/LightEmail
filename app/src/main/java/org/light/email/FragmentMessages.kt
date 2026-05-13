@@ -196,15 +196,16 @@ class FragmentMessages : FragmentEx() {
         binding?.rvFolder?.setAdapter(adapter)
 
         if (viewType == ViewType.FOLDER) {
-            var selectionTracker = SelectionTracker.Builder("messages-selection", binding!!.rvFolder,
+            selectionTracker = SelectionTracker.Builder("messages-selection", binding!!.rvFolder,
                     ItemKeyProviderMessage(binding?.rvFolder), ItemDetailsLookupMessage(binding?.rvFolder),
                     StorageStrategy.createLongStorage())
                     .withSelectionPredicate(SelectionPredicateMessage(binding?.rvFolder)).build()
-            adapter!!.setSelectionTracker(selectionTracker)
-            selectionTracker.addObserver(object : SelectionTracker.SelectionObserver<Long>() {
+            val tracker = selectionTracker!!
+            adapter!!.setSelectionTracker(tracker)
+            tracker.addObserver(object : SelectionTracker.SelectionObserver<Long>() {
                 override fun onSelectionChanged() {
                     binding?.swipeRefresh?.setEnabled(false)
-                    if (selectionTracker.hasSelection()) {
+                    if (tracker.hasSelection()) {
                         binding?.fabMove?.show()
                     } else {
                         binding?.fabMove?.hide()
@@ -247,8 +248,8 @@ class FragmentMessages : FragmentEx() {
                 }
 
                 override fun onLoaded(args: Bundle?, folders: List<EntityFolder?>?) {
-                    if (binding?.popupAnchor == null) return
-                    val popupMenu = PopupMenu(context!!, binding!!.popupAnchor)
+                    if (binding?.fabMove == null) return
+                    val popupMenu = PopupMenu(context!!, binding!!.fabMove)
                     var order = 0
                     for (folder in folders.orEmpty()) {
                         if (folder == null) return
@@ -301,8 +302,9 @@ class FragmentMessages : FragmentEx() {
             }.load(this@FragmentMessages, args)
         })
         (activity as ActivityBase?)!!.addBackPressedListener(IBackPressedListener {
-            if (selectionTracker != null && selectionTracker!!.hasSelection()) {
-                selectionTracker!!.clearSelection()
+            val tracker = selectionTracker
+            if (tracker != null && tracker.hasSelection()) {
+                tracker.clearSelection()
                 return@IBackPressedListener true
             }
             false
@@ -424,7 +426,8 @@ class FragmentMessages : FragmentEx() {
                     }
                     loadMessages()
                 })
-        if (selectionTracker != null && selectionTracker!!.hasSelection()) {
+        val tracker = selectionTracker
+        if (tracker != null && tracker.hasSelection()) {
             binding?.fabMove?.show()
         } else {
             binding?.fabMove?.hide()

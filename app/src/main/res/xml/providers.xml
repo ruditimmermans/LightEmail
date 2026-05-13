@@ -25,7 +25,7 @@
     </provider>
     <!-- needs subscription -->
     <provider
-        name="Mailbox.org"
+        name="Mailbox Mail"
         link="https://kb.mailbox.org/display/BMBOKB/E-Mail-Einrichtung+mit+Mozilla+Thunderbird">
         <imap
             host="imap.mailbox.org"
@@ -37,7 +37,7 @@
     </provider>
     <!-- no IMAP IDLE -->
     <provider
-        name="Yahoo!"
+        name="Yahoo! Mail"
         link="https://github.com/M66B/FairEmail/blob/master/FAQ.md#user-content-faq88">
         <imap
             host="imap.mail.yahoo.com"
@@ -48,7 +48,7 @@
             starttls="false" />
     </provider>
     <provider
-        name="Posteo.de"
+        name="Posteo Mail"
         link="https://posteo.de/en/help/how-do-i-set-up-posteo-in-an-email-client-pop3-imap-and-smtp">
         <imap
             host="posteo.de"
@@ -71,7 +71,7 @@
     </provider>
     <!-- no IMAP IDLE -->
     <provider
-        name="Gmx.com"
+        name="Gmx Mail"
         link="https://support.gmx.com/pop-imap/imap/index.html#breadcrumb_help_pop-imap_imap_server">
         <imap
             host="imap.gmx.com"
@@ -80,50 +80,6 @@
             host="mail.gmx.com"
             port="587"
             starttls="true" />
-    </provider>
-    <provider
-        name="Mail.de"
-        link="https://mail.de/hilfe/pop3-imap-einstellungen">
-        <imap
-            host="imap.mail.de"
-            port="993" />
-        <smtp
-            host="smtp.mail.de"
-            port="465"
-            starttls="false" />
-    </provider>
-    <provider
-        name="Yandex"
-        link="https://yandex.com/support/mail/mail-clients.html#imap">
-        <imap
-            host="imap.yandex.com"
-            port="993" />
-        <smtp
-            host="smtp.yandex.com"
-            port="465"
-            starttls="false" />
-    </provider>
-    <provider
-        name="Telstra"
-        link="https://www.telstra.com.au/support/category/email/set-up/imap-pop-and-smtp-information-for-manual-email-set-up">
-        <imap
-            host="imap.telstra.com"
-            port="993" />
-        <smtp
-            host="smtp.telstra.com"
-            port="465"
-            starttls="false" />
-    </provider>
-    <provider
-        name="T-Online.de"
-        link="https://www.telekom.de/hilfe/festnetz-internet-tv/e-mail/e-mail-server-e-mail-protokolle-und-e-mail-einrichtung/imap/einrichtung-imap">
-        <imap
-            host="secureimap.t-online.de"
-            port="993" />
-        <smtp
-            host="securesmtp.t-online.de"
-            port="465"
-            starttls="false" />
     </provider>
     <provider
       name="Mailfence"

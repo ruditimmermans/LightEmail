@@ -110,15 +110,18 @@ public interface DaoMessage {
             + " WHERE (message.account = f.account OR folder.type = '"
             + EntityFolder.OUTBOX
             + "')"
-            + " AND CASE WHEN (:folderType = '"
-            + EntityFolder.TRASH
-            + "' "
-            + "                 OR :folderType = '"
-            + EntityFolder.OUTBOX
-            + "') "
-            + "        THEN 1"
-            + "        ELSE folder.id = :folderId"
-            + "      END"
+             + " AND CASE WHEN (:folderType = '"
+             + EntityFolder.OUTBOX
+             + "') "
+             + "        THEN 1"
+             + "        WHEN (:folderType = '"
+             + EntityFolder.TRASH
+             + "') "
+             + "        THEN folder.type = '"
+             + EntityFolder.TRASH
+             + "'"
+             + "        ELSE folder.id = :folderId"
+             + "      END"
             + " AND (NOT message.ui_hide OR :debug)"
             + " AND ui_found = :found"
             + " ORDER BY CASE"

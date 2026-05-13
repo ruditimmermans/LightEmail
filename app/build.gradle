@@ -3,7 +3,7 @@ apply plugin: "kotlin-android"
 apply from: "${rootDir}/dirlocal.gradle"
 
 base {
-    archivesName = "LightEmail-v2.1"
+    archivesName = "LightEmail-v2.2"
 }
 
 android {
@@ -23,8 +23,8 @@ android {
         applicationId "org.light.email"
         minSdkVersion 21
         targetSdkVersion 36
-        versionCode 12
-        versionName "2.1"
+        versionCode 13
+        versionName "2.2"
 
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         javaCompileOptions {
