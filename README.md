@@ -30,7 +30,6 @@ notification to make sure you'll never miss a new email.
 * Offline storage and operations
 * Local Adressbook
 * HTML email view
-* RAW email view
 * Battery friendly
 * Low data usage
 * Folder management
