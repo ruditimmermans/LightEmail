@@ -36,7 +36,6 @@ notification to make sure you'll never miss a new email.
 * Signatures
 * Account colors
 * Search on server
-* Encryption/decryption
 * Export settings
 
 ## Screenshots
