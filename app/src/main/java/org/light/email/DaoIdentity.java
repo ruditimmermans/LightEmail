@@ -68,6 +68,9 @@ public interface DaoIdentity {
     @Query("UPDATE identity SET password = :password WHERE id = :id")
     int setIdentityPassword(long id, String password);
 
+    @Query("UPDATE identity SET password = :password, refresh = :refresh, expiry = :expiry WHERE id = :id")
+    int setIdentityTokens(long id, String password, String refresh, Long expiry);
+
     @Query("UPDATE identity SET error = :error WHERE id = :id")
     int setIdentityError(long id, String error);
 

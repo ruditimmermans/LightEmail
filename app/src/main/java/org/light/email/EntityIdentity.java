@@ -65,6 +65,8 @@ public class EntityIdentity {
     public String user;
     @NonNull
     public String password;
+    public String refresh;
+    public Long expiry;
     @NonNull
     public Integer auth_type;
     @NonNull

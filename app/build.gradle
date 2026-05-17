@@ -2,6 +2,12 @@ apply plugin: "com.android.application"
 apply plugin: "kotlin-android"
 apply from: "${rootDir}/dirlocal.gradle"
 
+def secretsFile = file("${rootProject.getRootDir()}/secrets.properties")
+def secrets = new Properties()
+if (secretsFile.exists()) {
+    secrets.load(new FileInputStream(secretsFile))
+}
+
 base {
     archivesName = "LightEmail-v2.2"
 }
@@ -25,6 +31,8 @@ android {
         targetSdkVersion 36
         versionCode 13
         versionName "2.2"
+
+        buildConfigField "String", "OUTLOOK_CLIENT_ID", "\"${secrets.getProperty('outlook_client_id', '')}\""
 
         proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         javaCompileOptions {
@@ -165,6 +173,9 @@ dependencies {
 
     // https://android.googlesource.com/platform/frameworks/opt/colorpicker
     implementation "com.github.QuadFlask:colorpicker:$colorpicker_version"
+
+    // LocalBroadcastManager
+    implementation "androidx.localbroadcastmanager:localbroadcastmanager:1.1.0"
 
     // Kotlin support
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"

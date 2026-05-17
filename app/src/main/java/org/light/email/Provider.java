@@ -105,6 +105,9 @@ public class Provider {
         if ("com.google".equals(type)) {
             return Helper.AUTH_TYPE_GMAIL;
         }
+        if ("com.microsoft.outlook".equals(type)) {
+            return Helper.AUTH_TYPE_OUTLOOK;
+        }
         return Helper.AUTH_TYPE_PASSWORD;
     }
 

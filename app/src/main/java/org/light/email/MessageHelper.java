@@ -174,7 +174,7 @@ public class MessageHelper {
 
         // https://javaee.github.io/javamail/OAuth2
         Log.i(Helper.TAG, "Auth type=" + auth_type);
-        if (auth_type == Helper.AUTH_TYPE_GMAIL) {
+        if (auth_type == Helper.AUTH_TYPE_GMAIL || auth_type == Helper.AUTH_TYPE_OUTLOOK) {
             props.put("mail.imaps.auth.mechanisms", "XOAUTH2");
             props.put("mail.imap.auth.mechanisms", "XOAUTH2");
             props.put("mail.smtps.auth.mechanisms", "XOAUTH2");

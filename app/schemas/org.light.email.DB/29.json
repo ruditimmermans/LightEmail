@@ -1,12 +1,12 @@
 {
   "formatVersion": 1,
   "database": {
-    "version": 28,
-    "identityHash": "37bb6aa278da23bb40d0634ff85a6cc7",
+    "version": 29,
+    "identityHash": "298aec263bdd90e5c14a6ebc79ea9f09",
     "entities": [
       {
         "tableName": "identity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `replyto` TEXT, `account` INTEGER NOT NULL, `host` TEXT NOT NULL, `starttls` INTEGER NOT NULL, `insecure` INTEGER NOT NULL, `port` INTEGER NOT NULL, `user` TEXT NOT NULL, `password` TEXT NOT NULL, `auth_type` INTEGER NOT NULL, `primary` INTEGER NOT NULL, `synchronize` INTEGER NOT NULL, `store_sent` INTEGER NOT NULL, `state` TEXT, `error` TEXT, `signature` TEXT, FOREIGN KEY(`account`) REFERENCES `account`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `replyto` TEXT, `account` INTEGER NOT NULL, `host` TEXT NOT NULL, `starttls` INTEGER NOT NULL, `insecure` INTEGER NOT NULL, `port` INTEGER NOT NULL, `user` TEXT NOT NULL, `password` TEXT NOT NULL, `refresh` TEXT, `expiry` INTEGER, `auth_type` INTEGER NOT NULL, `primary` INTEGER NOT NULL, `synchronize` INTEGER NOT NULL, `store_sent` INTEGER NOT NULL, `state` TEXT, `error` TEXT, `signature` TEXT, FOREIGN KEY(`account`) REFERENCES `account`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
         "fields": [
           {
             "fieldPath": "id",
@@ -73,6 +73,18 @@
             "columnName": "password",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "refresh",
+            "columnName": "refresh",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "expiry",
+            "columnName": "expiry",
+            "affinity": "INTEGER",
+            "notNull": false
           },
           {
             "fieldPath": "auth_type",
@@ -150,7 +162,7 @@
       },
       {
         "tableName": "account",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT, `signature` TEXT, `host` TEXT NOT NULL, `starttls` INTEGER NOT NULL, `insecure` INTEGER NOT NULL, `port` INTEGER NOT NULL, `user` TEXT NOT NULL, `password` TEXT NOT NULL, `auth_type` INTEGER NOT NULL, `synchronize` INTEGER NOT NULL, `primary` INTEGER NOT NULL, `color` INTEGER, `store_sent` INTEGER NOT NULL, `poll_interval` INTEGER NOT NULL, `seen_until` INTEGER, `state` TEXT, `error` TEXT)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `name` TEXT, `signature` TEXT, `host` TEXT NOT NULL, `starttls` INTEGER NOT NULL, `insecure` INTEGER NOT NULL, `port` INTEGER NOT NULL, `user` TEXT NOT NULL, `password` TEXT NOT NULL, `refresh` TEXT, `expiry` INTEGER, `auth_type` INTEGER NOT NULL, `synchronize` INTEGER NOT NULL, `primary` INTEGER NOT NULL, `color` INTEGER, `store_sent` INTEGER NOT NULL, `poll_interval` INTEGER NOT NULL, `seen_until` INTEGER, `state` TEXT, `error` TEXT)",
         "fields": [
           {
             "fieldPath": "id",
@@ -205,6 +217,18 @@
             "columnName": "password",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "refresh",
+            "columnName": "refresh",
+            "affinity": "TEXT",
+            "notNull": false
+          },
+          {
+            "fieldPath": "expiry",
+            "columnName": "expiry",
+            "affinity": "INTEGER",
+            "notNull": false
           },
           {
             "fieldPath": "auth_type",
@@ -1119,7 +1143,7 @@
     "views": [],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '37bb6aa278da23bb40d0634ff85a6cc7')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '298aec263bdd90e5c14a6ebc79ea9f09')"
     ]
   }
 }

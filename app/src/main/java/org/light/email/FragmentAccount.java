@@ -103,9 +103,11 @@ public class FragmentAccount extends FragmentEx {
     private Button btnAutoConfig;
 
     private EditText etHost;
+    private ViewButtonColor btnColor;
+    private LinearLayout llContainerColor;
+    private EditText etPort;
     private CheckBox cbStartTls;
     private CheckBox cbInsecure;
-    private EditText etPort;
     private EditText etUser;
     private TextInputLayout tilPassword;
 
@@ -116,8 +118,7 @@ public class FragmentAccount extends FragmentEx {
     private TextView tvName;
     private EditText etName;
 
-    private ViewButtonColor btnColor;
-    private LinearLayout llContainerColor;
+    private TextView tvColor;
     private EditText etSignature;
 
     private CheckBox cbSynchronize;
@@ -143,12 +144,13 @@ public class FragmentAccount extends FragmentEx {
 
     private Group grpServer;
     private Group grpAuthorize;
+    private Group grpUser;
     private Group grpAdvanced;
     private Group grpFolders;
 
     private long id = -1;
     private int color = Color.TRANSPARENT;
-    private String authorized = null;
+    private boolean authorized_auto_save = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -226,6 +228,7 @@ public class FragmentAccount extends FragmentEx {
 
         grpServer = view.findViewById(R.id.grpServer);
         grpAuthorize = view.findViewById(R.id.grpAuthorize);
+        grpUser = view.findViewById(R.id.grpUser);
         grpAdvanced = view.findViewById(R.id.grpAdvanced);
         grpFolders = view.findViewById(R.id.grpFolders);
 
@@ -239,7 +242,10 @@ public class FragmentAccount extends FragmentEx {
                     grpServer.setVisibility(position == 1 ? View.VISIBLE : View.GONE);
                     cbStartTls.setVisibility(position == 1 && insecure ? View.VISIBLE : View.GONE);
                     cbInsecure.setVisibility(position == 1 && insecure ? View.VISIBLE : View.GONE);
-                    grpAuthorize.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
+
+                    boolean isOutlook = (provider.getAuthType() == Helper.AUTH_TYPE_OUTLOOK);
+                    grpAuthorize.setVisibility(position > 0 && !isOutlook ? View.VISIBLE : View.GONE);
+                    grpUser.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
 
                     // TODO: since December 31, 2019 Gmail retricted the oAuth
                     // gmail scopes and it require privative google play services java libraries
@@ -249,17 +255,21 @@ public class FragmentAccount extends FragmentEx {
                     // maybe with webview and a web library?
                     btnAuthorize.setVisibility(View.GONE);
                     tvGmailNote.setVisibility(View.GONE);
-                    if (provider.type != null) {
+                    if (isOutlook) {
+                        btnAuthorize.setVisibility(View.VISIBLE);
+                        btnAuthorize.setText(R.string.title_login_outlook);
+                    } else if (provider.type != null) {
+                        btnAuthorize.setText(R.string.title_authorize);
                         tvGmailNote.setVisibility(View.VISIBLE);
                         tvGmailNote.setText(Html.fromHtml(getString(R.string.text_gmail_note)));
                     }
 
-                    btnAdvanced.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
+                    btnAdvanced.setVisibility(position > 0 && !isOutlook ? View.VISIBLE : View.GONE);
                     if (position == 0) {
                         grpAdvanced.setVisibility(View.GONE);
                     }
 
-                    btnCheck.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
+                    btnCheck.setVisibility(position > 0 && !isOutlook ? View.VISIBLE : View.GONE);
                     tvIdle.setVisibility(View.GONE);
                     grpFolders.setVisibility(View.GONE);
                     btnSave.setVisibility(View.GONE);
@@ -367,14 +377,25 @@ public class FragmentAccount extends FragmentEx {
             new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    String permission = Manifest.permission.GET_ACCOUNTS;
-                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O
-                        && ContextCompat.checkSelfPermission(getContext(), permission)
-                        != PackageManager.PERMISSION_GRANTED) {
-                        Log.i(Helper.TAG, "Requesting " + permission);
-                        requestPermissions(new String[] {permission}, ActivitySetup.REQUEST_PERMISSION);
+                    Provider provider = (Provider) spProvider.getSelectedItem();
+                    if (provider.getAuthType() == Helper.AUTH_TYPE_OUTLOOK) {
+                        try {
+                            authorized_code_verifier = OutlookOAuthHelper.generateCodeVerifier();
+                            String codeChallenge = OutlookOAuthHelper.generateCodeChallenge(authorized_code_verifier);
+                            Helper.view(getContext(), OutlookOAuthHelper.getAuthUri(codeChallenge));
+                        } catch (Throwable ex) {
+                            Helper.unexpectedError(getContext(), ex);
+                        }
                     } else {
-                        selectAccount();
+                        String permission = Manifest.permission.GET_ACCOUNTS;
+                        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O
+                            && ContextCompat.checkSelfPermission(getContext(), permission)
+                            != PackageManager.PERMISSION_GRANTED) {
+                            Log.i(Helper.TAG, "Requesting " + permission);
+                            requestPermissions(new String[] {permission}, ActivitySetup.REQUEST_PERMISSION);
+                        } else {
+                            selectAccount();
+                        }
                     }
                 }
             });
@@ -464,6 +485,7 @@ public class FragmentAccount extends FragmentEx {
                     args.putString("user", etUser.getText().toString());
                     args.putString("password", tilPassword.getEditText().getText().toString());
                     args.putInt("auth_type", provider.getAuthType());
+                    args.putString("refresh", authorized_refresh);
 
                     new SimpleTask<CheckResult>() {
                         @Override
@@ -476,6 +498,7 @@ public class FragmentAccount extends FragmentEx {
                             String user = args.getString("user");
                             String password = args.getString("password");
                             int auth_type = args.getInt("auth_type");
+                            String refresh = args.getString("refresh");
 
                             if (TextUtils.isEmpty(host)) {
                                 throw new Throwable(getContext().getString(R.string.title_no_host));
@@ -505,6 +528,14 @@ public class FragmentAccount extends FragmentEx {
                                 try {
                                     if (auth_type == Helper.AUTH_TYPE_GMAIL) {
                                         password = Helper.refreshToken(context, "com.google", user, password);
+                                    } else if (auth_type == Helper.AUTH_TYPE_OUTLOOK && refresh != null) {
+                                        OutlookOAuthHelper.TokenResponse response = OutlookOAuthHelper.refreshToken(refresh);
+                                        password = response.accessToken;
+                                        refresh = response.refreshToken;
+                                        long expiry = response.expiry;
+                                        args.putString("password", password);
+                                        args.putString("refresh", refresh);
+                                        args.putLong("expiry", expiry);
                                     }
                                     istore.connect(host, Integer.parseInt(port), user, password);
                                 } catch (AuthenticationFailedException ex) {
@@ -603,6 +634,13 @@ public class FragmentAccount extends FragmentEx {
                             btnCheck.setEnabled(true);
                             pbCheck.setVisibility(View.GONE);
 
+                            if (args.containsKey("password")) {
+                                tilPassword.getEditText().setText(args.getString("password"));
+                                authorized = args.getString("password");
+                                authorized_refresh = args.getString("refresh");
+                                authorized_expiry = args.getLong("expiry");
+                            }
+
                             tvIdle.setVisibility(result.idle ? View.GONE : View.VISIBLE);
 
                             setFolders(result.folders);
@@ -613,6 +651,10 @@ public class FragmentAccount extends FragmentEx {
                                         @Override
                                         public void run() {
                                             ((ScrollView) view).smoothScrollTo(0, btnSave.getBottom());
+                                            if (authorized_auto_save) {
+                                                authorized_auto_save = false;
+                                                btnSave.performClick();
+                                            }
                                         }
                                     });
                         }
@@ -681,6 +723,8 @@ public class FragmentAccount extends FragmentEx {
                     args.putInt(
                         "auth_type",
                         authorized == null ? Helper.AUTH_TYPE_PASSWORD : provider.getAuthType());
+                    args.putString("refresh", authorized_refresh);
+                    args.putLong("expiry", authorized_expiry == null ? 0 : authorized_expiry);
 
                     args.putString("name", etName.getText().toString());
                     args.putInt("color", color);
@@ -706,6 +750,9 @@ public class FragmentAccount extends FragmentEx {
                             String user = args.getString("user");
                             String password = args.getString("password");
                             int auth_type = args.getInt("auth_type");
+                            String refresh = args.getString("refresh");
+                            long expiry_val = args.getLong("expiry");
+                            Long expiry = (expiry_val == 0 ? null : expiry_val);
 
                             String name = args.getString("name");
                             Integer color = args.getInt("color");
@@ -758,6 +805,12 @@ public class FragmentAccount extends FragmentEx {
                                         if (auth_type == Helper.AUTH_TYPE_GMAIL) {
                                             password = Helper.refreshToken(context, "com.google", user, password);
                                             istore.connect(host, Integer.parseInt(port), user, password);
+                                        } else if (auth_type == Helper.AUTH_TYPE_OUTLOOK && refresh != null) {
+                                            OutlookOAuthHelper.TokenResponse response = OutlookOAuthHelper.refreshToken(refresh);
+                                            password = response.accessToken;
+                                            refresh = response.refreshToken;
+                                            expiry = response.expiry;
+                                            istore.connect(host, Integer.parseInt(port), user, password);
                                         } else {
                                             throw ex;
                                         }
@@ -794,6 +847,8 @@ public class FragmentAccount extends FragmentEx {
                                 account.port = Integer.parseInt(port);
                                 account.user = user;
                                 account.password = password;
+                                account.refresh = refresh;
+                                account.expiry = expiry;
                                 account.auth_type = auth_type;
 
                                 account.name = name;
@@ -984,10 +1039,36 @@ public class FragmentAccount extends FragmentEx {
     }
 
     @Override
+    protected void onAuthorized(OutlookOAuthHelper.TokenResponse response) {
+        btnAuthorize.setEnabled(true);
+        tilPassword.getEditText().setText(response.accessToken);
+
+        String email = OutlookOAuthHelper.getEmail(response.idToken);
+        if (email != null) {
+            etUser.setText(email);
+            if (TextUtils.isEmpty(etName.getText())) {
+                etName.setText(email);
+            }
+        }
+
+        Snackbar.make(view, R.string.title_authorized, Snackbar.LENGTH_SHORT).show();
+
+        // Automatically trigger check
+        if (!TextUtils.isEmpty(etUser.getText())) {
+            btnCheck.performClick();
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("provider", spProvider.getSelectedItemPosition());
         outState.putString("authorized", authorized);
+        outState.putString("authorized_refresh", authorized_refresh);
+        if (authorized_expiry != null) {
+            outState.putLong("authorized_expiry", authorized_expiry);
+        }
+        outState.putString("authorized_code_verifier", authorized_code_verifier);
         outState.putString("password", tilPassword.getEditText().getText().toString());
         outState.putInt("advanced", grpAdvanced.getVisibility());
         outState.putInt("color", color);
@@ -996,6 +1077,10 @@ public class FragmentAccount extends FragmentEx {
     @Override
     public void onActivityCreated(@Nullable final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            authorized_code_verifier = savedInstanceState.getString("authorized_code_verifier");
+        }
 
         final DB db = DB.getInstance(getContext());
 
@@ -1049,6 +1134,9 @@ public class FragmentAccount extends FragmentEx {
                                 (account != null && account.auth_type != Helper.AUTH_TYPE_PASSWORD
                                     ? account.password
                                     : null);
+                            authorized_refresh = (account != null ? account.refresh : null);
+                            authorized_expiry = (account != null ? account.expiry : null);
+
                             etUser.setText(account == null ? null : account.user);
                             tilPassword.getEditText().setText(account == null ? null : account.password);
 
@@ -1086,6 +1174,10 @@ public class FragmentAccount extends FragmentEx {
                             spProvider.setSelection(provider);
 
                             authorized = savedInstanceState.getString("authorized");
+                            authorized_refresh = savedInstanceState.getString("authorized_refresh");
+                            if (savedInstanceState.containsKey("authorized_expiry")) {
+                                authorized_expiry = savedInstanceState.getLong("authorized_expiry");
+                            }
                             tilPassword.getEditText().setText(savedInstanceState.getString("password"));
                             grpAdvanced.setVisibility(savedInstanceState.getInt("advanced"));
                             color = savedInstanceState.getInt("color");

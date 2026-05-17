@@ -37,6 +37,7 @@ internal class ActivitySetup : ActivityBase(), FragmentManager.OnBackStackChange
         const val REQUEST_IMPORT = 4
         const val ACTION_EDIT_ACCOUNT = BuildConfig.APPLICATION_ID + ".EDIT_ACCOUNT"
         const val ACTION_EDIT_IDENTITY = BuildConfig.APPLICATION_ID + ".EDIT_IDENTITY"
+        const val ACTION_OAUTH_RESULT = BuildConfig.APPLICATION_ID + ".OAUTH_RESULT"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -54,12 +55,36 @@ internal class ActivitySetup : ActivityBase(), FragmentManager.OnBackStackChange
             fragmentTransaction.commit()
         }
 
+        processIntent(intent)
+
         DB.getInstance(this)
             .account()
             .liveAccounts(true)
             .observe(
                 this
             ) { accounts -> hasAccount = accounts != null && accounts.size > 0 }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        processIntent(intent)
+    }
+
+    private fun processIntent(intent: Intent?) {
+        if (intent != null && intent.data != null) {
+            val uri = intent.data
+            if ("lightemail" == uri!!.scheme && "outlook-auth" == uri.host) {
+                val code = uri.getQueryParameter("code")
+                val error = uri.getQueryParameter("error")
+                val result = Intent(ACTION_OAUTH_RESULT)
+                if (code != null) {
+                    result.putExtra("code", code)
+                } else if (error != null) {
+                    result.putExtra("error", error)
+                }
+                LocalBroadcastManager.getInstance(this).sendBroadcast(result)
+            }
+        }
     }
 
     override fun onResume() {

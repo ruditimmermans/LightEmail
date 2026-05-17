@@ -79,8 +79,11 @@ public class FragmentIdentity extends FragmentEx {
     private CheckBox cbStartTls;
     private CheckBox cbInsecure;
     private EditText etPort;
+    private TextView tvUser;
     private EditText etUser;
+    private TextView tvPassword;
     private TextInputLayout tilPassword;
+    private Button btnAuthorize;
     private CheckBox cbSynchronize;
     private CheckBox cbPrimary;
     private CheckBox cbStoreSent;
@@ -133,7 +136,9 @@ public class FragmentIdentity extends FragmentEx {
         cbStartTls = view.findViewById(R.id.cbStartTls);
         cbInsecure = view.findViewById(R.id.cbInsecure);
         etPort = view.findViewById(R.id.etPort);
+        tvUser = view.findViewById(R.id.tvUser);
         etUser = view.findViewById(R.id.etUser);
+        tvPassword = view.findViewById(R.id.tvPassword);
         tilPassword = view.findViewById(R.id.tilPassword);
 
         cbSynchronize = view.findViewById(R.id.cbSynchronize);
@@ -147,13 +152,14 @@ public class FragmentIdentity extends FragmentEx {
         pbWait = view.findViewById(R.id.pbWait);
         grpAdvanced = view.findViewById(R.id.grpAdvanced);
 
+        btnAuthorize = view.findViewById(R.id.btnAuthorize);
+
         // Wire controls
 
         spAccount.setOnItemSelectedListener(
             new AdapterView.OnItemSelectedListener() {
                 @Override
                 public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-                    btnAdvanced.setVisibility(position > 0 ? View.VISIBLE : View.GONE);
                     if (position == 0) {
                         grpAdvanced.setVisibility(View.GONE);
                     }
@@ -167,6 +173,8 @@ public class FragmentIdentity extends FragmentEx {
                     adapterView.setTag(position);
 
                     EntityAccount account = (EntityAccount) adapterView.getAdapter().getItem(position);
+                    boolean isOutlook = (account.auth_type == Helper.AUTH_TYPE_OUTLOOK);
+                    btnAdvanced.setVisibility(position > 0 && !isOutlook ? View.VISIBLE : View.GONE);
 
                     // Select associated provider
                     if (position == 0) {
@@ -197,14 +205,35 @@ public class FragmentIdentity extends FragmentEx {
                     etEmail.setText(account.user);
                     etUser.setText(account.user);
 
-                    // Copy account password
+                    // Copy account password and tokens
                     tilPassword.getEditText().setText(account.password);
+                    authorized = account.password;
+                    authorized_refresh = account.refresh;
+                    authorized_expiry = account.expiry;
+
+                    tvUser.setVisibility(isOutlook ? View.GONE : View.VISIBLE);
+                    etUser.setVisibility(isOutlook ? View.GONE : View.VISIBLE);
+                    tvPassword.setVisibility(isOutlook ? View.GONE : View.VISIBLE);
+                    tilPassword.setVisibility(isOutlook ? View.GONE : View.VISIBLE);
                 }
 
                 @Override
                 public void onNothingSelected(AdapterView<?> adapterView) {
                 }
             });
+
+        btnAuthorize.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                try {
+                    authorized_code_verifier = OutlookOAuthHelper.generateCodeVerifier();
+                    String codeChallenge = OutlookOAuthHelper.generateCodeChallenge(authorized_code_verifier);
+                    Helper.view(getContext(), OutlookOAuthHelper.getAuthUri(codeChallenge));
+                } catch (Throwable ex) {
+                    Helper.unexpectedError(getContext(), ex);
+                }
+            }
+        });
 
         spProvider.setOnItemSelectedListener(
             new AdapterView.OnItemSelectedListener() {
@@ -344,6 +373,8 @@ public class FragmentIdentity extends FragmentEx {
                     args.putString("port", etPort.getText().toString());
                     args.putString("user", etUser.getText().toString());
                     args.putString("password", tilPassword.getEditText().getText().toString());
+                    args.putString("refresh", authorized_refresh);
+                    args.putLong("expiry", authorized_expiry == null ? 0 : authorized_expiry);
                     args.putBoolean("synchronize", cbSynchronize.isChecked());
                     args.putBoolean("primary", cbPrimary.isChecked());
                     args.putBoolean("store_sent", cbStoreSent.isChecked());
@@ -363,6 +394,9 @@ public class FragmentIdentity extends FragmentEx {
                             String port = args.getString("port");
                             String user = args.getString("user");
                             String password = args.getString("password");
+                            String refresh = args.getString("refresh");
+                            long expiry_val = args.getLong("expiry");
+                            Long expiry = (expiry_val == 0 ? null : expiry_val);
                             String signature = args.getString("signature");
                             int auth_type = args.getInt("auth_type");
                             boolean synchronize = args.getBoolean("synchronize");
@@ -410,6 +444,12 @@ public class FragmentIdentity extends FragmentEx {
                                         if (auth_type == Helper.AUTH_TYPE_GMAIL) {
                                             password = Helper.refreshToken(context, "com.google", user, password);
                                             itransport.connect(host, Integer.parseInt(port), user, password);
+                                        } else if (auth_type == Helper.AUTH_TYPE_OUTLOOK && refresh != null) {
+                                            OutlookOAuthHelper.TokenResponse response = OutlookOAuthHelper.refreshToken(refresh);
+                                            password = response.accessToken;
+                                            refresh = response.refreshToken;
+                                            expiry = response.expiry;
+                                            itransport.connect(host, Integer.parseInt(port), user, password);
                                         } else {
                                             throw ex;
                                         }
@@ -438,6 +478,8 @@ public class FragmentIdentity extends FragmentEx {
                                 identity.port = Integer.parseInt(port);
                                 identity.user = user;
                                 identity.password = password;
+                                identity.refresh = refresh;
+                                identity.expiry = expiry;
                                 identity.auth_type = auth_type;
                                 identity.synchronize = synchronize;
                                 identity.primary = (identity.synchronize && primary);
@@ -547,11 +589,38 @@ public class FragmentIdentity extends FragmentEx {
     }
 
     @Override
+    protected void onAuthorized(OutlookOAuthHelper.TokenResponse response) {
+        btnAuthorize.setEnabled(true);
+        tilPassword.getEditText().setText(response.accessToken);
+
+        String email = OutlookOAuthHelper.getEmail(response.idToken);
+        if (email != null) {
+            etEmail.setText(email);
+            etUser.setText(email);
+            if (TextUtils.isEmpty(etName.getText())) {
+                etName.setText(email);
+            }
+        }
+
+        Snackbar.make(view, R.string.title_authorized, Snackbar.LENGTH_SHORT).show();
+
+        // Automatically trigger save
+        if (!TextUtils.isEmpty(etUser.getText())) {
+            btnSave.performClick();
+        }
+    }
+
+    @Override
     public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putInt("account", spAccount.getSelectedItemPosition());
         outState.putInt("provider", spProvider.getSelectedItemPosition());
         outState.putString("password", tilPassword.getEditText().getText().toString());
+        outState.putString("authorized_refresh", authorized_refresh);
+        if (authorized_expiry != null) {
+            outState.putLong("authorized_expiry", authorized_expiry);
+        }
+        outState.putString("authorized_code_verifier", authorized_code_verifier);
         outState.putString("signature", Html.toHtml(etSignature.getText()));
         outState.putInt("advanced", grpAdvanced.getVisibility());
     }
@@ -559,6 +628,10 @@ public class FragmentIdentity extends FragmentEx {
     @Override
     public void onActivityCreated(@Nullable final Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+
+        if (savedInstanceState != null) {
+            authorized_code_verifier = savedInstanceState.getString("authorized_code_verifier");
+        }
 
         final DB db = DB.getInstance(getContext());
 
@@ -586,6 +659,8 @@ public class FragmentIdentity extends FragmentEx {
                             etPort.setText(identity == null ? null : Long.toString(identity.port));
                             etUser.setText(identity == null ? null : identity.user);
                             tilPassword.getEditText().setText(identity == null ? null : identity.password);
+                            authorized_refresh = (identity == null ? null : identity.refresh);
+                            authorized_expiry = (identity == null ? null : identity.expiry);
                             cbSynchronize.setChecked(identity == null ? true : identity.synchronize);
                             cbPrimary.setChecked(identity == null ? true : identity.primary);
                             cbStoreSent.setChecked(identity == null ? false : identity.store_sent);
@@ -611,6 +686,11 @@ public class FragmentIdentity extends FragmentEx {
                             }
                         } else {
                             tilPassword.getEditText().setText(savedInstanceState.getString("password"));
+                            authorized_refresh = savedInstanceState.getString("authorized_refresh");
+                            if (savedInstanceState.containsKey("authorized_expiry")) {
+                                authorized_expiry = savedInstanceState.getLong("authorized_expiry");
+                            }
+                            authorized_code_verifier = savedInstanceState.getString("authorized_code_verifier");
                             etSignature.setText(Html.fromHtml(savedInstanceState.getString("signature")));
                             grpAdvanced.setVisibility(savedInstanceState.getInt("advanced"));
                         }
@@ -686,6 +766,9 @@ public class FragmentIdentity extends FragmentEx {
                                                     if (pos > 0
                                                         && accounts.get(pos).auth_type != Helper.AUTH_TYPE_PASSWORD) {
                                                         tilPassword.getEditText().setText(accounts.get(pos).password);
+                                                        authorized = accounts.get(pos).password;
+                                                        authorized_refresh = accounts.get(pos).refresh;
+                                                        authorized_expiry = accounts.get(pos).expiry;
                                                     }
                                                     break;
                                                 }

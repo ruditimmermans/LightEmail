@@ -86,6 +86,9 @@ public interface DaoAccount {
     @Query("UPDATE account SET password = :password WHERE id = :id")
     int setAccountPassword(long id, String password);
 
+    @Query("UPDATE account SET password = :password, refresh = :refresh, expiry = :expiry WHERE id = :id")
+    int setAccountTokens(long id, String password, String refresh, Long expiry);
+
     @Query("UPDATE account SET error = :error WHERE id = :id")
     int setAccountError(long id, String error);
 

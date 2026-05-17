@@ -159,18 +159,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvPort" />
 
-    <Button
-        android:id="@+id/btnAuthorize"
-        style="@style/buttonStyleSmall"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="@dimen/margin_md"
-        android:minWidth="0dp"
-        android:minHeight="0dp"
-        android:text="@string/title_authorize"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/etPort" />
-
     <TextView
         android:id="@+id/tvGmailNote"
         android:layout_width="wrap_content"
@@ -184,6 +172,16 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/etPort" />
 
+    <Button
+      android:id="@+id/btnAuthorize"
+      android:layout_width="0dp"
+      android:layout_height="wrap_content"
+      android:text="@string/title_authorize"
+      android:layout_marginBottom="@dimen/margin_lg"
+      app:layout_constraintEnd_toEndOf="parent"
+      app:layout_constraintStart_toStartOf="parent"
+      app:layout_constraintTop_toBottomOf="@id/tvGmailNote" />
+
     <!-- user -->
 
     <TextView
@@ -194,7 +192,7 @@
         android:text="@string/title_user"
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvGmailNote" />
+        app:layout_constraintTop_toBottomOf="@id/btnAuthorize" />
 
     <EditText
         android:id="@+id/etUser"
@@ -545,10 +543,16 @@
         app:constraint_referenced_ids="tvDomain,etDomain,btnAutoConfig,tvImap,tvPop,tvInsecure,tvHost,etHost,tvPort,etPort" />
 
     <androidx.constraintlayout.widget.Group
+        android:id="@+id/grpUser"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:constraint_referenced_ids="tvUser,etUser" />
+
+    <androidx.constraintlayout.widget.Group
         android:id="@+id/grpAuthorize"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        app:constraint_referenced_ids="tvUser,etUser,tvPassword,tilPassword" />
+        app:constraint_referenced_ids="tvPassword,tilPassword" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/grpAdvanced"

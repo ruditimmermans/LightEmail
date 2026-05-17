@@ -1524,6 +1524,9 @@ public class ServiceSynchronize extends LifecycleService {
             // Connect transport
             db.identity().setIdentityState(ident.id, "connecting");
             try {
+                if (ident.auth_type == Helper.AUTH_TYPE_OUTLOOK && ident.expiry != null && System.currentTimeMillis() > ident.expiry) {
+                    throw new AuthenticationFailedException("Token expired");
+                }
                 itransport.connect(ident.host, ident.port, ident.user, ident.password);
             } catch (AuthenticationFailedException ex) {
                 if (ident.auth_type == Helper.AUTH_TYPE_GMAIL) {
@@ -1531,6 +1534,18 @@ public class ServiceSynchronize extends LifecycleService {
                     ident.password = Helper.refreshToken(this, "com.google", ident.user, account.password);
                     DB.getInstance(this).identity().setIdentityPassword(ident.id, ident.password);
                     itransport.connect(ident.host, ident.port, ident.user, ident.password);
+                } else if (ident.auth_type == Helper.AUTH_TYPE_OUTLOOK && ident.refresh != null) {
+                    try {
+                        OutlookOAuthHelper.TokenResponse response = OutlookOAuthHelper.refreshToken(ident.refresh);
+                        ident.password = response.accessToken;
+                        ident.refresh = response.refreshToken;
+                        ident.expiry = response.expiry;
+                        DB.getInstance(this).identity().setIdentityTokens(ident.id, ident.password, ident.refresh, ident.expiry);
+                        itransport.connect(ident.host, ident.port, ident.user, ident.password);
+                    } catch (Throwable t) {
+                        Log.e(Helper.TAG, t + "\n" + Log.getStackTraceString(t));
+                        throw ex;
+                    }
                 } else {
                     throw ex;
                 }

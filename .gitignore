@@ -42,6 +42,9 @@ proguard/
 # Log Files
 *.log
 
+# Secrets
+secrets.properties
+
 # IDE and OS files
 .idea/
 *.iml

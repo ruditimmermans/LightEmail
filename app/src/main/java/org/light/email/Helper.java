@@ -23,14 +23,12 @@ package org.light.email;
 import android.accounts.Account;
 import android.accounts.AccountManager;
 import android.app.Notification;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.res.TypedArray;
-import android.database.Cursor;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -83,6 +81,7 @@ public class Helper {
 
     static final int AUTH_TYPE_PASSWORD = 1;
     static final int AUTH_TYPE_GMAIL = 2;
+    static final int AUTH_TYPE_OUTLOOK = 3;
 
     static ThreadFactory backgroundThreadFactory =
         new ThreadFactory() {
@@ -270,6 +269,9 @@ public class Helper {
     static void connect(Context context, IMAPStore istore, EntityAccount account)
         throws MessagingException {
         try {
+            if (account.auth_type == Helper.AUTH_TYPE_OUTLOOK && account.expiry != null && System.currentTimeMillis() > account.expiry) {
+                throw new AuthenticationFailedException("Token expired");
+            }
             istore.connect(account.host, account.port, account.user, account.password);
         } catch (AuthenticationFailedException ex) {
             if (account.auth_type == Helper.AUTH_TYPE_GMAIL) {
@@ -277,6 +279,18 @@ public class Helper {
                     Helper.refreshToken(context, "com.google", account.user, account.password);
                 DB.getInstance(context).account().setAccountPassword(account.id, account.password);
                 istore.connect(account.host, account.port, account.user, account.password);
+            } else if (account.auth_type == Helper.AUTH_TYPE_OUTLOOK && account.refresh != null) {
+                try {
+                    OutlookOAuthHelper.TokenResponse response = OutlookOAuthHelper.refreshToken(account.refresh);
+                    account.password = response.accessToken;
+                    account.refresh = response.refreshToken;
+                    account.expiry = response.expiry;
+                    DB.getInstance(context).account().setAccountTokens(account.id, account.password, account.refresh, account.expiry);
+                    istore.connect(account.host, account.port, account.user, account.password);
+                } catch (Throwable t) {
+                    Log.e(Helper.TAG, t + "\n" + Log.getStackTraceString(t));
+                    throw ex;
+                }
             } else {
                 throw ex;
             }
