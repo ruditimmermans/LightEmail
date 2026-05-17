@@ -12,16 +12,32 @@
       android:layout_height="wrap_content"
       android:padding="12dp">
 
+    <!-- Outlook warning -->
+
+    <TextView
+        android:id="@+id/tvOutlookWarning"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:background="@color/red"
+        android:padding="8dp"
+        android:text="@string/title_outlook_warning"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <!-- provider -->
 
     <TextView
         android:id="@+id/tvProvider"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
         android:text="@string/title_provider"
         android:textAppearance="@style/TextAppearance.AppCompat.Small"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/tvOutlookWarning" />
 
     <Spinner
         android:id="@+id/spProvider"

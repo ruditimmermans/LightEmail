@@ -281,4 +281,5 @@
     <string name="message_gmail_note">Since January 2020, Gmail restricted the OAuth scopes, and now requires authorization to authenticate, we are looking for the best way to fix OAuth authentication without private libraries.&lt;br/&gt;&lt;br/&gt; As a temporary solution you need to allow normal authentication or what Google calls &lt;i&gt;\"less secure apps\"&lt;/i&gt;.&lt;br/&gt;&lt;br/&gt;&lt;b&gt;Instructions here:&lt;/b&gt; https://support.google.com/accounts/answer/6010255&lt;br/&gt;</string>
     <string name="title_attachment_downloading">Downloading attachment: %1$s</string>
     <string name="title_no_subject">No subject</string>
+    <string name="title_outlook_warning">Attention: LightEmail does not support Outlook due to Microsoft\'s switch to OAuth.</string>
 </resources>

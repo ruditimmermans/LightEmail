@@ -271,4 +271,5 @@
     <string name="title_attachment_downloading">Downloading attachment: %1$s</string>
     <string name="title_message_text_size">Grootte van berichttekst</string>
     <string name="title_no_subject">Geen onderwerp</string>
+    <string name="title_outlook_warning">Let op: LightEmail biedt geen ondersteuning voor Outlook vanwege de overstap van Microsoft naar OAuth.</string>
 </resources>
