@@ -8,7 +8,14 @@ import javax.mail.internet.MimeMultipart
 import javax.mail.search.FlagTerm
 
 class ImapManager {
-    fun fetchEmails(email: String, password: String, host: String): List<EmailMessage> {
+    fun fetchEmails(
+        email: String,
+        password: String,
+        host: String,
+        noSubjectString: String = "(No Subject)",
+        unknownSenderString: String = "Unknown",
+        errorReadingContentString: String = "Error reading content"
+    ): List<EmailMessage> {
         val properties = Properties()
         properties["mail.store.protocol"] = "imaps"
         properties["mail.imaps.host"] = host
@@ -27,9 +34,9 @@ class ImapManager {
             val result = messages.takeLast(20).reversed().map { msg ->
                 EmailMessage(
                     id = msg.messageNumber.toString(),
-                    subject = msg.subject ?: "(No Subject)",
-                    sender = msg.from?.firstOrNull()?.toString() ?: "Unknown",
-                    content = getTextFromMessage(msg),
+                    subject = msg.subject ?: noSubjectString,
+                    sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
+                    content = getTextFromMessage(msg, errorReadingContentString),
                     date = msg.sentDate?.toString() ?: ""
                 )
             }
@@ -43,7 +50,7 @@ class ImapManager {
         }
     }
 
-    private fun getTextFromMessage(message: Message): String {
+    private fun getTextFromMessage(message: Message, errorReadingContentString: String): String {
         return try {
             if (message.isMimeType("text/plain")) {
                 message.content.toString()
@@ -54,7 +61,7 @@ class ImapManager {
                 message.content.toString()
             }
         } catch (e: Exception) {
-            "Error reading content"
+            errorReadingContentString
         }
     }
 
@@ -79,7 +86,9 @@ class ImapManager {
         smtpHost: String,
         originalMessage: EmailMessage,
         replyContent: String,
-        signature: String
+        signature: String,
+        subjectPrefix: String = "Re: ",
+        attributionFormat: String = "\n\nOn %s, %s wrote:\n> "
     ): Boolean {
         val properties = Properties()
         properties["mail.smtp.auth"] = "true"
@@ -97,9 +106,10 @@ class ImapManager {
             val message = MimeMessage(session)
             message.setFrom(InternetAddress(email))
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(originalMessage.sender))
-            message.subject = "Re: ${originalMessage.subject}"
+            message.subject = "$subjectPrefix${originalMessage.subject}"
             
-            val fullBody = "$replyContent\n\n--\n$signature\n\nOn ${originalMessage.date}, ${originalMessage.sender} wrote:\n> ${originalMessage.content.replace("\n", "\n> ")}"
+            val attribution = String.format(attributionFormat, originalMessage.date, originalMessage.sender)
+            val fullBody = "$replyContent\n\n--\n$signature$attribution${originalMessage.content.replace("\n", "\n> ")}"
             message.setText(fullBody)
 
             Transport.send(message)

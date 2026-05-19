@@ -5,21 +5,28 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.light.lightemail.R
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.ui.viewmodel.EmailViewModel
 
@@ -28,18 +35,18 @@ import com.light.lightemail.ui.viewmodel.EmailViewModel
 fun MainScreen(viewModel: EmailViewModel = viewModel()) {
     val context = LocalContext.current
     var currentScreen by remember { mutableStateOf("home") }
-    var textSize by remember { mutableFloatStateOf(16f) }
-    var signature by remember { mutableStateOf("Sent from Light Email") }
     var selectedEmail by remember { mutableStateOf<EmailMessage?>(null) }
     
     val emails by viewModel.emails.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
+    val textSize by viewModel.textSize.collectAsState()
+    val signature by viewModel.signature.collectAsState()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("LIGHT EMAIL", fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
+                title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground
@@ -50,14 +57,14 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                             if (currentScreen == "reply") currentScreen = "view_email"
                             else currentScreen = "home"
                         }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                         }
                     }
                 },
                 actions = {
                     if (currentScreen == "home" && accountEmail.isNotEmpty()) {
                         IconButton(onClick = { viewModel.refreshEmails() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
                         }
                     }
                 }
@@ -67,8 +74,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
             if (currentScreen == "home") {
                 BottomBar(
                     onAboutClick = { currentScreen = "about" },
-                    onSettingsClick = { currentScreen = "settings" },
-                    onAddAccountClick = { currentScreen = "add_account" }
+                    onSettingsClick = { currentScreen = "settings" }
                 )
             }
         }
@@ -81,18 +87,8 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                 }
                 "about" -> AboutScreen { currentScreen = "home" }
                 "settings" -> SettingsScreen(
-                    textSize = textSize,
-                    onTextSizeChange = { textSize = it },
-                    signature = signature,
-                    onSignatureChange = { signature = it },
+                    viewModel = viewModel,
                     onBack = { currentScreen = "home" }
-                )
-                "add_account" -> AddAccountScreen(
-                    onAccountAdded = { email, password, host ->
-                        viewModel.setAccount(email, password, host)
-                        currentScreen = "home"
-                    },
-                    onCancel = { currentScreen = "home" }
                 )
                 "view_email" -> selectedEmail?.let {
                     EmailDetailScreen(it, textSize) {
@@ -100,13 +96,15 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                     }
                 }
                 "reply" -> selectedEmail?.let {
+                    val replySentText = stringResource(R.string.reply_sent)
+                    val failedReplyText = stringResource(R.string.failed_to_send_reply)
                     ReplyScreen(it, signature, onSend = { reply ->
                         viewModel.sendReply(it, reply, signature) { success ->
                             if (success) {
-                                Toast.makeText(context, "Reply sent", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, replySentText, Toast.LENGTH_SHORT).show()
                                 currentScreen = "home"
                             } else {
-                                Toast.makeText(context, "Failed to send reply", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, failedReplyText, Toast.LENGTH_SHORT).show()
                             }
                         }
                     }, onCancel = { currentScreen = "view_email" })
@@ -117,21 +115,18 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
 }
 
 @Composable
-fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit, onAddAccountClick: () -> Unit) {
+fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
         horizontalArrangement = Arrangement.SpaceAround
     ) {
-        IconButton(onClick = onAddAccountClick) {
-            Icon(Icons.Default.Add, contentDescription = "Add Account")
-        }
         IconButton(onClick = onSettingsClick) {
-            Icon(Icons.Default.Settings, contentDescription = "Settings")
+            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
         }
         IconButton(onClick = onAboutClick) {
-            Icon(Icons.Default.Info, contentDescription = "About")
+            Icon(Icons.Default.Info, contentDescription = stringResource(R.string.about))
         }
     }
 }
@@ -144,7 +139,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
         }
     } else if (emails.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No emails. Add an account or refresh.", fontSize = textSize.sp)
+            Text(stringResource(R.string.no_emails), fontSize = textSize.sp)
         }
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
@@ -176,38 +171,93 @@ fun AboutScreen(onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("LIGHT EMAIL", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, fontSize = 24.sp)
         Spacer(modifier = Modifier.height(16.dp))
-        Text("A minimalist mail application.")
+        Text(stringResource(R.string.app_description))
         Spacer(modifier = Modifier.height(32.dp))
-        Text("Copyright 2026 By Rudi Timmermans", fontSize = 14.sp)
+        Text(stringResource(R.string.copyright), fontSize = 14.sp)
         Spacer(modifier = Modifier.height(48.dp))
         Button(
             onClick = onBack,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
         ) {
-            Text("Back")
+            Text(stringResource(R.string.back))
         }
     }
 }
 
 @Composable
-fun SettingsScreen(textSize: Float, onTextSizeChange: (Float) -> Unit, signature: String, onSignatureChange: (String) -> Unit, onBack: () -> Unit) {
+fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
+    val currentEmail by viewModel.accountEmail.collectAsState()
+    val currentPassword by viewModel.accountPassword.collectAsState()
+    val currentHost by viewModel.imapHost.collectAsState()
+    val currentTextSize by viewModel.textSize.collectAsState()
+    val currentSignature by viewModel.signature.collectAsState()
+
+    var email by remember { mutableStateOf(currentEmail) }
+    var password by remember { mutableStateOf(currentPassword) }
+    var host by remember { mutableStateOf(currentHost) }
+    var textSize by remember { mutableFloatStateOf(currentTextSize) }
+    var signature by remember { mutableStateOf(currentSignature) }
+    var passwordVisible by remember { mutableStateOf(false) }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp)
+            .verticalScroll(rememberScrollState())
     ) {
-        Text("SETTINGS", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(32.dp))
-        Text("Text Size: ${textSize.toInt()}sp")
+        Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // IMAP Settings
+        Text(stringResource(R.string.add_imap_account_title), fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = email,
+            onValueChange = { email = it },
+            label = { Text(stringResource(R.string.email_label)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text(stringResource(R.string.password_label)) },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible)
+                    Icons.Default.Visibility
+                else Icons.Default.VisibilityOff
+
+                val description = if (passwordVisible) stringResource(R.string.hide_password) else stringResource(R.string.show_password)
+
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(imageVector = image, contentDescription = description)
+                }
+            }
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = host,
+            onValueChange = { host = it },
+            label = { Text(stringResource(R.string.imap_server_label)) },
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Appearance Settings
+        Text(stringResource(R.string.text_size_label, textSize.toInt()), fontWeight = FontWeight.Bold)
         Slider(
             value = textSize,
-            onValueChange = onTextSizeChange,
+            onValueChange = { textSize = it },
             valueRange = 12f..24f,
             steps = 5,
             colors = SliderDefaults.colors(
@@ -215,21 +265,34 @@ fun SettingsScreen(textSize: Float, onTextSizeChange: (Float) -> Unit, signature
                 activeTrackColor = MaterialTheme.colorScheme.onBackground
             )
         )
-        Spacer(modifier = Modifier.height(24.dp))
-        Text("Email Signature", fontWeight = FontWeight.Bold)
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.email_signature_title), fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
             value = signature,
-            onValueChange = onSignatureChange,
+            onValueChange = { signature = it },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("Signature") }
+            label = { Text(stringResource(R.string.signature_label)) }
         )
+
         Spacer(modifier = Modifier.height(32.dp))
-        Button(
-            onClick = onBack,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
-        ) {
-            Text("Back")
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Button(
+                onClick = onBack,
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground)
+            ) {
+                Text(stringResource(R.string.back))
+            }
+            Button(
+                onClick = {
+                    viewModel.saveSettings(email, password, host, textSize, signature)
+                    onBack()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
+            ) {
+                Text(stringResource(R.string.save))
+            }
         }
     }
 }
@@ -241,20 +304,27 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit)
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(text = email.subject, fontSize = (textSize * 1.2f).sp, fontWeight = FontWeight.Bold)
-        Text(text = "From: ${email.sender}", fontSize = (textSize * 0.9f).sp)
-        Text(text = "Date: ${email.date}", fontSize = (textSize * 0.8f).sp)
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(text = email.content, fontSize = textSize.sp, modifier = Modifier.weight(1f))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(text = email.subject, fontSize = (textSize * 1.2f).sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp)
+            Text(text = stringResource(R.string.date_label, email.date), fontSize = (textSize * 0.8f).sp)
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(text = email.content, fontSize = textSize.sp)
+        }
 
+        Spacer(modifier = Modifier.height(16.dp))
         Button(
             onClick = onReply,
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
         ) {
-            Text("Reply")
+            Text(stringResource(R.string.reply))
         }
     }
 }
@@ -268,80 +338,38 @@ fun ReplyScreen(email: EmailMessage, signature: String, onSend: (String) -> Unit
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(text = "Replying to: ${email.sender}", fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = replyText,
-            onValueChange = { replyText = it },
-            modifier = Modifier.fillMaxWidth().weight(1f),
-            label = { Text("Your Message") }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text("Signature: $signature", fontSize = 12.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f))
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(text = stringResource(R.string.replying_to, email.sender), fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(16.dp))
+            OutlinedTextField(
+                value = replyText,
+                onValueChange = { replyText = it },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 5,
+                label = { Text(stringResource(R.string.your_message_label)) }
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                stringResource(R.string.signature_preview, signature),
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
+            )
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Button(onClick = onCancel) {
-                Text("Cancel")
+                Text(stringResource(R.string.cancel))
             }
             Button(
                 onClick = { onSend(replyText) },
                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
             ) {
-                Text("Send")
-            }
-        }
-    }
-}
-
-@Composable
-fun AddAccountScreen(onAccountAdded: (String, String, String) -> Unit, onCancel: () -> Unit) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var server by remember { mutableStateOf("imap.gmail.com") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        Text("ADD IMAP ACCOUNT", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Email") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Password") },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        OutlinedTextField(
-            value = server,
-            onValueChange = { server = it },
-            label = { Text("IMAP Server") },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Button(
-                onClick = onCancel,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground)
-            ) {
-                Text("Cancel")
-            }
-            Button(
-                onClick = { onAccountAdded(email, password, server) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
-            ) {
-                Text("Add")
+                Text(stringResource(R.string.send))
             }
         }
     }
