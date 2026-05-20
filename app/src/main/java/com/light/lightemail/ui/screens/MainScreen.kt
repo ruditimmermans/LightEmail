@@ -1,7 +1,13 @@
 package com.light.lightemail.ui.screens
 
+import android.view.View
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -9,105 +15,159 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.light.lightemail.R
+import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.ui.viewmodel.EmailViewModel
+import kotlinx.coroutines.launch
+
+enum class Screen {
+    Home, Settings, About, ViewEmail, Compose, AddressBook
+}
+
+enum class ComposeMode {
+    New, Reply, Forward
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(viewModel: EmailViewModel = viewModel()) {
     val context = LocalContext.current
-    var currentScreen by remember { mutableStateOf("home") }
+    var currentScreen by remember { mutableStateOf(Screen.Home) }
     var selectedEmail by remember { mutableStateOf<EmailMessage?>(null) }
+    var composeMode by remember { mutableStateOf(ComposeMode.New) }
     
     val emails by viewModel.emails.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
     val textSize by viewModel.textSize.collectAsState()
     val signature by viewModel.signature.collectAsState()
+    val folders by viewModel.folders.collectAsState()
+    val currentFolder by viewModel.currentFolder.collectAsState()
 
-    Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
-                    titleContentColor = MaterialTheme.colorScheme.onBackground
-                ),
-                navigationIcon = {
-                    if (currentScreen != "home") {
-                        IconButton(onClick = {
-                            if (currentScreen == "reply") currentScreen = "view_email"
-                            else currentScreen = "home"
-                        }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
-                        }
-                    }
-                },
-                actions = {
-                    if (currentScreen == "home" && accountEmail.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.refreshEmails() }) {
-                            Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
-                        }
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                Text(stringResource(R.string.folders), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                HorizontalDivider()
+                LazyColumn {
+                    items(folders) { folder ->
+                        NavigationDrawerItem(
+                            label = { Text(folder) },
+                            selected = folder == currentFolder,
+                            onClick = {
+                                viewModel.selectFolder(folder)
+                                scope.launch { drawerState.close() }
+                            },
+                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                        )
                     }
                 }
-            )
-        },
-        bottomBar = {
-            if (currentScreen == "home") {
-                BottomBar(
-                    onAboutClick = { currentScreen = "about" },
-                    onSettingsClick = { currentScreen = "settings" }
-                )
             }
-        }
-    ) { padding ->
-        Box(modifier = Modifier.padding(padding)) {
-            when (currentScreen) {
-                "home" -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
-                    selectedEmail = emailMsg
-                    currentScreen = "view_email"
-                }
-                "about" -> AboutScreen { currentScreen = "home" }
-                "settings" -> SettingsScreen(
-                    viewModel = viewModel,
-                    onBack = { currentScreen = "home" }
-                )
-                "view_email" -> selectedEmail?.let {
-                    EmailDetailScreen(it, textSize) {
-                        currentScreen = "reply"
-                    }
-                }
-                "reply" -> selectedEmail?.let {
-                    val replySentText = stringResource(R.string.reply_sent)
-                    val failedReplyText = stringResource(R.string.failed_to_send_reply)
-                    ReplyScreen(it, signature, onSend = { reply ->
-                        viewModel.sendReply(it, reply, signature) { success ->
-                            if (success) {
-                                Toast.makeText(context, replySentText, Toast.LENGTH_SHORT).show()
-                                currentScreen = "home"
-                            } else {
-                                Toast.makeText(context, failedReplyText, Toast.LENGTH_SHORT).show()
+        },
+        gesturesEnabled = currentScreen == Screen.Home
+    ) {
+        Scaffold(
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
+                    navigationIcon = {
+                        if (currentScreen != Screen.Home) {
+                            IconButton(onClick = { currentScreen = Screen.Home }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                            }
+                        } else {
+                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                Icon(Icons.Default.Menu, contentDescription = "Menu")
                             }
                         }
-                    }, onCancel = { currentScreen = "view_email" })
+                    },
+                    actions = {
+                        if (currentScreen == Screen.Home && accountEmail.isNotEmpty()) {
+                            IconButton(onClick = { viewModel.refreshEmails() }) {
+                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
+                            }
+                        }
+                    }
+                )
+            },
+            floatingActionButton = {
+                if (currentScreen == Screen.Home) {
+                    FloatingActionButton(onClick = {
+                        selectedEmail = null
+                        composeMode = ComposeMode.New
+                        currentScreen = Screen.Compose
+                    }) {
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose))
+                    }
+                }
+            },
+            bottomBar = {
+                if (currentScreen == Screen.Home) {
+                    BottomBar(
+                        onAboutClick = { currentScreen = Screen.About },
+                        onSettingsClick = { currentScreen = Screen.Settings },
+                        onAddressBookClick = { currentScreen = Screen.AddressBook }
+                    )
+                }
+            }
+        ) { padding ->
+            Box(modifier = Modifier.padding(padding)) {
+                when (currentScreen) {
+                    Screen.Home -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
+                        selectedEmail = emailMsg
+                        currentScreen = Screen.ViewEmail
+                    }
+                    Screen.About -> AboutScreen { currentScreen = Screen.Home }
+                    Screen.Settings -> SettingsScreen(viewModel = viewModel, onBack = { currentScreen = Screen.Home })
+                    Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
+                    Screen.ViewEmail -> selectedEmail?.let { email ->
+                        EmailDetailScreen(
+                            email = email,
+                            textSize = textSize,
+                            onReply = {
+                                composeMode = ComposeMode.Reply
+                                currentScreen = Screen.Compose
+                            },
+                            onForward = {
+                                composeMode = ComposeMode.Forward
+                                currentScreen = Screen.Compose
+                            },
+                            onDelete = {
+                                viewModel.deleteEmail(email)
+                                currentScreen = Screen.Home
+                            }
+                        )
+                    }
+                    Screen.Compose -> ComposeEmailScreen(
+                        viewModel = viewModel,
+                        mode = composeMode,
+                        originalEmail = selectedEmail,
+                        textSize = textSize,
+                        onFinished = { currentScreen = Screen.Home }
+                    )
                 }
             }
         }
@@ -115,7 +175,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
 }
 
 @Composable
-fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit) {
+fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit, onAddressBookClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -124,6 +184,9 @@ fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit) {
     ) {
         IconButton(onClick = onSettingsClick) {
             Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
+        }
+        IconButton(onClick = onAddressBookClick) {
+            Icon(Icons.Default.Contacts, contentDescription = stringResource(R.string.address_book))
         }
         IconButton(onClick = onAboutClick) {
             Icon(Icons.Default.Info, contentDescription = stringResource(R.string.about))
@@ -135,7 +198,7 @@ fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit) {
 fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
     if (isLoading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.onBackground)
+            CircularProgressIndicator()
         }
     } else if (emails.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -150,15 +213,8 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                         .clickable { onEmailClick(email) }
                         .padding(16.dp)
                 ) {
-                    Text(
-                        text = email.sender,
-                        fontSize = (textSize * 0.8f).sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = email.subject,
-                        fontSize = textSize.sp
-                    )
+                    Text(text = email.sender, fontSize = (textSize * 0.8f).sp, fontWeight = FontWeight.Bold)
+                    Text(text = email.subject, fontSize = textSize.sp)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
             }
@@ -167,7 +223,361 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
 }
 
 @Composable
+fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit) {
+    val isDark = isSystemInDarkTheme()
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = email.subject, fontSize = (textSize * 1.2f).sp, fontWeight = FontWeight.Bold)
+            Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp)
+            Text(text = stringResource(R.string.date_label, email.date), fontSize = (textSize * 0.8f).sp)
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            if (email.htmlContent != null) {
+                HtmlView(html = email.htmlContent, isDark = isDark, textSize = textSize)
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.secure_text_email),
+                        color = Color.Green,
+                        fontSize = (textSize * 0.7f).sp,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Text(
+                        text = email.content,
+                        fontSize = textSize.sp,
+                        color = Color.White,
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    )
+                }
+            }
+        }
+
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Button(onClick = onReply) { Text(stringResource(R.string.reply)) }
+            Button(onClick = onForward) { Text(stringResource(R.string.forward)) }
+            Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { 
+                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.onError) 
+            }
+        }
+    }
+}
+
+@Composable
+fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
+    // Force black background for HTML emails as requested by user
+    val backgroundColor = "#000000"
+    val textColor = "#FFFFFF"
+    val styledHtml = """
+        <html>
+        <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        html, body { 
+            background-color: $backgroundColor !important; 
+            color: $textColor !important; 
+            font-family: sans-serif !important;
+            font-size: ${textSize}px !important;
+            line-height: 1.5 !important;
+            margin: 0;
+            padding: 12px;
+        }
+        /* Force all elements to inherit font size and color from body, and have transparent background */
+        * { 
+            font-size: inherit !important; 
+            background-color: transparent !important; 
+            color: inherit !important;
+        }
+        /* Except for links which should have their own color */
+        a { color: #BB86FC !important; text-decoration: underline; }
+        img { max-width: 100%; height: auto; }
+        </style>
+        </head>
+        <body>$html</body>
+        </html>
+    """.trimIndent()
+
+    var webViewError by remember { mutableStateOf(false) }
+
+    if (webViewError) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(8.dp)
+                .verticalScroll(rememberScrollState())
+        ) {
+            Text(
+                text = stringResource(R.string.secure_text_email),
+                color = Color.Green,
+                fontSize = (textSize * 0.7f).sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
+            Text(
+                text = html,
+                color = Color.White,
+                fontSize = textSize.sp
+            )
+        }
+    } else {
+        AndroidView(
+            factory = { context ->
+                try {
+                    WebView(context).apply {
+                        webViewClient = WebViewClient()
+                        settings.javaScriptEnabled = false
+                        // Disable overview mode and wide viewport to respect the font size
+                        settings.loadWithOverviewMode = false
+                        settings.useWideViewPort = false
+                        settings.textZoom = 100
+                        setBackgroundColor(android.graphics.Color.BLACK)
+                    }
+                } catch (e: Exception) {
+                    webViewError = true
+                    View(context)
+                }
+            },
+            update = { webView ->
+                if (webView is WebView) {
+                    webView.loadDataWithBaseURL(null, styledHtml, "text/html", "utf-8", null)
+                }
+            },
+            modifier = Modifier.fillMaxSize().background(Color.Black)
+        )
+    }
+}
+
+@Composable
+fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEmail: EmailMessage?, textSize: Float, onFinished: () -> Unit) {
+    val context = LocalContext.current
+    val accountEmail by viewModel.accountEmail.collectAsState()
+    val signature by viewModel.signature.collectAsState()
+    val contacts by viewModel.contacts.collectAsState(initial = emptyList())
+
+    val replyPrefix = stringResource(R.string.reply_subject_prefix, originalEmail?.subject ?: "")
+    val forwardPrefix = stringResource(R.string.forward_subject_prefix, originalEmail?.subject ?: "")
+
+    var to by remember { mutableStateOf(
+        when(mode) {
+            ComposeMode.New, ComposeMode.Forward -> ""
+            ComposeMode.Reply -> originalEmail?.sender ?: ""
+        }
+    ) }
+    var subject by remember { mutableStateOf(
+        when(mode) {
+            ComposeMode.Reply -> replyPrefix
+            ComposeMode.Forward -> forwardPrefix
+            ComposeMode.New -> ""
+        }
+    ) }
+    var content by remember { mutableStateOf("") }
+    var showContactPicker by remember { mutableStateOf(false) }
+
+    if (showContactPicker) {
+        AlertDialog(
+            onDismissRequest = { showContactPicker = false },
+            title = { Text(stringResource(R.string.select_contact)) },
+            text = {
+                LazyColumn {
+                    items(contacts) { contact ->
+                        Text(
+                            text = "${contact.name} <${contact.email}>",
+                            modifier = Modifier.fillMaxWidth().clickable {
+                                to = contact.email
+                                showContactPicker = false
+                            }.padding(8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showContactPicker = false }) { Text(stringResource(R.string.cancel)) } }
+        )
+    }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+        Text(text = stringResource(R.string.from_label, accountEmail), fontSize = (textSize * 0.8f).sp, modifier = Modifier.padding(bottom = 8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = to, 
+                onValueChange = { to = it }, 
+                label = { Text(stringResource(R.string.to_label)) }, 
+                modifier = Modifier.weight(1f),
+                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+            )
+            IconButton(onClick = { showContactPicker = true }) { Icon(Icons.Default.Person, contentDescription = null) }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = subject, 
+            onValueChange = { subject = it }, 
+            label = { Text(stringResource(R.string.subject_label)) }, 
+            modifier = Modifier.fillMaxWidth(),
+            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        OutlinedTextField(
+            value = content, 
+            onValueChange = { content = it }, 
+            label = { Text(stringResource(R.string.your_message_label)) }, 
+            modifier = Modifier.fillMaxWidth(), 
+            minLines = 10,
+            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(16.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Button(onClick = onFinished) { Text(stringResource(R.string.cancel)) }
+            Button(onClick = {
+                val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
+                    "$content\n\n--\n$signature\n\n--- Original Message ---\n${originalEmail.content}"
+                } else {
+                    "$content\n\n--\n$signature"
+                }
+                viewModel.sendEmail(to, subject, fullBody) { success ->
+                    if (success) {
+                        Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                        onFinished()
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }) { Text(stringResource(R.string.send)) }
+        }
+    }
+}
+
+@Composable
+fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
+    val contacts by viewModel.contacts.collectAsState(initial = emptyList())
+    var name by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+        Text(stringResource(R.string.add_contact), fontWeight = FontWeight.Bold, fontSize = textSize.sp)
+        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.name_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
+        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
+        Button(onClick = {
+            if (name.isNotEmpty() && email.isNotEmpty()) {
+                viewModel.addContact(name, email)
+                name = ""
+                email = ""
+            }
+        }, modifier = Modifier.align(Alignment.End).padding(top = 8.dp)) { Text(stringResource(R.string.add), fontSize = textSize.sp) }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        LazyColumn(modifier = Modifier.weight(1f)) {
+            items(contacts) { contact ->
+                Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    Column {
+                        Text(contact.name, fontWeight = FontWeight.Bold, fontSize = textSize.sp)
+                        Text(contact.email, fontSize = (textSize * 0.8f).sp)
+                    }
+                    IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = null) }
+                }
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+            }
+        }
+    }
+}
+
+@Composable
+fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
+    val emailVal by viewModel.accountEmail.collectAsState()
+    val passwordVal by viewModel.accountPassword.collectAsState()
+    val imapHostVal by viewModel.imapHost.collectAsState()
+    val smtpHostVal by viewModel.smtpHost.collectAsState()
+    val smtpPortVal by viewModel.smtpPort.collectAsState()
+    val senderNameVal by viewModel.senderName.collectAsState()
+    val syncIntervalVal by viewModel.syncInterval.collectAsState()
+    val textSizeVal by viewModel.textSize.collectAsState()
+    val signatureVal by viewModel.signature.collectAsState()
+
+    var email by remember { mutableStateOf(emailVal) }
+    var password by remember { mutableStateOf(passwordVal) }
+    var imapHost by remember { mutableStateOf(imapHostVal) }
+    var smtpHost by remember { mutableStateOf(smtpHostVal) }
+    var smtpPort by remember { mutableStateOf(smtpPortVal) }
+    var senderName by remember { mutableStateOf(senderNameVal) }
+    var syncInterval by remember { mutableIntStateOf(syncIntervalVal) }
+    var textSize by remember { mutableFloatStateOf(textSizeVal) }
+    var signature by remember { mutableStateOf(signatureVal) }
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
+        Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text(stringResource(R.string.add_imap_account_title), fontWeight = FontWeight.Bold)
+        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = password, onValueChange = { password = it },
+            label = { Text(stringResource(R.string.password_label)) },
+            modifier = Modifier.fillMaxWidth(),
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                }
+            }
+        )
+        OutlinedTextField(value = imapHost, onValueChange = { imapHost = it }, label = { Text(stringResource(R.string.imap_server_label)) }, modifier = Modifier.fillMaxWidth())
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.add_smtp_account_title), fontWeight = FontWeight.Bold)
+        OutlinedTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = { Text(stringResource(R.string.smtp_server_label)) }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = { Text(stringResource(R.string.smtp_port_label)) }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = senderName, onValueChange = { senderName = it }, label = { Text(stringResource(R.string.sender_name_label)) }, modifier = Modifier.fillMaxWidth())
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.sync_interval_label), fontWeight = FontWeight.Bold)
+        Row {
+            listOf(3, 5, 15).forEach { min ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(8.dp)) {
+                    RadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
+                    Text("$min min")
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.text_size_label, textSize.toInt()), fontWeight = FontWeight.Bold)
+        Slider(value = textSize, onValueChange = { textSize = it }, valueRange = 12f..24f, steps = 5)
+
+        Text(stringResource(R.string.email_signature_title), fontWeight = FontWeight.Bold)
+        OutlinedTextField(value = signature, onValueChange = { signature = it }, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.signature_label)) })
+
+        Spacer(modifier = Modifier.height(32.dp))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Button(onClick = onBack) { Text(stringResource(R.string.back)) }
+            Button(onClick = {
+                viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, textSize, signature)
+                onBack()
+            }) { Text(stringResource(R.string.save)) }
+        }
+    }
+}
+
+@Composable
 fun AboutScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val versionName = try {
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName
+    } catch (e: Exception) {
+        "1.0"
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -176,201 +586,26 @@ fun AboutScreen(onBack: () -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Icon(
+            imageVector = Icons.Default.Info,
+            contentDescription = null,
+            modifier = Modifier.size(100.dp),
+            tint = MaterialTheme.colorScheme.primary
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.app_description))
+        Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Text(stringResource(R.string.version_label, versionName ?: "1.0"), fontSize = 14.sp)
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(
+            text = stringResource(R.string.app_description),
+            textAlign = TextAlign.Center,
+            fontSize = 12.sp
+        )
         Spacer(modifier = Modifier.height(32.dp))
         Text(stringResource(R.string.copyright), fontSize = 14.sp)
         Spacer(modifier = Modifier.height(48.dp))
-        Button(
-            onClick = onBack,
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
-        ) {
+        Button(onClick = onBack) {
             Text(stringResource(R.string.back))
-        }
-    }
-}
-
-@Composable
-fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
-    val currentEmail by viewModel.accountEmail.collectAsState()
-    val currentPassword by viewModel.accountPassword.collectAsState()
-    val currentHost by viewModel.imapHost.collectAsState()
-    val currentTextSize by viewModel.textSize.collectAsState()
-    val currentSignature by viewModel.signature.collectAsState()
-
-    var email by remember { mutableStateOf(currentEmail) }
-    var password by remember { mutableStateOf(currentPassword) }
-    var host by remember { mutableStateOf(currentHost) }
-    var textSize by remember { mutableFloatStateOf(currentTextSize) }
-    var signature by remember { mutableStateOf(currentSignature) }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState())
-    ) {
-        Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // IMAP Settings
-        Text(stringResource(R.string.add_imap_account_title), fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text(stringResource(R.string.email_label)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(stringResource(R.string.password_label)) },
-            modifier = Modifier.fillMaxWidth(),
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible)
-                    Icons.Default.Visibility
-                else Icons.Default.VisibilityOff
-
-                val description = if (passwordVisible) stringResource(R.string.hide_password) else stringResource(R.string.show_password)
-
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(imageVector = image, contentDescription = description)
-                }
-            }
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = host,
-            onValueChange = { host = it },
-            label = { Text(stringResource(R.string.imap_server_label)) },
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Appearance Settings
-        Text(stringResource(R.string.text_size_label, textSize.toInt()), fontWeight = FontWeight.Bold)
-        Slider(
-            value = textSize,
-            onValueChange = { textSize = it },
-            valueRange = 12f..24f,
-            steps = 5,
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.onBackground,
-                activeTrackColor = MaterialTheme.colorScheme.onBackground
-            )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.email_signature_title), fontWeight = FontWeight.Bold)
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = signature,
-            onValueChange = { signature = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text(stringResource(R.string.signature_label)) }
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Button(
-                onClick = onBack,
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.background, contentColor = MaterialTheme.colorScheme.onBackground)
-            ) {
-                Text(stringResource(R.string.back))
-            }
-            Button(
-                onClick = {
-                    viewModel.saveSettings(email, password, host, textSize, signature)
-                    onBack()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
-            ) {
-                Text(stringResource(R.string.save))
-            }
-        }
-    }
-}
-
-@Composable
-fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(text = email.subject, fontSize = (textSize * 1.2f).sp, fontWeight = FontWeight.Bold)
-            Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp)
-            Text(text = stringResource(R.string.date_label, email.date), fontSize = (textSize * 0.8f).sp)
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(text = email.content, fontSize = textSize.sp)
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(
-            onClick = onReply,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
-        ) {
-            Text(stringResource(R.string.reply))
-        }
-    }
-}
-
-@Composable
-fun ReplyScreen(email: EmailMessage, signature: String, onSend: (String) -> Unit, onCancel: () -> Unit) {
-    var replyText by remember { mutableStateOf("") }
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .verticalScroll(rememberScrollState())
-        ) {
-            Text(text = stringResource(R.string.replying_to, email.sender), fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.height(16.dp))
-            OutlinedTextField(
-                value = replyText,
-                onValueChange = { replyText = it },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 5,
-                label = { Text(stringResource(R.string.your_message_label)) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                stringResource(R.string.signature_preview, signature),
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Button(onClick = onCancel) {
-                Text(stringResource(R.string.cancel))
-            }
-            Button(
-                onClick = { onSend(replyText) },
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.onBackground, contentColor = MaterialTheme.colorScheme.background)
-            ) {
-                Text(stringResource(R.string.send))
-            }
         }
     }
 }

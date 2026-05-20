@@ -1,9 +1,10 @@
 val appVersionName = "1.0"
 
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
-    id("org.jetbrains.kotlin.plugin.compose")
+    alias(libs.plugins.androidApp)
+    alias(libs.plugins.kotlinAndroid)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.ksp)
 }
 
 base {
@@ -65,6 +66,11 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.navigation.compose)
     
     implementation(libs.android.mail)
     implementation(libs.android.activation)

@@ -1,5 +1,6 @@
 package com.light.lightemail.data
 
+import com.sun.mail.imap.IMAPFolder
 import java.util.Properties
 import javax.mail.*
 import javax.mail.internet.InternetAddress
@@ -12,6 +13,8 @@ class ImapManager {
         email: String,
         password: String,
         host: String,
+        folderName: String = "INBOX",
+        limit: Int = 20,
         noSubjectString: String = "(No Subject)",
         unknownSenderString: String = "Unknown",
         errorReadingContentString: String = "Error reading content"
@@ -23,25 +26,29 @@ class ImapManager {
         properties["mail.imaps.ssl.enable"] = "true"
 
         return try {
-            val session = Session.getDefaultInstance(properties, null)
+            val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val inbox = store.getFolder("INBOX")
-            inbox.open(Folder.READ_ONLY)
+            val folder = store.getFolder(folderName)
+            folder.open(Folder.READ_ONLY)
 
-            val messages = inbox.messages
-            val result = messages.takeLast(20).reversed().map { msg ->
+            val messages = folder.messages
+            val result = messages.takeLast(limit).reversed().map { msg ->
+                val (text, html) = getContent(msg, errorReadingContentString)
                 EmailMessage(
                     id = msg.messageNumber.toString(),
+                    uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
                     subject = msg.subject ?: noSubjectString,
                     sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
-                    content = getTextFromMessage(msg, errorReadingContentString),
-                    date = msg.sentDate?.toString() ?: ""
+                    content = text,
+                    htmlContent = html,
+                    date = msg.sentDate?.toString() ?: "",
+                    folder = folderName
                 )
             }
 
-            inbox.close(false)
+            folder.close(false)
             store.close()
             result
         } catch (e: Exception) {
@@ -50,51 +57,101 @@ class ImapManager {
         }
     }
 
-    private fun getTextFromMessage(message: Message, errorReadingContentString: String): String {
+    private fun getContent(message: Message, errorReadingContentString: String): Pair<String, String?> {
         return try {
-            if (message.isMimeType("text/plain")) {
-                message.content.toString()
-            } else if (message.isMimeType("multipart/*")) {
-                val mimeMultipart = message.content as MimeMultipart
-                getTextFromMimeMultipart(mimeMultipart)
-            } else {
-                message.content.toString()
-            }
+            val textBuilder = StringBuilder()
+            val htmlBuilder = StringBuilder()
+            extractContent(message, textBuilder, htmlBuilder)
+            
+            val text = textBuilder.toString().ifEmpty { errorReadingContentString }
+            val html = htmlBuilder.toString().ifEmpty { null }
+            Pair(text, html)
         } catch (e: Exception) {
-            errorReadingContentString
+            Pair(errorReadingContentString, null)
         }
     }
 
-    private fun getTextFromMimeMultipart(mimeMultipart: MimeMultipart): String {
-        val result = StringBuilder()
-        for (i in 0 until mimeMultipart.count) {
-            val bodyPart = mimeMultipart.getBodyPart(i)
-            if (bodyPart.isMimeType("text/plain")) {
-                result.append(bodyPart.content)
-            } else if (bodyPart.isMimeType("text/html")) {
-                // For simplicity, we just take the plain text or ignore HTML
-            } else if (bodyPart.content is MimeMultipart) {
-                result.append(getTextFromMimeMultipart(bodyPart.content as MimeMultipart))
+    private fun extractContent(part: Part, text: StringBuilder, html: StringBuilder) {
+        if (part.isMimeType("text/plain")) {
+            text.append(part.content.toString())
+        } else if (part.isMimeType("text/html")) {
+            html.append(part.content.toString())
+        } else if (part.isMimeType("multipart/*")) {
+            val multiPart = part.content as MimeMultipart
+            for (i in 0 until multiPart.count) {
+                extractContent(multiPart.getBodyPart(i), text, html)
             }
         }
-        return result.toString()
     }
 
-    fun sendReply(
+    fun fetchFolders(email: String, password: String, host: String): List<String> {
+        val properties = Properties()
+        properties["mail.store.protocol"] = "imaps"
+        properties["mail.imaps.host"] = host
+        properties["mail.imaps.port"] = "993"
+        properties["mail.imaps.ssl.enable"] = "true"
+
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+            val folders = store.defaultFolder.list("*").map { it.fullName }
+            store.close()
+            folders
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    fun deleteEmail(email: String, password: String, host: String, folderName: String, messageId: Int): Boolean {
+        val properties = Properties()
+        properties["mail.store.protocol"] = "imaps"
+        properties["mail.imaps.host"] = host
+        properties["mail.imaps.port"] = "993"
+        properties["mail.imaps.ssl.enable"] = "true"
+
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+            val folder = store.getFolder(folderName)
+            folder.open(Folder.READ_WRITE)
+            val message = folder.getMessage(messageId)
+            message.setFlag(Flags.Flag.DELETED, true)
+            folder.close(true)
+            store.close()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun sendEmail(
         email: String,
         password: String,
         smtpHost: String,
-        originalMessage: EmailMessage,
-        replyContent: String,
-        signature: String,
-        subjectPrefix: String = "Re: ",
-        attributionFormat: String = "\n\nOn %s, %s wrote:\n> "
+        smtpPort: String,
+        senderName: String,
+        to: String,
+        subject: String,
+        content: String,
+        isHtml: Boolean = false
     ): Boolean {
         val properties = Properties()
         properties["mail.smtp.auth"] = "true"
-        properties["mail.smtp.starttls.enable"] = "true"
         properties["mail.smtp.host"] = smtpHost
-        properties["mail.smtp.port"] = "587"
+        properties["mail.smtp.port"] = smtpPort
+
+        if (smtpPort == "465") {
+            properties["mail.smtp.socketFactory.port"] = smtpPort
+            properties["mail.smtp.socketFactory.class"] = "javax.net.ssl.SSLSocketFactory"
+            properties["mail.smtp.socketFactory.fallback"] = "false"
+            properties["mail.smtp.ssl.enable"] = "true"
+        } else {
+            properties["mail.smtp.starttls.enable"] = "true"
+        }
 
         val session = Session.getInstance(properties, object : Authenticator() {
             override fun getPasswordAuthentication(): PasswordAuthentication {
@@ -104,14 +161,14 @@ class ImapManager {
 
         return try {
             val message = MimeMessage(session)
-            message.setFrom(InternetAddress(email))
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(originalMessage.sender))
-            message.subject = "$subjectPrefix${originalMessage.subject}"
-            
-            val attribution = String.format(attributionFormat, originalMessage.date, originalMessage.sender)
-            val fullBody = "$replyContent\n\n--\n$signature$attribution${originalMessage.content.replace("\n", "\n> ")}"
-            message.setText(fullBody)
-
+            message.setFrom(InternetAddress(email, senderName))
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to))
+            message.subject = subject
+            if (isHtml) {
+                message.setContent(content, "text/html; charset=utf-8")
+            } else {
+                message.setText(content)
+            }
             Transport.send(message)
             true
         } catch (e: Exception) {
