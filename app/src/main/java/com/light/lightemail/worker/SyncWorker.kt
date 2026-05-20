@@ -2,10 +2,13 @@ package com.light.lightemail.worker
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
+import com.light.lightemail.MainActivity
 import com.light.lightemail.R
 import com.light.lightemail.data.ImapManager
 
@@ -34,7 +37,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             
             if (latestEmail.uid > lastSeenUid) {
                 showNotification(latestEmail.sender, latestEmail.subject)
-                prefs.edit().putLong("last_seen_uid", latestEmail.uid).apply()
+                // Use commit() instead of apply() to ensure UID is saved immediately in the worker
+                prefs.edit().putLong("last_seen_uid", latestEmail.uid).commit()
             }
         }
 
@@ -48,11 +52,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val channel = NotificationChannel(channelId, "New Emails", NotificationManager.IMPORTANCE_DEFAULT)
         notificationManager.createNotificationChannel(channel)
 
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            applicationContext, 
+            0, 
+            intent, 
+            PendingIntent.FLAG_IMMUTABLE
+        )
+
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_email)
             .setContentTitle("New Email from $sender")
             .setContentText(subject)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 

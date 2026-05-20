@@ -165,6 +165,16 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             _emails.value = fetchedEmails
+            
+            // Update last seen UID to avoid duplicate notifications for emails already seen in app
+            if (folder == "INBOX" && fetchedEmails.isNotEmpty()) {
+                val latestUid = fetchedEmails.first().uid
+                val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                if (latestUid > lastSeenUid) {
+                    prefs.edit().putLong("last_seen_uid", latestUid).apply()
+                }
+            }
+
             _isLoading.value = false
         }
     }
