@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -28,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -486,7 +488,8 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
             onValueChange = { subject = it }, 
             label = { Text(stringResource(R.string.subject_label)) }, 
             modifier = Modifier.fillMaxWidth(),
-            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
         Spacer(modifier = Modifier.height(8.dp))
         OutlinedTextField(
@@ -495,7 +498,8 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
             label = { Text(stringResource(R.string.your_message_label)) }, 
             modifier = Modifier.fillMaxWidth(), 
             minLines = 10,
-            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
@@ -534,7 +538,14 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
             fontWeight = FontWeight.Bold,
             fontSize = textSize.sp
         )
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.name_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
+        OutlinedTextField(
+            value = name, 
+            onValueChange = { name = it }, 
+            label = { Text(stringResource(R.string.name_label)) }, 
+            modifier = Modifier.fillMaxWidth(), 
+            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+        )
         OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
         
         Row(modifier = Modifier.align(Alignment.End).padding(top = 8.dp)) {
@@ -634,7 +645,13 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         Text(stringResource(R.string.add_smtp_account_title), fontWeight = FontWeight.Bold)
         OutlinedTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = { Text(stringResource(R.string.smtp_server_label)) }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = { Text(stringResource(R.string.smtp_port_label)) }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = senderName, onValueChange = { senderName = it }, label = { Text(stringResource(R.string.sender_name_label)) }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = senderName, 
+            onValueChange = { senderName = it }, 
+            label = { Text(stringResource(R.string.sender_name_label)) }, 
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+        )
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.sync_interval_label), fontWeight = FontWeight.Bold)
@@ -652,7 +669,13 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         Slider(value = textSize, onValueChange = { textSize = it }, valueRange = 12f..24f, steps = 5)
 
         Text(stringResource(R.string.email_signature_title), fontWeight = FontWeight.Bold)
-        OutlinedTextField(value = signature, onValueChange = { signature = it }, modifier = Modifier.fillMaxWidth(), label = { Text(stringResource(R.string.signature_label)) })
+        OutlinedTextField(
+            value = signature, 
+            onValueChange = { signature = it }, 
+            modifier = Modifier.fillMaxWidth(), 
+            label = { Text(stringResource(R.string.signature_label)) },
+            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+        )
 
         Spacer(modifier = Modifier.height(32.dp))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
