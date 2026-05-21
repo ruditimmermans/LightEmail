@@ -15,7 +15,7 @@
     <string name="app_description">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.</string>
     <string name="version_label">Version: %1$s</string>
     <string name="copyright">Copyright Ⓒ 2026-2027 By Rudi Timmermans</string>
-    <string name="settings_title">SETTINGS</string>
+    <string name="settings_title">Settings</string>
     <string name="text_size_label">Text Size: %1$d sp</string>
     <string name="email_signature_title">Email Signature</string>
     <string name="signature_label">Signature</string>
@@ -34,8 +34,8 @@
     <string name="signature_preview">Signature: %1$s</string>
     <string name="cancel">Cancel</string>
     <string name="send">Send</string>
-    <string name="add_imap_account_title">IMAP SETTINGS</string>
-    <string name="add_smtp_account_title">SMTP SETTINGS</string>
+    <string name="add_imap_account_title">IMAP Settings</string>
+    <string name="add_smtp_account_title">SMTP Settings</string>
     <string name="email_label">Email</string>
     <string name="password_label">Password</string>
     <string name="imap_server_label">IMAP Server</string>
@@ -58,9 +58,10 @@
     <string name="reply_attribution">\n\nOn %1$s, %2$s wrote:\n> </string>
     <string name="address_book">Address Book</string>
     <string name="add_contact">Add Contact</string>
+    <string name="edit_contact">Edit Contact</string>
     <string name="name_label">Name</string>
     <string name="contact_added">Contact added</string>
     <string name="select_contact">Select Contact</string>
     <string name="folders">Folders</string>
-    <string name="secure_text_email">SECURE TEXT EMAIL</string>
+    <string name="secure_text_email">Secure text email</string>
 </resources>

@@ -8,12 +8,14 @@ import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
 import javax.mail.search.FlagTerm
 
+data class FolderInfo(val name: String, val messageCount: Int, val unreadCount: Int)
+
 class ImapManager {
     fun fetchEmails(
         email: String,
         password: String,
         host: String,
-        folderName: String = "INBOX",
+        folderName: String = "Inbox",
         limit: Int = 20,
         noSubjectString: String = "(No Subject)",
         unknownSenderString: String = "Unknown",
@@ -34,7 +36,16 @@ class ImapManager {
             folder.open(Folder.READ_ONLY)
 
             val messages = folder.messages
-            val result = messages.takeLast(limit).reversed().map { msg ->
+            val lastMessages = messages.takeLast(limit).toTypedArray()
+            
+            // Optimize fetching by using a FetchProfile
+            val fp = FetchProfile()
+            fp.add(FetchProfile.Item.ENVELOPE)
+            fp.add(FetchProfile.Item.FLAGS)
+            fp.add(FetchProfile.Item.CONTENT_INFO)
+            folder.fetch(lastMessages, fp)
+
+            val result = lastMessages.reversedArray().map { msg ->
                 val (text, html) = getContent(msg, errorReadingContentString)
                 EmailMessage(
                     id = msg.messageNumber.toString(),
@@ -44,7 +55,8 @@ class ImapManager {
                     content = text,
                     htmlContent = html,
                     date = msg.sentDate?.toString() ?: "",
-                    folder = folderName
+                    folder = folderName,
+                    isRead = msg.flags.contains(Flags.Flag.SEEN)
                 )
             }
 
@@ -61,17 +73,25 @@ class ImapManager {
         return try {
             val textBuilder = StringBuilder()
             val htmlBuilder = StringBuilder()
-            extractContent(message, textBuilder, htmlBuilder)
+            val images = mutableMapOf<String, String>()
+            extractContent(message, textBuilder, htmlBuilder, images)
             
             val text = textBuilder.toString().ifEmpty { errorReadingContentString }
-            val html = htmlBuilder.toString().ifEmpty { null }
+            var html = htmlBuilder.toString().ifEmpty { null }
+            
+            if (html != null && images.isNotEmpty()) {
+                for ((cid, base64) in images) {
+                    html = html!!.replace("cid:$cid", base64)
+                }
+            }
+            
             Pair(text, html)
         } catch (e: Exception) {
             Pair(errorReadingContentString, null)
         }
     }
 
-    private fun extractContent(part: Part, text: StringBuilder, html: StringBuilder) {
+    private fun extractContent(part: Part, text: StringBuilder, html: StringBuilder, images: MutableMap<String, String>) {
         if (part.isMimeType("text/plain")) {
             text.append(part.content.toString())
         } else if (part.isMimeType("text/html")) {
@@ -79,12 +99,20 @@ class ImapManager {
         } else if (part.isMimeType("multipart/*")) {
             val multiPart = part.content as MimeMultipart
             for (i in 0 until multiPart.count) {
-                extractContent(multiPart.getBodyPart(i), text, html)
+                extractContent(multiPart.getBodyPart(i), text, html, images)
+            }
+        } else if (part.isMimeType("image/*")) {
+            val cid = part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
+            if (cid != null) {
+                val inputStream = part.inputStream
+                val bytes = inputStream.readBytes()
+                val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                images[cid] = "data:${part.contentType.substringBefore(";")};base64,$base64"
             }
         }
     }
 
-    fun fetchFolders(email: String, password: String, host: String): List<String> {
+    fun fetchFolders(email: String, password: String, host: String): List<FolderInfo> {
         val properties = Properties()
         properties["mail.store.protocol"] = "imaps"
         properties["mail.imaps.host"] = host
@@ -95,7 +123,14 @@ class ImapManager {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val folders = store.defaultFolder.list("*").map { it.fullName }
+            val folders = store.defaultFolder.list("*").map { folder ->
+                folder.open(Folder.READ_ONLY)
+                val count = folder.messageCount
+                val unread = folder.unreadMessageCount
+                val info = FolderInfo(folder.fullName, count, unread)
+                folder.close(false)
+                info
+            }
             store.close()
             folders
         } catch (e: Exception) {
@@ -118,13 +153,103 @@ class ImapManager {
             val folder = store.getFolder(folderName)
             folder.open(Folder.READ_WRITE)
             val message = folder.getMessage(messageId)
-            message.setFlag(Flags.Flag.DELETED, true)
+
+            if (folderName.lowercase().contains("trash")) {
+                message.setFlag(Flags.Flag.DELETED, true)
+            } else {
+                val trashFolder = store.defaultFolder.list().find { it.name.lowercase().contains("trash") }
+                    ?: store.getFolder("Trash")
+                if (!trashFolder.exists()) trashFolder.create(Folder.HOLDS_MESSAGES)
+                folder.copyMessages(arrayOf(message), trashFolder)
+                message.setFlag(Flags.Flag.DELETED, true)
+            }
+            
+            folder.expunge()
             folder.close(true)
             store.close()
             true
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    fun markAsRead(email: String, password: String, host: String, folderName: String, messageId: Int): Boolean {
+        val properties = Properties()
+        properties["mail.store.protocol"] = "imaps"
+        properties["mail.imaps.host"] = host
+        properties["mail.imaps.port"] = "993"
+        properties["mail.imaps.ssl.enable"] = "true"
+
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+            val folder = store.getFolder(folderName)
+            folder.open(Folder.READ_WRITE)
+            val message = folder.getMessage(messageId)
+            message.setFlag(Flags.Flag.SEEN, true)
+            folder.close(true)
+            store.close()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun emptyTrash(email: String, password: String, host: String): Boolean {
+        val properties = Properties()
+        properties["mail.store.protocol"] = "imaps"
+        properties["mail.imaps.host"] = host
+        properties["mail.imaps.port"] = "993"
+        properties["mail.imaps.ssl.enable"] = "true"
+
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+            val trashFolder = store.defaultFolder.list().find { it.name.lowercase().contains("trash") }
+            if (trashFolder != null) {
+                trashFolder.open(Folder.READ_WRITE)
+                val messages = trashFolder.messages
+                for (msg in messages) {
+                    msg.setFlag(Flags.Flag.DELETED, true)
+                }
+                trashFolder.expunge()
+                trashFolder.close(true)
+            }
+            store.close()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun saveSentEmail(
+        email: String,
+        password: String,
+        host: String,
+        message: MimeMessage
+    ) {
+        val properties = Properties()
+        properties["mail.store.protocol"] = "imaps"
+        properties["mail.imaps.host"] = host
+        properties["mail.imaps.port"] = "993"
+        properties["mail.imaps.ssl.enable"] = "true"
+
+        try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+            val sentFolder = store.defaultFolder.list().find { it.name.lowercase().contains("sent") }
+                ?: store.getFolder("Sent")
+            if (!sentFolder.exists()) sentFolder.create(Folder.HOLDS_MESSAGES)
+            sentFolder.appendMessages(arrayOf(message))
+            store.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -137,7 +262,8 @@ class ImapManager {
         to: String,
         subject: String,
         content: String,
-        isHtml: Boolean = false
+        isHtml: Boolean = false,
+        imapHost: String? = null
     ): Boolean {
         val properties = Properties()
         properties["mail.smtp.auth"] = "true"
@@ -170,6 +296,11 @@ class ImapManager {
                 message.setText(content)
             }
             Transport.send(message)
+            
+            if (imapHost != null) {
+                saveSentEmail(email, password, imapHost, message)
+            }
+
             true
         } catch (e: Exception) {
             e.printStackTrace()

@@ -55,10 +55,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _signature = MutableStateFlow(prefs.getString("signature", application.getString(R.string.default_signature)) ?: application.getString(R.string.default_signature))
     val signature: StateFlow<String> = _signature
 
-    private val _folders = MutableStateFlow<List<String>>(emptyList())
-    val folders: StateFlow<List<String>> = _folders
+    private val _folders = MutableStateFlow<List<com.light.lightemail.data.FolderInfo>>(emptyList())
+    val folders: StateFlow<List<com.light.lightemail.data.FolderInfo>> = _folders
 
-    private val _currentFolder = MutableStateFlow("INBOX")
+    private val _currentFolder = MutableStateFlow("Inbox")
     val currentFolder: StateFlow<String> = _currentFolder
 
     private val db = AppDatabase.getDatabase(application)
@@ -113,20 +113,56 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun scheduleSync(intervalMinutes: Int) {
         val workManager = WorkManager.getInstance(getApplication())
-        val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes.toLong(), TimeUnit.MINUTES)
-            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-            .build()
-        
-        workManager.enqueueUniquePeriodicWork(
-            "email_sync",
-            ExistingPeriodicWorkPolicy.UPDATE,
-            syncRequest
-        )
+        workManager.cancelUniqueWork("email_sync")
+
+        if (intervalMinutes >= 15) {
+            val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes.toLong(), TimeUnit.MINUTES)
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .build()
+            
+            workManager.enqueueUniquePeriodicWork(
+                "email_sync",
+                ExistingPeriodicWorkPolicy.UPDATE,
+                syncRequest
+            )
+        } else {
+            // For intervals < 15 min, we use OneTimeWorkRequest and the worker will reschedule itself
+            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
+                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .build()
+            
+            workManager.enqueueUniqueWork(
+                "email_sync",
+                ExistingWorkPolicy.REPLACE,
+                syncRequest
+            )
+        }
     }
 
     fun selectFolder(folder: String) {
         _currentFolder.value = folder
         refreshEmails()
+    }
+
+    fun markAsRead(emailMessage: EmailMessage) {
+        if (emailMessage.isRead) return
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                imapManager.markAsRead(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    emailMessage.id.toInt()
+                )
+            }
+            // Update local state to show as read immediately
+            _emails.value = _emails.value.map {
+                if (it.uid == emailMessage.uid) it.copy(isRead = true) else it
+            }
+            refreshFolders()
+        }
     }
 
     fun refreshFolders() {
@@ -167,7 +203,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             _emails.value = fetchedEmails
             
             // Update last seen UID to avoid duplicate notifications for emails already seen in app
-            if (folder == "INBOX" && fetchedEmails.isNotEmpty()) {
+            if (folder == "Inbox" && fetchedEmails.isNotEmpty()) {
                 val latestUid = fetchedEmails.first().uid
                 val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
                 if (latestUid > lastSeenUid) {
@@ -190,7 +226,26 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     emailMessage.id.toInt()
                 )
             }
-            if (success) refreshEmails()
+            if (success) {
+                refreshEmails()
+                refreshFolders()
+            }
+        }
+    }
+
+    fun emptyTrash() {
+        viewModelScope.launch {
+            val success = withContext(Dispatchers.IO) {
+                imapManager.emptyTrash(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value
+                )
+            }
+            if (success) {
+                refreshEmails()
+                refreshFolders()
+            }
         }
     }
 
@@ -206,9 +261,11 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     to,
                     subject,
                     content,
-                    isHtml
+                    isHtml,
+                    _imapHost.value
                 )
             }
+            if (success) refreshFolders()
             onResult(success)
         }
     }
@@ -216,6 +273,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     fun addContact(name: String, email: String) {
         viewModelScope.launch {
             db.contactDao().insertContact(Contact(name = name, email = email))
+        }
+    }
+
+    fun updateContact(contact: Contact) {
+        viewModelScope.launch {
+            db.contactDao().insertContact(contact)
         }
     }
 

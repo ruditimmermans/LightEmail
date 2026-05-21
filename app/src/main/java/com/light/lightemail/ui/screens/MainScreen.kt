@@ -1,6 +1,7 @@
 package com.light.lightemail.ui.screens
 
 import android.view.View
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
@@ -21,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -75,10 +77,27 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                 LazyColumn {
                     items(folders) { folder ->
                         NavigationDrawerItem(
-                            label = { Text(folder) },
-                            selected = folder == currentFolder,
+                            label = { 
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(folder.name, modifier = Modifier.weight(1f))
+                                    if (folder.unreadCount > 0) {
+                                        Badge(containerColor = MaterialTheme.colorScheme.primary) {
+                                            Text(folder.unreadCount.toString(), color = Color.White)
+                                        }
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                    }
+                                    Text("(${folder.messageCount})", fontSize = 12.sp, color = Color.Gray)
+                                    if (folder.name.lowercase().contains("trash")) {
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        IconButton(onClick = { viewModel.emptyTrash() }, modifier = Modifier.size(24.dp)) {
+                                            Icon(Icons.Default.DeleteSweep, contentDescription = "Empty Trash", modifier = Modifier.size(16.dp))
+                                        }
+                                    }
+                                }
+                            },
+                            selected = folder.name == currentFolder,
                             onClick = {
-                                viewModel.selectFolder(folder)
+                                viewModel.selectFolder(folder.name)
                                 scope.launch { drawerState.close() }
                             },
                             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -138,6 +157,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                 when (currentScreen) {
                     Screen.Home -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
                         selectedEmail = emailMsg
+                        viewModel.markAsRead(emailMsg)
                         currentScreen = Screen.ViewEmail
                     }
                     Screen.About -> AboutScreen { currentScreen = Screen.Home }
@@ -158,6 +178,10 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                             onDelete = {
                                 viewModel.deleteEmail(email)
                                 currentScreen = Screen.Home
+                            },
+                            onAddContact = { name, emailAddr ->
+                                viewModel.addContact(name, emailAddr)
+                                Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -207,14 +231,16 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize()) {
             items(emails) { email ->
+                val opacity = if (email.isRead) 0.5f else 1.0f
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { onEmailClick(email) }
                         .padding(16.dp)
+                        .graphicsLayer(alpha = opacity)
                 ) {
-                    Text(text = email.sender, fontSize = (textSize * 0.8f).sp, fontWeight = FontWeight.Bold)
-                    Text(text = email.subject, fontSize = textSize.sp)
+                    Text(text = email.sender, fontSize = (textSize * 0.8f).sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
+                    Text(text = email.subject, fontSize = textSize.sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
             }
@@ -223,12 +249,29 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
 }
 
 @Composable
-fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit) {
+fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onAddContact: (String, String) -> Unit) {
     val isDark = isSystemInDarkTheme()
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
         Column(modifier = Modifier.weight(1f)) {
             Text(text = email.subject, fontSize = (textSize * 1.2f).sp, fontWeight = FontWeight.Bold)
-            Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp)
+            
+            // Clickable sender to add to contact
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable {
+                val name: String
+                val emailAddr: String
+                if (email.sender.contains("<")) {
+                    name = email.sender.substringBefore("<").trim().removeSurrounding("\"")
+                    emailAddr = email.sender.substringAfter("<").substringBefore(">").trim()
+                } else {
+                    name = email.sender.substringBefore("@").trim()
+                    emailAddr = email.sender.trim()
+                }
+                onAddContact(if (name.isNotEmpty()) name else emailAddr, emailAddr)
+            }) {
+                Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp, modifier = Modifier.weight(1f))
+                Icon(Icons.Default.PersonAdd, contentDescription = "Add Contact", modifier = Modifier.size(18.dp))
+            }
+            
             Text(text = stringResource(R.string.date_label, email.date), fontSize = (textSize * 0.8f).sp)
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider()
@@ -272,6 +315,7 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
 
 @Composable
 fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
+    val context = LocalContext.current
     // Force black background for HTML emails as requested by user
     val backgroundColor = "#000000"
     val textColor = "#FFFFFF"
@@ -280,6 +324,12 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
         <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
+        * { 
+            background-color: transparent !important; 
+            background: transparent !important;
+            color: inherit !important;
+            font-size: inherit !important;
+        }
         html, body { 
             background-color: $backgroundColor !important; 
             color: $textColor !important; 
@@ -289,15 +339,18 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             margin: 0;
             padding: 12px;
         }
-        /* Force all elements to inherit font size and color from body, and have transparent background */
-        * { 
-            font-size: inherit !important; 
-            background-color: transparent !important; 
-            color: inherit !important;
+        /* Ensure images are visible and responsive */
+        img { 
+            max-width: 100% !important; 
+            height: auto !important; 
+            display: block !important;
+            margin: 10px 0 !important;
         }
-        /* Except for links which should have their own color */
-        a { color: #BB86FC !important; text-decoration: underline; }
-        img { max-width: 100%; height: auto; }
+        /* Keep links visible */
+        a {
+            color: #58a6ff !important;
+            text-decoration: underline !important;
+        }
         </style>
         </head>
         <body>$html</body>
@@ -332,12 +385,25 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             factory = { context ->
                 try {
                     WebView(context).apply {
-                        webViewClient = WebViewClient()
+                        webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                if (url != null) {
+                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                    context.startActivity(intent)
+                                    return true
+                                }
+                                return false
+                            }
+                        }
                         settings.javaScriptEnabled = false
-                        // Disable overview mode and wide viewport to respect the font size
                         settings.loadWithOverviewMode = false
                         settings.useWideViewPort = false
                         settings.textZoom = 100
+                        settings.domStorageEnabled = true
+                        settings.loadsImagesAutomatically = true
+                        settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                        settings.builtInZoomControls = true
+                        settings.displayZoomControls = false
                         setBackgroundColor(android.graphics.Color.BLACK)
                     }
                 } catch (e: Exception) {
@@ -460,18 +526,41 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var editingContact by remember { mutableStateOf<Contact?>(null) }
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(stringResource(R.string.add_contact), fontWeight = FontWeight.Bold, fontSize = textSize.sp)
+        Text(
+            text = if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact),
+            fontWeight = FontWeight.Bold,
+            fontSize = textSize.sp
+        )
         OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text(stringResource(R.string.name_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
         OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
-        Button(onClick = {
-            if (name.isNotEmpty() && email.isNotEmpty()) {
-                viewModel.addContact(name, email)
-                name = ""
-                email = ""
+        
+        Row(modifier = Modifier.align(Alignment.End).padding(top = 8.dp)) {
+            if (editingContact != null) {
+                TextButton(onClick = {
+                    editingContact = null
+                    name = ""
+                    email = ""
+                }) {
+                    Text(stringResource(R.string.cancel), fontSize = textSize.sp)
+                }
+                Spacer(modifier = Modifier.width(8.dp))
             }
-        }, modifier = Modifier.align(Alignment.End).padding(top = 8.dp)) { Text(stringResource(R.string.add), fontSize = textSize.sp) }
+            Button(onClick = {
+                if (name.isNotEmpty() && email.isNotEmpty()) {
+                    if (editingContact == null) {
+                        viewModel.addContact(name, email)
+                    } else {
+                        viewModel.updateContact(editingContact!!.copy(name = name, email = email))
+                        editingContact = null
+                    }
+                    name = ""
+                    email = ""
+                }
+            }) { Text(if (editingContact == null) stringResource(R.string.add) else stringResource(R.string.save), fontSize = textSize.sp) }
+        }
         
         Spacer(modifier = Modifier.height(16.dp))
         HorizontalDivider()
@@ -480,11 +569,18 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
         LazyColumn(modifier = Modifier.weight(1f)) {
             items(contacts) { contact ->
                 Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(contact.name, fontWeight = FontWeight.Bold, fontSize = textSize.sp)
                         Text(contact.email, fontSize = (textSize * 0.8f).sp)
                     }
-                    IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = null) }
+                    Row {
+                        IconButton(onClick = {
+                            editingContact = contact
+                            name = contact.name
+                            email = contact.email
+                        }) { Icon(Icons.Default.Edit, contentDescription = "Edit") }
+                        IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
+                    }
                 }
                 HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
             }
@@ -543,7 +639,7 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.sync_interval_label), fontWeight = FontWeight.Bold)
         Row {
-            listOf(3, 5, 15).forEach { min ->
+            listOf(1, 3, 5, 15).forEach { min ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(8.dp)) {
                     RadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
                     Text("$min min")

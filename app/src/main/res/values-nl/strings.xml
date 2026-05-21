@@ -15,7 +15,7 @@
     <string name="app_description">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.</string>
     <string name="version_label">Versie: %1$s</string>
     <string name="copyright">Copyright Ⓒ 2026-2027 door Rudi Timmermans</string>
-    <string name="settings_title">INSTELLINGEN</string>
+    <string name="settings_title">Instellingen</string>
     <string name="text_size_label">Tekengrootte: %1$d sp</string>
     <string name="email_signature_title">E-mailhandtekening</string>
     <string name="signature_label">Handtekening</string>
@@ -34,8 +34,8 @@
     <string name="signature_preview">Handtekening: %1$s</string>
     <string name="cancel">Annuleren</string>
     <string name="send">Verzenden</string>
-    <string name="add_imap_account_title">IMAP-INSTELLINGEN</string>
-    <string name="add_smtp_account_title">SMTP-INSTELLINGEN</string>
+    <string name="add_imap_account_title">IMAP-instellingen</string>
+    <string name="add_smtp_account_title">SMTP-instellingen</string>
     <string name="email_label">E-mail</string>
     <string name="password_label">Wachtwoord</string>
     <string name="imap_server_label">IMAP-server</string>
@@ -58,9 +58,10 @@
     <string name="reply_attribution">\n\nOp %1$s schreef %2$s:\n> </string>
     <string name="address_book">Adresboek</string>
     <string name="add_contact">Contact toevoegen</string>
+    <string name="edit_contact">Contact bewerken</string>
     <string name="name_label">Naam</string>
     <string name="contact_added">Contact toegevoegd</string>
     <string name="select_contact">Contact selecteren</string>
     <string name="folders">Mappen</string>
-    <string name="secure_text_email">BEVEILIGDE TEKST E-MAIL</string>
+    <string name="secure_text_email">Beveiligde text email</string>
 </resources>

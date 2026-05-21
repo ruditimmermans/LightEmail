@@ -42,6 +42,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
         }
 
+        // Reschedule if interval < 15 minutes
+        val syncInterval = prefs.getInt("sync_interval", 15)
+        if (syncInterval < 15) {
+            val workManager = androidx.work.WorkManager.getInstance(applicationContext)
+            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>()
+                .setInitialDelay(syncInterval.toLong(), java.util.concurrent.TimeUnit.MINUTES)
+                .setConstraints(androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build())
+                .build()
+            
+            workManager.enqueueUniqueWork(
+                "email_sync",
+                androidx.work.ExistingWorkPolicy.REPLACE,
+                syncRequest
+            )
+        }
+
         return Result.success()
     }
 
