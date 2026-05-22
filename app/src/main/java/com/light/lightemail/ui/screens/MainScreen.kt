@@ -665,16 +665,31 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.sync_interval_label), fontWeight = FontWeight.Bold)
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-            listOf(5, 15, 30, 60).forEach { min ->
+            listOf(3, 5, 15).forEach { min ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(4.dp)) {
                     RadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
+                    val label = when(min) {
+                        3 -> stringResource(R.string.sync_3_min)
+                        5 -> stringResource(R.string.sync_5_min)
+                        15 -> stringResource(R.string.sync_15_min)
+                        else -> "$min min"
+                    }
                     Text(
-                        text = if (min == 60) "1 hour" else "$min min",
+                        text = label,
                         fontSize = 14.sp,
-                        color = if (min == 5 && syncInterval == 5) MaterialTheme.colorScheme.error else Color.Unspecified
+                        color = if (min < 15 && syncInterval == min) MaterialTheme.colorScheme.error else Color.Unspecified
                     )
                 }
             }
+        }
+
+        if (syncInterval == 3 || syncInterval == 5) {
+            Text(
+                text = stringResource(R.string.sync_warning),
+                color = MaterialTheme.colorScheme.error,
+                fontSize = 11.sp,
+                modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
+            )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -682,7 +697,12 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
             Checkbox(checked = enablePush, onCheckedChange = { enablePush = it })
             Column {
                 Text(stringResource(R.string.enable_push_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text(stringResource(R.string.push_battery_warning), fontSize = 10.sp, color = Color.Gray)
+                Text(
+                    stringResource(R.string.push_battery_warning),
+                    fontSize = 10.sp,
+                    color = Color.White,
+                    modifier = Modifier.background(Color.Black).padding(horizontal = 4.dp)
+                )
             }
         }
 

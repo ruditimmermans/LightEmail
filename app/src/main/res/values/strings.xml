@@ -70,4 +70,5 @@
     <string name="push_service_desc">Listening for new emails (Battery Optimized)...</string>
     <string name="enable_push_label">Enable Push (Real-time notifications)</string>
     <string name="push_battery_warning">Push might use more battery on some devices.</string>
+    <string name="sync_warning">Note: Frequent syncing may affect battery life on Light Phone 3.</string>
 </resources>
