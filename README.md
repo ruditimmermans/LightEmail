@@ -25,9 +25,7 @@ notification to make sure you'll never miss a new email.
 
 ## Features
 
-* Multiple accounts (inboxes)
 * Two way synchronization
-* Offline storage and operations
 * Local Adressbook
 * HTML email view
 * Battery friendly
