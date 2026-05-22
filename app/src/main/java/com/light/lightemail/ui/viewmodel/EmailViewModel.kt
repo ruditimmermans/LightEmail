@@ -49,6 +49,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _syncInterval = MutableStateFlow(prefs.getInt("sync_interval", 15))
     val syncInterval: StateFlow<Int> = _syncInterval
 
+    private val _enablePush = MutableStateFlow(prefs.getBoolean("enable_push", false))
+    val enablePush: StateFlow<Boolean> = _enablePush
+
     private val _textSize = MutableStateFlow(prefs.getFloat("text_size", 16f))
     val textSize: StateFlow<Float> = _textSize
 
@@ -69,6 +72,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             refreshEmails()
             refreshFolders()
             scheduleSync(_syncInterval.value)
+            updatePushService(_enablePush.value)
         }
     }
 
@@ -80,6 +84,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         smtpPort: String,
         senderName: String,
         syncInterval: Int,
+        enablePush: Boolean,
         textSize: Float,
         signature: String
     ) {
@@ -90,6 +95,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _smtpPort.value = smtpPort
         _senderName.value = senderName
         _syncInterval.value = syncInterval
+        _enablePush.value = enablePush
         _textSize.value = textSize
         _signature.value = signature
 
@@ -101,6 +107,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putString("smtp_port", smtpPort)
             putString("sender_name", senderName)
             putInt("sync_interval", syncInterval)
+            putBoolean("enable_push", enablePush)
             putFloat("text_size", textSize)
             putString("signature", signature)
             apply()
@@ -109,6 +116,16 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         refreshEmails()
         refreshFolders()
         scheduleSync(syncInterval)
+        updatePushService(enablePush)
+    }
+
+    private fun updatePushService(enabled: Boolean) {
+        val intent = android.content.Intent(getApplication(), com.light.lightemail.service.EmailPushService::class.java)
+        if (enabled) {
+            getApplication<Application>().startForegroundService(intent)
+        } else {
+            getApplication<Application>().stopService(intent)
+        }
     }
 
     private fun scheduleSync(intervalMinutes: Int) {

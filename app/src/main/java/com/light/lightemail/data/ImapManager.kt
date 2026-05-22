@@ -3,6 +3,8 @@ package com.light.lightemail.data
 import com.sun.mail.imap.IMAPFolder
 import java.util.Properties
 import javax.mail.*
+import javax.mail.event.MessageCountAdapter
+import javax.mail.event.MessageCountEvent
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
@@ -23,7 +25,52 @@ class ImapManager {
         properties["mail.imaps.compress.enable"] = "true" // Enable compression
         properties["mail.imaps.partialfetch"] = "true"
         properties["mail.imaps.fetchsize"] = "16384"
+        // IDLE optimization
+        properties["mail.imaps.peek"] = "true"
         return properties
+    }
+
+    fun startIdle(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String = "Inbox",
+        onNewMessage: () -> Unit
+    ) {
+        val properties = getImapProperties(host)
+        // IDLE requires keeping the connection open
+        properties["mail.imaps.connectionpooltimeout"] = "300000" // 5 min
+        
+        var store: Store? = null
+        var folder: IMAPFolder? = null
+
+        try {
+            val session = Session.getInstance(properties, null)
+            store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            folder = store.getFolder(folderName) as IMAPFolder
+            folder.open(Folder.READ_ONLY)
+
+            folder.addMessageCountListener(object : MessageCountAdapter() {
+                override fun messagesAdded(e: MessageCountEvent) {
+                    onNewMessage()
+                }
+            })
+
+            while (!Thread.interrupted() && store.isConnected) {
+                if (!folder.isOpen) folder.open(Folder.READ_ONLY)
+                // idle() blocks until a change or timeout (approx 30 mins)
+                folder.idle()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            try {
+                folder?.close(false)
+                store?.close()
+            } catch (e: Exception) {}
+        }
     }
 
     fun fetchEmails(

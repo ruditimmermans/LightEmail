@@ -608,6 +608,7 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
     val smtpPortVal by viewModel.smtpPort.collectAsState()
     val senderNameVal by viewModel.senderName.collectAsState()
     val syncIntervalVal by viewModel.syncInterval.collectAsState()
+    val enablePushVal by viewModel.enablePush.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
 
@@ -618,6 +619,7 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
     var smtpPort by remember { mutableStateOf(smtpPortVal) }
     var senderName by remember { mutableStateOf(senderNameVal) }
     var syncInterval by remember { mutableIntStateOf(syncIntervalVal) }
+    var enablePush by remember { mutableStateOf(enablePushVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -675,6 +677,15 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
             }
         }
 
+        Spacer(modifier = Modifier.height(8.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { enablePush = !enablePush }) {
+            Checkbox(checked = enablePush, onCheckedChange = { enablePush = it })
+            Column {
+                Text(stringResource(R.string.enable_push_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                Text(stringResource(R.string.push_battery_warning), fontSize = 10.sp, color = Color.Gray)
+            }
+        }
+
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.text_size_label, textSize.toInt()), fontWeight = FontWeight.Bold)
         Slider(value = textSize, onValueChange = { textSize = it }, valueRange = 12f..24f, steps = 5)
@@ -692,7 +703,7 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Button(onClick = onBack) { Text(stringResource(R.string.back)) }
             Button(onClick = {
-                viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, textSize, signature)
+                viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature)
                 onBack()
             }) { Text(stringResource(R.string.save)) }
         }

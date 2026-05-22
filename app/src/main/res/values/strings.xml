@@ -65,4 +65,9 @@
     <string name="folders">Folders</string>
     <string name="secure_text_email">Secure text email</string>
     <string name="outlook_oauth_warning">LightEmail does not support Outlook OAuth email accounts.</string>
+    <string name="push_service_channel_name">Email Push Service</string>
+    <string name="push_service_title">LightEmail is active</string>
+    <string name="push_service_desc">Listening for new emails (Battery Optimized)...</string>
+    <string name="enable_push_label">Enable Push (Real-time notifications)</string>
+    <string name="push_battery_warning">Push might use more battery on some devices.</string>
 </resources>

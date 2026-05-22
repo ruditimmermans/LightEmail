@@ -43,9 +43,11 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             }
         }
 
-        // Reschedule if interval < 15 minutes
+        // Reschedule if interval < 15 minutes and push is not enabled
         val syncInterval = prefs.getInt("sync_interval", 15)
-        if (syncInterval < 15) {
+        val enablePush = prefs.getBoolean("enable_push", false)
+        
+        if (syncInterval < 15 && !enablePush) {
             val workManager = androidx.work.WorkManager.getInstance(applicationContext)
             
             // Check battery level manually for aggressive rescheduling

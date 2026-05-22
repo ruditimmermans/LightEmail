@@ -65,4 +65,9 @@
     <string name="folders">Mappen</string>
     <string name="secure_text_email">Beveiligde text email</string>
     <string name="outlook_oauth_warning">LightEmail ondersteunt geen Outlook OAuth e-mailaccounts.</string>
+    <string name="push_service_channel_name">E-mail Push-service</string>
+    <string name="push_service_title">LightEmail is actief</string>
+    <string name="push_service_desc">Luisteren naar nieuwe e-mails (Batterijgeoptimaliseerd)…</string>
+    <string name="enable_push_label">Push inschakelen (Real-time meldingen)</string>
+    <string name="push_battery_warning">Push kan op sommige apparaten meer batterij verbruiken.</string>
 </resources>
