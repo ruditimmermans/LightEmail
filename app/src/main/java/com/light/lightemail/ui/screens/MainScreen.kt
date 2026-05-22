@@ -626,6 +626,13 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
+        Text(
+            text = stringResource(R.string.outlook_oauth_warning),
+            color = MaterialTheme.colorScheme.error,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+
         Text(stringResource(R.string.add_imap_account_title), fontWeight = FontWeight.Bold)
         OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(

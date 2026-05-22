@@ -64,4 +64,5 @@
     <string name="select_contact">Contact selecteren</string>
     <string name="folders">Mappen</string>
     <string name="secure_text_email">Beveiligde text email</string>
+    <string name="outlook_oauth_warning">LightEmail ondersteunt geen Outlook OAuth e-mailaccounts.</string>
 </resources>

@@ -64,4 +64,5 @@
     <string name="select_contact">Select Contact</string>
     <string name="folders">Folders</string>
     <string name="secure_text_email">Secure text email</string>
+    <string name="outlook_oauth_warning">LightEmail does not support Outlook OAuth email accounts.</string>
 </resources>
