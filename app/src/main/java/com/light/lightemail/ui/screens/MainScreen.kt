@@ -662,11 +662,15 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.sync_interval_label), fontWeight = FontWeight.Bold)
-        Row {
-            listOf(1, 3, 5, 15).forEach { min ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(8.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+            listOf(5, 15, 30, 60).forEach { min ->
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(4.dp)) {
                     RadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
-                    Text("$min min")
+                    Text(
+                        text = if (min == 60) "1 hour" else "$min min",
+                        fontSize = 14.sp,
+                        color = if (min == 5 && syncInterval == 5) MaterialTheme.colorScheme.error else Color.Unspecified
+                    )
                 }
             }
         }

@@ -28,7 +28,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             limit = 1,
             noSubjectString = applicationContext.getString(R.string.no_subject),
             unknownSenderString = applicationContext.getString(R.string.unknown_sender),
-            errorReadingContentString = applicationContext.getString(R.string.error_reading_content)
+            errorReadingContentString = applicationContext.getString(R.string.error_reading_content),
+            fetchContent = false // Don't fetch content in background to save battery/data
         )
 
         if (emails.isNotEmpty()) {
@@ -46,9 +47,31 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val syncInterval = prefs.getInt("sync_interval", 15)
         if (syncInterval < 15) {
             val workManager = androidx.work.WorkManager.getInstance(applicationContext)
+            
+            // Check battery level manually for aggressive rescheduling
+            val batteryStatus: android.content.Intent? = android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
+                applicationContext.registerReceiver(null, ifilter)
+            }
+            val status: Int = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
+            val isCharging: Boolean = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
+                                     status == android.os.BatteryManager.BATTERY_STATUS_FULL
+            
+            // If battery is low and not charging, force a longer interval (at least 15 min)
+            val effectiveInterval = if (!isCharging && syncInterval < 15) {
+                val level: Int = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
+                val scale: Int = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
+                val batteryPct = level * 100 / scale.toFloat()
+                if (batteryPct < 20) 15 else syncInterval
+            } else {
+                syncInterval
+            }
+
             val syncRequest = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>()
-                .setInitialDelay(syncInterval.toLong(), java.util.concurrent.TimeUnit.MINUTES)
-                .setConstraints(androidx.work.Constraints.Builder().setRequiredNetworkType(androidx.work.NetworkType.CONNECTED).build())
+                .setInitialDelay(effectiveInterval.toLong(), java.util.concurrent.TimeUnit.MINUTES)
+                .setConstraints(androidx.work.Constraints.Builder()
+                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                    .setRequiresBatteryNotLow(true)
+                    .build())
                 .build()
             
             workManager.enqueueUniqueWork(

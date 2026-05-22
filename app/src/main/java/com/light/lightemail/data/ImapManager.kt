@@ -11,6 +11,21 @@ import javax.mail.search.FlagTerm
 data class FolderInfo(val name: String, val messageCount: Int, val unreadCount: Int)
 
 class ImapManager {
+    private fun getImapProperties(host: String): Properties {
+        val properties = Properties()
+        properties["mail.store.protocol"] = "imaps"
+        properties["mail.imaps.host"] = host
+        properties["mail.imaps.port"] = "993"
+        properties["mail.imaps.ssl.enable"] = "true"
+        // Battery and Performance Optimizations
+        properties["mail.imaps.connectiontimeout"] = "10000" // 10s
+        properties["mail.imaps.timeout"] = "10000" // 10s
+        properties["mail.imaps.compress.enable"] = "true" // Enable compression
+        properties["mail.imaps.partialfetch"] = "true"
+        properties["mail.imaps.fetchsize"] = "16384"
+        return properties
+    }
+
     fun fetchEmails(
         email: String,
         password: String,
@@ -19,13 +34,10 @@ class ImapManager {
         limit: Int = 20,
         noSubjectString: String = "(No Subject)",
         unknownSenderString: String = "Unknown",
-        errorReadingContentString: String = "Error reading content"
+        errorReadingContentString: String = "Error reading content",
+        fetchContent: Boolean = true
     ): List<EmailMessage> {
-        val properties = Properties()
-        properties["mail.store.protocol"] = "imaps"
-        properties["mail.imaps.host"] = host
-        properties["mail.imaps.port"] = "993"
-        properties["mail.imaps.ssl.enable"] = "true"
+        val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
@@ -43,10 +55,17 @@ class ImapManager {
             fp.add(FetchProfile.Item.ENVELOPE)
             fp.add(FetchProfile.Item.FLAGS)
             fp.add(FetchProfile.Item.CONTENT_INFO)
+            if (folder is IMAPFolder) {
+                fp.add(UIDFolder.FetchProfileItem.UID)
+            }
             folder.fetch(lastMessages, fp)
 
             val result = lastMessages.reversedArray().map { msg ->
-                val (text, html) = getContent(msg, errorReadingContentString)
+                val (text, html) = if (fetchContent) {
+                    getContent(msg, errorReadingContentString)
+                } else {
+                    Pair("", null)
+                }
                 EmailMessage(
                     id = msg.messageNumber.toString(),
                     uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
@@ -113,17 +132,15 @@ class ImapManager {
     }
 
     fun fetchFolders(email: String, password: String, host: String): List<FolderInfo> {
-        val properties = Properties()
-        properties["mail.store.protocol"] = "imaps"
-        properties["mail.imaps.host"] = host
-        properties["mail.imaps.port"] = "993"
-        properties["mail.imaps.ssl.enable"] = "true"
+        val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
             val folders = store.defaultFolder.list("*").map { folder ->
+                // Optimize: only open if necessary or use STATUS if supported
+                // For now, we keep opening but with compressed connection
                 folder.open(Folder.READ_ONLY)
                 val count = folder.messageCount
                 val unread = folder.unreadMessageCount
@@ -140,11 +157,7 @@ class ImapManager {
     }
 
     fun deleteEmail(email: String, password: String, host: String, folderName: String, messageId: Int): Boolean {
-        val properties = Properties()
-        properties["mail.store.protocol"] = "imaps"
-        properties["mail.imaps.host"] = host
-        properties["mail.imaps.port"] = "993"
-        properties["mail.imaps.ssl.enable"] = "true"
+        val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
@@ -175,11 +188,7 @@ class ImapManager {
     }
 
     fun markAsRead(email: String, password: String, host: String, folderName: String, messageId: Int): Boolean {
-        val properties = Properties()
-        properties["mail.store.protocol"] = "imaps"
-        properties["mail.imaps.host"] = host
-        properties["mail.imaps.port"] = "993"
-        properties["mail.imaps.ssl.enable"] = "true"
+        val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
@@ -199,11 +208,7 @@ class ImapManager {
     }
 
     fun emptyTrash(email: String, password: String, host: String): Boolean {
-        val properties = Properties()
-        properties["mail.store.protocol"] = "imaps"
-        properties["mail.imaps.host"] = host
-        properties["mail.imaps.port"] = "993"
-        properties["mail.imaps.ssl.enable"] = "true"
+        val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
@@ -233,11 +238,7 @@ class ImapManager {
         host: String,
         message: MimeMessage
     ) {
-        val properties = Properties()
-        properties["mail.store.protocol"] = "imaps"
-        properties["mail.imaps.host"] = host
-        properties["mail.imaps.port"] = "993"
-        properties["mail.imaps.ssl.enable"] = "true"
+        val properties = getImapProperties(host)
 
         try {
             val session = Session.getInstance(properties, null)
@@ -253,6 +254,25 @@ class ImapManager {
         }
     }
 
+    private fun getSmtpProperties(host: String, port: String): Properties {
+        val properties = Properties()
+        properties["mail.smtp.auth"] = "true"
+        properties["mail.smtp.host"] = host
+        properties["mail.smtp.port"] = port
+        properties["mail.smtp.connectiontimeout"] = "10000"
+        properties["mail.smtp.timeout"] = "10000"
+
+        if (port == "465") {
+            properties["mail.smtp.socketFactory.port"] = port
+            properties["mail.smtp.socketFactory.class"] = "javax.net.ssl.SSLSocketFactory"
+            properties["mail.smtp.socketFactory.fallback"] = "false"
+            properties["mail.smtp.ssl.enable"] = "true"
+        } else {
+            properties["mail.smtp.starttls.enable"] = "true"
+        }
+        return properties
+    }
+
     fun sendEmail(
         email: String,
         password: String,
@@ -265,19 +285,7 @@ class ImapManager {
         isHtml: Boolean = false,
         imapHost: String? = null
     ): Boolean {
-        val properties = Properties()
-        properties["mail.smtp.auth"] = "true"
-        properties["mail.smtp.host"] = smtpHost
-        properties["mail.smtp.port"] = smtpPort
-
-        if (smtpPort == "465") {
-            properties["mail.smtp.socketFactory.port"] = smtpPort
-            properties["mail.smtp.socketFactory.class"] = "javax.net.ssl.SSLSocketFactory"
-            properties["mail.smtp.socketFactory.fallback"] = "false"
-            properties["mail.smtp.ssl.enable"] = "true"
-        } else {
-            properties["mail.smtp.starttls.enable"] = "true"
-        }
+        val properties = getSmtpProperties(smtpHost, smtpPort)
 
         val session = Session.getInstance(properties, object : Authenticator() {
             override fun getPasswordAuthentication(): PasswordAuthentication {

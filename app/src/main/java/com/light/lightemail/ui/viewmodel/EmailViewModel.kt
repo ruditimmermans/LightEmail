@@ -115,9 +115,14 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         val workManager = WorkManager.getInstance(getApplication())
         workManager.cancelUniqueWork("email_sync")
 
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .setRequiresBatteryNotLow(true)
+            .build()
+
         if (intervalMinutes >= 15) {
             val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes.toLong(), TimeUnit.MINUTES)
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setConstraints(constraints)
                 .build()
             
             workManager.enqueueUniquePeriodicWork(
@@ -129,7 +134,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             // For intervals < 15 min, we use OneTimeWorkRequest and the worker will reschedule itself
             val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
                 .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
-                .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
+                .setConstraints(constraints)
                 .build()
             
             workManager.enqueueUniqueWork(
