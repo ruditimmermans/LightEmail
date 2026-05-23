@@ -69,6 +69,6 @@
     <string name="push_service_title">LightEmail is actief</string>
     <string name="push_service_desc">Luisteren naar nieuwe e-mails (Batterijgeoptimaliseerd)…</string>
     <string name="enable_push_label">Push inschakelen (Real-time meldingen)</string>
-    <string name="push_battery_warning">Push kan op sommige apparaten meer batterij verbruiken.</string>
+    <string name="push_battery_warning">Push kan de batterijduur beïnvloeden op Light Phone 3.</string>
     <string name="sync_warning">Opmerking: Frequent synchroniseren kan de batterijduur beïnvloeden op Light Phone 3.</string>
 </resources>
