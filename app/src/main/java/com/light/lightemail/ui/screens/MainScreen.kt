@@ -41,6 +41,7 @@ import com.light.lightemail.R
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.ui.viewmodel.EmailViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class Screen {
@@ -449,78 +450,115 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
     var content by remember { mutableStateOf("") }
     var showContactPicker by remember { mutableStateOf(false) }
 
-    if (showContactPicker) {
-        AlertDialog(
-            onDismissRequest = { showContactPicker = false },
-            title = { Text(stringResource(R.string.select_contact)) },
-            text = {
-                LazyColumn {
-                    items(contacts) { contact ->
-                        Text(
-                            text = "${contact.name} <${contact.email}>",
-                            modifier = Modifier.fillMaxWidth().clickable {
-                                to = contact.email
-                                showContactPicker = false
-                            }.padding(8.dp)
-                        )
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showContactPicker = false }) { Text(stringResource(R.string.cancel)) } }
-        )
-    }
-
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Text(text = stringResource(R.string.from_label, accountEmail), fontSize = (textSize * 0.8f).sp, modifier = Modifier.padding(bottom = 8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+            Text(text = stringResource(R.string.from_label, accountEmail), fontSize = (textSize * 0.8f).sp, modifier = Modifier.padding(bottom = 8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                OutlinedTextField(
+                    value = to, 
+                    onValueChange = { to = it }, 
+                    label = { Text(stringResource(R.string.to_label)) }, 
+                    modifier = Modifier.weight(1f),
+                    textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+                )
+                IconButton(onClick = { showContactPicker = true }) { Icon(Icons.Default.Person, contentDescription = null) }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(
-                value = to, 
-                onValueChange = { to = it }, 
-                label = { Text(stringResource(R.string.to_label)) }, 
-                modifier = Modifier.weight(1f),
-                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+                value = subject, 
+                onValueChange = { subject = it }, 
+                label = { Text(stringResource(R.string.subject_label)) }, 
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
-            IconButton(onClick = { showContactPicker = true }) { Icon(Icons.Default.Person, contentDescription = null) }
-        }
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = subject, 
-            onValueChange = { subject = it }, 
-            label = { Text(stringResource(R.string.subject_label)) }, 
-            modifier = Modifier.fillMaxWidth(),
-            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        OutlinedTextField(
-            value = content, 
-            onValueChange = { content = it }, 
-            label = { Text(stringResource(R.string.your_message_label)) }, 
-            modifier = Modifier.fillMaxWidth(), 
-            minLines = 10,
-            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Button(onClick = onFinished) { Text(stringResource(R.string.cancel)) }
-            Button(onClick = {
-                val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
-                    "$content\n\n--\n$signature\n\n--- Original Message ---\n${originalEmail.content}"
-                } else {
-                    "$content\n\n--\n$signature"
-                }
-                viewModel.sendEmail(to, subject, fullBody) { success ->
-                    if (success) {
-                        Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
-                        onFinished()
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = content, 
+                onValueChange = { content = it }, 
+                label = { Text(stringResource(R.string.your_message_label)) }, 
+                modifier = Modifier.fillMaxWidth(), 
+                minLines = 10,
+                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Button(onClick = onFinished) { Text(stringResource(R.string.cancel)) }
+                Button(onClick = {
+                    val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
+                        "$content\n\n--\n$signature\n\n--- Original Message ---\n${originalEmail.content}"
                     } else {
-                        Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                        "$content\n\n--\n$signature"
+                    }
+                    viewModel.sendEmail(to, subject, fullBody) { success ->
+                        if (success) {
+                            Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                            onFinished()
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }) { Text(stringResource(R.string.send)) }
+            }
+        }
+
+        if (showContactPicker) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+                    .padding(16.dp)
+                    .clickable(enabled = false) {}
+            ) {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = stringResource(R.string.select_contact),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp
+                        )
+                        IconButton(onClick = { showContactPicker = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    if (contacts.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "No contacts selected",
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = 18.sp
+                            )
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.weight(1f)) {
+                            items(contacts) { contact ->
+                                Text(
+                                    text = "${contact.name} <${contact.email}>",
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            to = contact.email
+                                            showContactPicker = false
+                                        }
+                                        .padding(16.dp)
+                                )
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+                            }
+                        }
                     }
                 }
-            }) { Text(stringResource(R.string.send)) }
+            }
         }
     }
 }
@@ -624,6 +662,20 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // Auto-save settings
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature) {
+        if (email != emailVal || password != passwordVal || imapHost != imapHostVal || 
+            smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal || 
+            syncInterval != syncIntervalVal || enablePush != enablePushVal || 
+            textSize != textSizeVal || signature != signatureVal) {
+            
+            // For account settings, we might want a longer debounce, but for others, it can be quick.
+            // Let's use 1s debounce for all to be safe and avoid flickering.
+            delay(1000)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature)
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(16.dp))
@@ -720,12 +772,8 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
         )
 
         Spacer(modifier = Modifier.height(32.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
             Button(onClick = onBack) { Text(stringResource(R.string.back)) }
-            Button(onClick = {
-                viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature)
-                onBack()
-            }) { Text(stringResource(R.string.save)) }
         }
     }
 }
