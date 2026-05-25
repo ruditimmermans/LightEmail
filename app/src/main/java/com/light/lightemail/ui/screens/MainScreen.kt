@@ -195,7 +195,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                 }
             }
         ) { padding ->
-            Box(modifier = Modifier.padding(padding)) {
+            Box(modifier = Modifier.padding(padding).imePadding()) {
                 when (currentScreen) {
                     Screen.Home -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
                         selectedEmail = emailMsg
@@ -530,51 +530,55 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 modifier = Modifier
                     .fillMaxSize()
                     .background(Color.Black)
-                    .padding(16.dp)
                     .clickable(enabled = false) {}
             ) {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stringResource(R.string.select_contact),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
-                        IconButton(onClick = { showContactPicker = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = stringResource(R.string.select_contact),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 20.sp
+                            )
+                            IconButton(onClick = { showContactPicker = false }) {
+                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        if (contacts.isEmpty()) {
+                            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = "No contacts selected",
+                                    color = Color.White.copy(alpha = 0.5f),
+                                    fontSize = 18.sp
+                                )
+                            }
                         }
                     }
-                    Spacer(modifier = Modifier.height(16.dp))
                     
-                    if (contacts.isEmpty()) {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (contacts.isNotEmpty()) {
+                        items(contacts) { contact ->
                             Text(
-                                text = "No contacts selected",
-                                color = Color.White.copy(alpha = 0.5f),
-                                fontSize = 18.sp
+                                text = "${contact.name} <${contact.email}>",
+                                color = Color.White,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        to = contact.email
+                                        showContactPicker = false
+                                    }
+                                    .padding(vertical = 16.dp)
                             )
-                        }
-                    } else {
-                        LazyColumn(modifier = Modifier.weight(1f)) {
-                            items(contacts) { contact ->
-                                Text(
-                                    text = "${contact.name} <${contact.email}>",
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            to = contact.email
-                                            showContactPicker = false
-                                        }
-                                        .padding(16.dp)
-                                )
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
-                            }
+                            HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
                         }
                     }
                 }
@@ -590,69 +594,69 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
     var email by remember { mutableStateOf("") }
     var editingContact by remember { mutableStateOf<Contact?>(null) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text(
-            text = if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact),
-            fontWeight = FontWeight.Bold,
-            fontSize = textSize.sp
-        )
-        OutlinedTextField(
-            value = name, 
-            onValueChange = { name = it }, 
-            label = { Text(stringResource(R.string.name_label)) }, 
-            modifier = Modifier.fillMaxWidth(), 
-            textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
-        )
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
-        
-        Row(modifier = Modifier.align(Alignment.End).padding(top = 8.dp)) {
-            if (editingContact != null) {
-                TextButton(onClick = {
-                    editingContact = null
-                    name = ""
-                    email = ""
-                }) {
-                    Text(stringResource(R.string.cancel), fontSize = textSize.sp)
-                }
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            Button(onClick = {
-                if (name.isNotEmpty() && email.isNotEmpty()) {
-                    if (editingContact == null) {
-                        viewModel.addContact(name, email)
-                    } else {
-                        viewModel.updateContact(editingContact!!.copy(name = name, email = email))
+    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+        item {
+            Text(
+                text = if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact),
+                fontWeight = FontWeight.Bold,
+                fontSize = textSize.sp
+            )
+            OutlinedTextField(
+                value = name, 
+                onValueChange = { name = it }, 
+                label = { Text(stringResource(R.string.name_label)) }, 
+                modifier = Modifier.fillMaxWidth(), 
+                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
+            )
+            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
+            
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+                if (editingContact != null) {
+                    TextButton(onClick = {
                         editingContact = null
+                        name = ""
+                        email = ""
+                    }) {
+                        Text(stringResource(R.string.cancel), fontSize = textSize.sp)
                     }
-                    name = ""
-                    email = ""
+                    Spacer(modifier = Modifier.width(8.dp))
                 }
-            }) { Text(if (editingContact == null) stringResource(R.string.add) else stringResource(R.string.save), fontSize = textSize.sp) }
-        }
-        
-        Spacer(modifier = Modifier.height(16.dp))
-        HorizontalDivider()
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        LazyColumn(modifier = Modifier.weight(1f)) {
-            items(contacts) { contact ->
-                Row(modifier = Modifier.fillMaxWidth().padding(8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(contact.name, fontWeight = FontWeight.Bold, fontSize = textSize.sp)
-                        Text(contact.email, fontSize = (textSize * 0.8f).sp)
+                Button(onClick = {
+                    if (name.isNotEmpty() && email.isNotEmpty()) {
+                        if (editingContact == null) {
+                            viewModel.addContact(name, email)
+                        } else {
+                            viewModel.updateContact(editingContact!!.copy(name = name, email = email))
+                            editingContact = null
+                        }
+                        name = ""
+                        email = ""
                     }
-                    Row {
-                        IconButton(onClick = {
-                            editingContact = contact
-                            name = contact.name
-                            email = contact.email
-                        }) { Icon(Icons.Default.Edit, contentDescription = "Edit") }
-                        IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
-                    }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f))
+                }) { Text(if (editingContact == null) stringResource(R.string.add) else stringResource(R.string.save), fontSize = textSize.sp) }
             }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+
+        items(contacts) { contact ->
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(contact.name, fontWeight = FontWeight.Bold, fontSize = textSize.sp)
+                    Text(contact.email, fontSize = (textSize * 0.8f).sp)
+                }
+                Row {
+                    IconButton(onClick = {
+                        editingContact = contact
+                        name = contact.name
+                        email = contact.email
+                    }) { Icon(Icons.Default.Edit, contentDescription = "Edit") }
+                    IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
+                }
+            }
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
         }
     }
 }
