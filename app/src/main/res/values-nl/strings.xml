@@ -56,6 +56,7 @@
     <string name="reply_subject_prefix">Re: %1$s</string>
     <string name="forward_subject_prefix">Fwd: %1$s</string>
     <string name="reply_attribution">\n\nOp %1$s schreef %2$s:\n> </string>
+    <string name="home">Home</string>
     <string name="address_book">Adresboek</string>
     <string name="add_contact">Contact toevoegen</string>
     <string name="edit_contact">Contact bewerken</string>

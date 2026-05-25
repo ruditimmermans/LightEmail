@@ -77,7 +77,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
             ModalDrawerSheet {
                 Text(stringResource(R.string.folders), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
                 HorizontalDivider()
-                LazyColumn {
+                LazyColumn(modifier = Modifier.weight(1f)) {
                     items(folders) { folder ->
                         NavigationDrawerItem(
                             label = { 
@@ -107,6 +107,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                         )
                     }
                 }
+                HorizontalDivider()
             }
         },
         gesturesEnabled = currentScreen == Screen.Home
@@ -116,13 +117,16 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                 CenterAlignedTopAppBar(
                     title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
                     navigationIcon = {
-                        if (currentScreen != Screen.Home) {
-                            IconButton(onClick = { currentScreen = Screen.Home }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        val isTopLevelScreen = currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)
+                        if (isTopLevelScreen) {
+                            if (currentScreen == Screen.Home) {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                }
                             }
                         } else {
-                            IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Menu")
+                            IconButton(onClick = { currentScreen = Screen.Home }) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                             }
                         }
                     },
@@ -135,6 +139,50 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                     }
                 )
             },
+            bottomBar = {
+                if (currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)) {
+                    NavigationBar(
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    ) {
+                        val itemColors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = Color.White,
+                            selectedTextColor = Color.White,
+                            unselectedIconColor = Color.White.copy(alpha = 0.6f),
+                            unselectedTextColor = Color.White.copy(alpha = 0.6f),
+                            indicatorColor = Color.DarkGray
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.Home,
+                            onClick = { currentScreen = Screen.Home },
+                            icon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            label = { Text(stringResource(R.string.home)) },
+                            colors = itemColors
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.AddressBook,
+                            onClick = { currentScreen = Screen.AddressBook },
+                            icon = { Icon(Icons.Default.Contacts, contentDescription = null) },
+                            label = { Text(stringResource(R.string.address_book)) },
+                            colors = itemColors
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.Settings,
+                            onClick = { currentScreen = Screen.Settings },
+                            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            label = { Text(stringResource(R.string.settings)) },
+                            colors = itemColors
+                        )
+                        NavigationBarItem(
+                            selected = currentScreen == Screen.About,
+                            onClick = { currentScreen = Screen.About },
+                            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                            label = { Text(stringResource(R.string.about)) },
+                            colors = itemColors
+                        )
+                    }
+                }
+            },
             floatingActionButton = {
                 if (currentScreen == Screen.Home) {
                     FloatingActionButton(onClick = {
@@ -145,15 +193,6 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose))
                     }
                 }
-            },
-            bottomBar = {
-                if (currentScreen == Screen.Home) {
-                    BottomBar(
-                        onAboutClick = { currentScreen = Screen.About },
-                        onSettingsClick = { currentScreen = Screen.Settings },
-                        onAddressBookClick = { currentScreen = Screen.AddressBook }
-                    )
-                }
             }
         ) { padding ->
             Box(modifier = Modifier.padding(padding)) {
@@ -163,8 +202,8 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
                         viewModel.markAsRead(emailMsg)
                         currentScreen = Screen.ViewEmail
                     }
-                    Screen.About -> AboutScreen { currentScreen = Screen.Home }
-                    Screen.Settings -> SettingsScreen(viewModel = viewModel, onBack = { currentScreen = Screen.Home })
+                    Screen.About -> AboutScreen()
+                    Screen.Settings -> SettingsScreen(viewModel = viewModel)
                     Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
                     Screen.ViewEmail -> selectedEmail?.let { email ->
                         EmailDetailScreen(
@@ -201,25 +240,6 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
     }
 }
 
-@Composable
-fun BottomBar(onAboutClick: () -> Unit, onSettingsClick: () -> Unit, onAddressBookClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        horizontalArrangement = Arrangement.SpaceAround
-    ) {
-        IconButton(onClick = onSettingsClick) {
-            Icon(Icons.Default.Settings, contentDescription = stringResource(R.string.settings))
-        }
-        IconButton(onClick = onAddressBookClick) {
-            Icon(Icons.Default.Contacts, contentDescription = stringResource(R.string.address_book))
-        }
-        IconButton(onClick = onAboutClick) {
-            Icon(Icons.Default.Info, contentDescription = stringResource(R.string.about))
-        }
-    }
-}
 
 @Composable
 fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
@@ -638,7 +658,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
 }
 
 @Composable
-fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
+fun SettingsScreen(viewModel: EmailViewModel) {
     val emailVal by viewModel.accountEmail.collectAsState()
     val passwordVal by viewModel.accountPassword.collectAsState()
     val imapHostVal by viewModel.imapHost.collectAsState()
@@ -770,16 +790,11 @@ fun SettingsScreen(viewModel: EmailViewModel, onBack: () -> Unit) {
             label = { Text(stringResource(R.string.signature_label)) },
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
-
-        Spacer(modifier = Modifier.height(32.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-            Button(onClick = onBack) { Text(stringResource(R.string.back)) }
-        }
     }
 }
 
 @Composable
-fun AboutScreen(onBack: () -> Unit) {
+fun AboutScreen() {
     val context = LocalContext.current
     val versionName = try {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
@@ -812,9 +827,5 @@ fun AboutScreen(onBack: () -> Unit) {
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(stringResource(R.string.copyright), fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(48.dp))
-        Button(onClick = onBack) {
-            Text(stringResource(R.string.back))
-        }
     }
 }
