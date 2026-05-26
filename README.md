@@ -34,8 +34,6 @@ notification to make sure you'll never miss a new email.
 
 ## Secure
 
-* Allow encrypted connections only
-* Accept valid security certificates only
 * Authentication required
 * No advertisements
 * No analytics and no tracking
