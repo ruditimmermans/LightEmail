@@ -161,9 +161,9 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                         val itemColors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color.White,
                             selectedTextColor = Color.White,
-                            unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                            unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                            indicatorColor = Color.DarkGray
+                            unselectedIconColor = Color.White.copy(alpha = 0.4f),
+                            unselectedTextColor = Color.White.copy(alpha = 0.4f),
+                            indicatorColor = Color.Transparent
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
