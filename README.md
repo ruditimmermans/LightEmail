@@ -1,8 +1,8 @@
 # LightEmail
 
-A Free Software, minimalistic and privacy friendly email app for the Light Phone.
+A Free Software, minimalistic and privacy friendly email tool for the Light Phone.
 
-LightEmail is primarily made for personal use; I only want to share the app with others if they want to use it and are able to use it.
+LightEmail is primarily made for personal use; I only want to share the tool with others if they want to use it and are able to use it.
 
 You can download directly from GitHub.
 
@@ -13,15 +13,6 @@ You can download directly from GitHub.
 * No bells and whistles
 * Privacy friendly
 * Simple design
-
-## Why?
-
-The focus of LightEmail is be a privacy-friendly email app with a good UX/UI
-and with a community development model.
-
-LightEmail is minimalistic by design, so you can concentrate on reading and
-writing messages, it starts a foreground service with a low priority status bar
-notification to make sure you'll never miss a new email.
 
 ## Features
 
@@ -46,8 +37,8 @@ notification to make sure you'll never miss a new email.
 | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/4.png" /> |
 
 ## GitHub
-The latest releases can be found here: [releases](https://github.com/ruditimmermans/LightEmail/releases). You may need to enable downloading apps from unknown sources to install it.
-You can also use the app [Obtainium](https://github.com/ImranR98/Obtainium) or others like it to automatically update to the newest release on GitHub.
+The latest releases can be found here: [releases](https://github.com/ruditimmermans/LightEmail/releases). You may need to enable downloading tools from unknown sources to install it.
+You can also use the tool [Obtainium](https://github.com/ImranR98/Obtainium) or others like it to automatically update to the newest release on GitHub.
 
 ## License
 
