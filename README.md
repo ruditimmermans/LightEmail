@@ -40,6 +40,13 @@ notification to make sure you'll never miss a new email.
 * No advertisements
 * No analytics and no tracking
 
+## Screenshots 📷
+
+| | | |
+|---|---|---|
+| <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/1.png" /> | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/2.png" /> | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/3.png" /> |
+| <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/4.png" /> |  |  |
+
 ## GitHub
 The latest releases can be found here: [releases](https://github.com/ruditimmermans/LightEmail/releases). You may need to enable downloading apps from unknown sources to install it.
 You can also use the app [Obtainium](https://github.com/ImranR98/Obtainium) or others like it to automatically update to the newest release on GitHub.
