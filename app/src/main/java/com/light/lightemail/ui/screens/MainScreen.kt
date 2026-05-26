@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -168,28 +169,28 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
                             onClick = { currentScreen = Screen.Home },
-                            icon = { Icon(Icons.Default.Email, contentDescription = null) },
+                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null) },
                             label = { Text(stringResource(R.string.home)) },
                             colors = itemColors
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.AddressBook,
                             onClick = { currentScreen = Screen.AddressBook },
-                            icon = { Icon(Icons.Default.Contacts, contentDescription = null) },
+                            icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
                             label = { Text(stringResource(R.string.address_book)) },
                             colors = itemColors
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
                             onClick = { currentScreen = Screen.Settings },
-                            icon = { Icon(Icons.Default.Settings, contentDescription = null) },
+                            icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
                             label = { Text(stringResource(R.string.settings)) },
                             colors = itemColors
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
                             onClick = { currentScreen = Screen.About },
-                            icon = { Icon(Icons.Default.Info, contentDescription = null) },
+                            icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
                             label = { Text(stringResource(R.string.about)) },
                             colors = itemColors
                         )
