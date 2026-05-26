@@ -1,6 +1,7 @@
 package com.light.lightemail.ui.viewmodel
 
 import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -169,6 +170,11 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     fun markAsRead(emailMessage: EmailMessage) {
         if (emailMessage.isRead) return
+
+        // Remove notification when email is read
+        val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(1)
+
         viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 imapManager.markAsRead(
@@ -209,6 +215,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
         if (email.isEmpty()) return
 
+        // Clear notification when refreshing emails (viewing the list)
+        val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(1)
+
         viewModelScope.launch {
             _isLoading.value = true
             val fetchedEmails = withContext(Dispatchers.IO) {
@@ -238,6 +248,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteEmail(emailMessage: EmailMessage) {
+        // Remove notification if email is deleted
+        val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(1)
+
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
                 imapManager.deleteEmail(
