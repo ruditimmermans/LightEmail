@@ -45,7 +45,7 @@ notification to make sure you'll never miss a new email.
 | | | |
 |---|---|---|
 | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/1.png" /> | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/2.png" /> | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/3.png" /> |
-| <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/4.png" /> |  |  |
+| <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/4.png" /> |
 
 ## GitHub
 The latest releases can be found here: [releases](https://github.com/ruditimmermans/LightEmail/releases). You may need to enable downloading apps from unknown sources to install it.
