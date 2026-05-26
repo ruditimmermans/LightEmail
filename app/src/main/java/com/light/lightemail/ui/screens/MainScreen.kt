@@ -54,7 +54,7 @@ enum class ComposeMode {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: EmailViewModel = viewModel()) {
+fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? = null, onEmailOpened: () -> Unit = {}) {
     val context = LocalContext.current
     var currentScreen by remember { mutableStateOf(Screen.Home) }
     var selectedEmail by remember { mutableStateOf<EmailMessage?>(null) }
@@ -70,6 +70,19 @@ fun MainScreen(viewModel: EmailViewModel = viewModel()) {
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // Handle deep link from notification
+    LaunchedEffect(initialEmailUid, emails) {
+        if (initialEmailUid != null && emails.isNotEmpty()) {
+            val email = emails.find { it.uid == initialEmailUid }
+            if (email != null) {
+                selectedEmail = email
+                viewModel.markAsRead(email)
+                currentScreen = Screen.ViewEmail
+                onEmailOpened()
+            }
+        }
+    }
 
     ModalNavigationDrawer(
         drawerState = drawerState,

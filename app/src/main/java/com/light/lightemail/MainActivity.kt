@@ -13,11 +13,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.*
 import androidx.core.content.ContextCompat
 import com.light.lightemail.ui.theme.LightEmailTheme
 import com.light.lightemail.ui.screens.MainScreen
 
 class MainActivity : ComponentActivity() {
+    private var initialEmailUid by mutableStateOf<Long?>(null)
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
@@ -27,14 +30,30 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        handleIntent(intent)
         requestNotificationPermission()
         requestIgnoreBatteryOptimizations()
 
         enableEdgeToEdge()
         setContent {
             LightEmailTheme {
-                MainScreen()
+                MainScreen(
+                    initialEmailUid = initialEmailUid,
+                    onEmailOpened = { initialEmailUid = null }
+                )
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        val uid = intent?.getLongExtra("EXTRA_EMAIL_UID", -1L) ?: -1L
+        if (uid != -1L) {
+            initialEmailUid = uid
         }
     }
 

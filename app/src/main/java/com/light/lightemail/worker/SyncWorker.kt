@@ -37,7 +37,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
             
             if (latestEmail.uid > lastSeenUid) {
-                showNotification(latestEmail.sender, latestEmail.subject)
+                showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid)
                 // Use commit() instead of apply() to ensure UID is saved immediately in the worker
                 prefs.edit().putLong("last_seen_uid", latestEmail.uid).commit()
             }
@@ -86,7 +86,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         return Result.success()
     }
 
-    private fun showNotification(sender: String, subject: String) {
+    private fun showNotification(sender: String, subject: String, uid: Long) {
         val channelId = "new_email_channel"
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -95,12 +95,13 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("EXTRA_EMAIL_UID", uid)
         }
         val pendingIntent = PendingIntent.getActivity(
             applicationContext, 
             0, 
             intent, 
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val notification = NotificationCompat.Builder(applicationContext, channelId)
