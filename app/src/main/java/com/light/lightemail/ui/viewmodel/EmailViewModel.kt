@@ -178,13 +178,22 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun markAsRead(emailMessage: EmailMessage) {
-        if (emailMessage.isRead) return
+        if (emailMessage.isRead) {
+            // Even if already read, we might need to fetch content if it's missing
+            if (emailMessage.content.isEmpty() || (emailMessage.content == getApplication<Application>().getString(R.string.error_reading_content))) {
+                fetchEmailContent(emailMessage)
+            }
+            return
+        }
 
         // Remove notification when email is read
         val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(1)
 
         viewModelScope.launch {
+            // Fetch content if missing while marking as read
+            fetchEmailContent(emailMessage)
+
             withContext(Dispatchers.IO) {
                 imapManager.markAsRead(
                     _accountEmail.value,
@@ -202,6 +211,27 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun fetchEmailContent(emailMessage: EmailMessage) {
+        // If content already fetched, don't fetch again
+        if (emailMessage.content.isNotEmpty() && emailMessage.content != getApplication<Application>().getString(R.string.error_reading_content)) return
+
+        viewModelScope.launch {
+            val (text, html) = withContext(Dispatchers.IO) {
+                imapManager.fetchEmailContent(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    emailMessage.uid,
+                    getApplication<Application>().getString(R.string.error_reading_content)
+                )
+            }
+            _emails.value = _emails.value.map {
+                if (it.uid == emailMessage.uid) it.copy(content = text, htmlContent = html) else it
+            }
+        }
+    }
+
     fun refreshFolders() {
         val email = _accountEmail.value
         val password = _accountPassword.value
@@ -216,7 +246,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun refreshEmails() {
+    fun refreshEmails(showLoading: Boolean = true) {
         val email = _accountEmail.value
         val password = _accountPassword.value
         val host = _imapHost.value
@@ -229,7 +259,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         notificationManager.cancel(1)
 
         viewModelScope.launch {
-            _isLoading.value = true
+            if (showLoading) _isLoading.value = true
             val fetchedEmails = withContext(Dispatchers.IO) {
                 imapManager.fetchEmails(
                     email = email,
@@ -252,7 +282,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
 
-            _isLoading.value = false
+            if (showLoading) _isLoading.value = false
         }
     }
 
@@ -260,6 +290,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         // Remove notification if email is deleted
         val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(1)
+
+        // Optimistic UI update: remove from local list immediately
+        val originalEmails = _emails.value
+        _emails.value = _emails.value.filter { it.uid != emailMessage.uid }
 
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
@@ -272,8 +306,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             if (success) {
-                refreshEmails()
+                // Refresh folders in background to update counts, but don't force a full email refresh
+                // unless it's necessary. Since we already removed it locally, we're good.
                 refreshFolders()
+            } else {
+                // If it failed, restore the original list
+                _emails.value = originalEmails
             }
         }
     }

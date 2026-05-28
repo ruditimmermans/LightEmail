@@ -85,7 +85,7 @@ class ImapManager {
         noSubjectString: String = "(No Subject)",
         unknownSenderString: String = "Unknown",
         errorReadingContentString: String = "Error reading content",
-        fetchContent: Boolean = true
+        fetchContent: Boolean = false // Default to false for faster refresh
     ): List<EmailMessage> {
         val properties = getImapProperties(host)
 
@@ -97,8 +97,20 @@ class ImapManager {
             val folder = store.getFolder(folderName)
             folder.open(Folder.READ_ONLY)
 
-            val messages = folder.search(FlagTerm(Flags(Flags.Flag.DELETED), false))
-            val lastMessages = messages.takeLast(limit).toTypedArray()
+            val totalMessages = folder.messageCount
+            if (totalMessages == 0) {
+                folder.close(false)
+                store.close()
+                return emptyList()
+            }
+
+            // Get last 'limit' messages more efficiently
+            val start = (totalMessages - limit + 1).coerceAtLeast(1)
+            val end = totalMessages
+            val messages = folder.getMessages(start, end)
+            
+            // Filter out deleted messages if necessary, though getMessages is faster than search
+            val lastMessages = messages.filter { !it.flags.contains(Flags.Flag.DELETED) }.toTypedArray()
             
             // Optimize fetching by using a FetchProfile
             val fp = FetchProfile()
@@ -135,6 +147,35 @@ class ImapManager {
         } catch (e: Exception) {
             e.printStackTrace()
             emptyList()
+        }
+    }
+
+    fun fetchEmailContent(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String,
+        uid: Long,
+        errorReadingContentString: String = "Error reading content"
+    ): Pair<String, String?> {
+        val properties = getImapProperties(host)
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = store.getFolder(folderName) as IMAPFolder
+            folder.open(Folder.READ_ONLY)
+
+            val msg = folder.getMessageByUID(uid)
+            val content = if (msg != null) getContent(msg, errorReadingContentString) else Pair(errorReadingContentString, null)
+
+            folder.close(false)
+            store.close()
+            content
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Pair(errorReadingContentString, null)
         }
     }
 
@@ -188,15 +229,34 @@ class ImapManager {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val folders = store.defaultFolder.list("*").map { folder ->
-                // Optimize: only open if necessary or use STATUS if supported
-                // For now, we keep opening but with compressed connection
-                folder.open(Folder.READ_ONLY)
-                val count = folder.messageCount
-                val unread = folder.unreadMessageCount
-                val info = FolderInfo(folder.fullName, count, unread)
-                folder.close(false)
-                info
+            
+            // Limit to top-level folders or common folders to speed up if many folders exist
+            val folders = store.defaultFolder.list().map { folder ->
+                if (folder is IMAPFolder) {
+                    try {
+                        // Use STATUS command which is much faster than opening the folder
+                        // We use JavaMail's internal way of getting status if possible
+                        // or just open it briefly. Actually, folder.messageCount on IMAPFolder 
+                        // often triggers a STATUS if not open.
+                        val count = folder.messageCount
+                        val unread = folder.unreadMessageCount
+                        FolderInfo(folder.fullName, count, unread)
+                    } catch (e: Exception) {
+                        folder.open(Folder.READ_ONLY)
+                        val count = folder.messageCount
+                        val unread = folder.unreadMessageCount
+                        val info = FolderInfo(folder.fullName, count, unread)
+                        folder.close(false)
+                        info
+                    }
+                } else {
+                    folder.open(Folder.READ_ONLY)
+                    val count = folder.messageCount
+                    val unread = folder.unreadMessageCount
+                    val info = FolderInfo(folder.fullName, count, unread)
+                    folder.close(false)
+                    info
+                }
             }
             store.close()
             folders

@@ -220,27 +220,31 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                     Screen.About -> AboutScreen()
                     Screen.Settings -> SettingsScreen(viewModel = viewModel)
                     Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
-                    Screen.ViewEmail -> selectedEmail?.let { email ->
-                        EmailDetailScreen(
-                            email = email,
-                            textSize = textSize,
-                            onReply = {
-                                composeMode = ComposeMode.Reply
-                                currentScreen = Screen.Compose
-                            },
-                            onForward = {
-                                composeMode = ComposeMode.Forward
-                                currentScreen = Screen.Compose
-                            },
-                            onDelete = {
-                                viewModel.deleteEmail(email)
-                                currentScreen = Screen.Home
-                            },
-                            onAddContact = { name, emailAddr ->
-                                viewModel.addContact(name, emailAddr)
-                                Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
-                            }
-                        )
+                    Screen.ViewEmail -> {
+                        // Find the email in the list to get the one with content once it's fetched
+                        val emailToDisplay = emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+                        emailToDisplay?.let { email ->
+                            EmailDetailScreen(
+                                email = email,
+                                textSize = textSize,
+                                onReply = {
+                                    composeMode = ComposeMode.Reply
+                                    currentScreen = Screen.Compose
+                                },
+                                onForward = {
+                                    composeMode = ComposeMode.Forward
+                                    currentScreen = Screen.Compose
+                                },
+                                onDelete = {
+                                    viewModel.deleteEmail(email)
+                                    currentScreen = Screen.Home
+                                },
+                                onAddContact = { name, emailAddr ->
+                                    viewModel.addContact(name, emailAddr)
+                                    Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
                     }
                     Screen.Compose -> ComposeEmailScreen(
                         viewModel = viewModel,
@@ -258,29 +262,42 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
 
 @Composable
 fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
-    if (isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator()
-        }
-    } else if (emails.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(stringResource(R.string.no_emails), fontSize = textSize.sp)
-        }
-    } else {
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
-            items(emails) { email ->
-                val opacity = if (email.isRead) 0.5f else 1.0f
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onEmailClick(email) }
-                        .padding(16.dp)
-                        .graphicsLayer(alpha = opacity)
-                ) {
-                    Text(text = email.sender, fontSize = (textSize * 0.8f).sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
-                    Text(text = email.subject, fontSize = textSize.sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (emails.isEmpty() && !isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(stringResource(R.string.no_emails), fontSize = textSize.sp)
+            }
+        } else {
+            LazyColumn(modifier = Modifier.fillMaxSize()) {
+                items(emails) { email ->
+                    val opacity = if (email.isRead) 0.5f else 1.0f
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onEmailClick(email) }
+                            .padding(16.dp)
+                            .graphicsLayer(alpha = opacity)
+                    ) {
+                        Text(text = email.sender, fontSize = (textSize * 0.8f).sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
+                        Text(text = email.subject, fontSize = textSize.sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
+                    }
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+            }
+        }
+        
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(if (emails.isEmpty()) MaterialTheme.colorScheme.background else Color.Transparent),
+                contentAlignment = if (emails.isEmpty()) Alignment.Center else Alignment.TopCenter
+            ) {
+                if (emails.isEmpty()) {
+                    CircularProgressIndicator()
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
+                }
             }
         }
     }
@@ -317,7 +334,7 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
             
             if (email.htmlContent != null) {
                 HtmlView(html = email.htmlContent, isDark = isDark, textSize = textSize)
-            } else {
+            } else if (email.content.isNotEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -337,6 +354,10 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                         color = Color.White,
                         modifier = Modifier.verticalScroll(rememberScrollState())
                     )
+                }
+            } else {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
                 }
             }
         }
