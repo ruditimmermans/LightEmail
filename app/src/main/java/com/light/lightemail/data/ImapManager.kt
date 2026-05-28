@@ -56,6 +56,9 @@ class ImapManager {
                 override fun messagesAdded(e: MessageCountEvent) {
                     onNewMessage()
                 }
+                override fun messagesRemoved(e: MessageCountEvent) {
+                    onNewMessage()
+                }
             })
 
             while (!Thread.interrupted() && store.isConnected) {
@@ -94,7 +97,7 @@ class ImapManager {
             val folder = store.getFolder(folderName)
             folder.open(Folder.READ_ONLY)
 
-            val messages = folder.messages
+            val messages = folder.search(FlagTerm(Flags(Flags.Flag.DELETED), false))
             val lastMessages = messages.takeLast(limit).toTypedArray()
             
             // Optimize fetching by using a FetchProfile

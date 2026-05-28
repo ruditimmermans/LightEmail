@@ -7,6 +7,7 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
@@ -784,7 +785,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { enablePush = !enablePush }) {
-            Checkbox(checked = enablePush, onCheckedChange = { enablePush = it })
+            LightSwitch(checked = enablePush, onCheckedChange = { enablePush = it })
+            Spacer(modifier = Modifier.width(12.dp))
             Column {
                 Text(stringResource(R.string.enable_push_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Text(
@@ -798,7 +800,20 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 
         Spacer(modifier = Modifier.height(16.dp))
         Text(stringResource(R.string.text_size_label, textSize.toInt()), fontWeight = FontWeight.Bold)
-        Slider(value = textSize, onValueChange = { textSize = it }, valueRange = 12f..24f, steps = 5)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${size.toInt()}", fontSize = 12.sp, color = if (textSize == size) Color.White else Color.Gray)
+                    LightSwitch(
+                        checked = textSize == size,
+                        onCheckedChange = { if (it) textSize = size }
+                    )
+                }
+            }
+        }
 
         Text(stringResource(R.string.email_signature_title), fontWeight = FontWeight.Bold)
         OutlinedTextField(
@@ -845,5 +860,36 @@ fun AboutScreen() {
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(stringResource(R.string.copyright), fontSize = 14.sp)
+    }
+}
+
+@Composable
+fun LightSwitch(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .width(40.dp)
+            .height(24.dp)
+            .clickable { onCheckedChange(!checked) },
+        contentAlignment = Alignment.Center
+    ) {
+        // Track
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(Color.White)
+        )
+        // Thumb
+        Box(
+            modifier = Modifier
+                .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
+                .size(18.dp)
+                .background(Color.Black)
+                .border(2.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
+        )
     }
 }

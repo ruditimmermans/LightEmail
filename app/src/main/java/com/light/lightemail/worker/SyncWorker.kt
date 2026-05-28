@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters
 import com.light.lightemail.MainActivity
 import com.light.lightemail.R
 import com.light.lightemail.data.ImapManager
+import com.light.lightemail.data.SyncEvent
 
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -37,11 +38,24 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
             
             if (latestEmail.uid > lastSeenUid) {
-                showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid)
-                // Use commit() instead of apply() to ensure UID is saved immediately in the worker
+                if (!latestEmail.isRead) {
+                    showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid)
+                }
+                // Update last_seen_uid even if read, so we don't process it again
                 prefs.edit().putLong("last_seen_uid", latestEmail.uid).commit()
+            } else if (latestEmail.uid < lastSeenUid || (latestEmail.uid == lastSeenUid && latestEmail.isRead)) {
+                // If the latest email is now older than what we last saw, 
+                // it means the one we notified for was likely deleted.
+                // Or if the latest is the same but now marked as read.
+                cancelNotification()
             }
+        } else {
+            // No emails in folder, clear any pending notification
+            cancelNotification()
         }
+
+        // Trigger UI refresh if app is in foreground
+        SyncEvent.trigger()
 
         // Reschedule if interval < 15 minutes and push is not enabled
         val syncInterval = prefs.getInt("sync_interval", 15)
@@ -114,5 +128,10 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             .build()
 
         notificationManager.notify(1, notification)
+    }
+
+    private fun cancelNotification() {
+        val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(1)
     }
 }

@@ -11,10 +11,12 @@ import com.light.lightemail.data.AppDatabase
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.data.ImapManager
+import com.light.lightemail.data.SyncEvent
 import com.light.lightemail.worker.SyncWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -74,6 +76,13 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             refreshFolders()
             scheduleSync(_syncInterval.value)
             updatePushService(_enablePush.value)
+        }
+
+        viewModelScope.launch {
+            SyncEvent.events.collectLatest {
+                refreshEmails()
+                refreshFolders()
+            }
         }
     }
 
