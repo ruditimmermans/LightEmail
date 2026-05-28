@@ -715,7 +715,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState())) {
+    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -786,7 +786,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         Spacer(modifier = Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { enablePush = !enablePush }) {
             LightSwitch(checked = enablePush, onCheckedChange = { enablePush = it })
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(8.dp))
             Column {
                 Text(stringResource(R.string.enable_push_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                 Text(
@@ -838,7 +838,7 @@ fun AboutScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp)
+            .padding(16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -871,8 +871,8 @@ fun LightSwitch(
 ) {
     Box(
         modifier = modifier
-            .width(40.dp)
-            .height(24.dp)
+            .width(30.dp)
+            .height(18.dp)
             .clickable { onCheckedChange(!checked) },
         contentAlignment = Alignment.Center
     ) {
@@ -880,16 +880,16 @@ fun LightSwitch(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(2.dp)
+                .height(1.dp)
                 .background(Color.White)
         )
         // Thumb
         Box(
             modifier = Modifier
                 .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
-                .size(18.dp)
+                .size(12.dp)
                 .background(Color.Black)
-                .border(2.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
+                .border(1.5.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
         )
     }
 }
