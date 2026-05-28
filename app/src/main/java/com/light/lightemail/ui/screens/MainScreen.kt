@@ -129,30 +129,32 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
     ) {
         Scaffold(
             topBar = {
-                CenterAlignedTopAppBar(
-                    title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
-                    navigationIcon = {
-                        val isTopLevelScreen = currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)
-                        if (isTopLevelScreen) {
-                            if (currentScreen == Screen.Home) {
-                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                if (currentScreen != Screen.Compose) {
+                    CenterAlignedTopAppBar(
+                        title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
+                        navigationIcon = {
+                            val isTopLevelScreen = currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)
+                            if (isTopLevelScreen) {
+                                if (currentScreen == Screen.Home) {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                    }
+                                }
+                            } else {
+                                IconButton(onClick = { currentScreen = Screen.Home }) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                                 }
                             }
-                        } else {
-                            IconButton(onClick = { currentScreen = Screen.Home }) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                        },
+                        actions = {
+                            if (currentScreen == Screen.Home && accountEmail.isNotEmpty()) {
+                                IconButton(onClick = { viewModel.refreshEmails() }) {
+                                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
+                                }
                             }
                         }
-                    },
-                    actions = {
-                        if (currentScreen == Screen.Home && accountEmail.isNotEmpty()) {
-                            IconButton(onClick = { viewModel.refreshEmails() }) {
-                                Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
-                            }
-                        }
-                    }
-                )
+                    )
+                }
             },
             bottomBar = {
                 if (currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)) {
@@ -200,15 +202,20 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
             },
             floatingActionButton = {
                 if (currentScreen == Screen.Home) {
-                    FloatingActionButton(onClick = {
-                        selectedEmail = null
-                        composeMode = ComposeMode.New
-                        currentScreen = Screen.Compose
-                    }) {
+                    FloatingActionButton(
+                        onClick = {
+                            selectedEmail = null
+                            composeMode = ComposeMode.New
+                            currentScreen = Screen.Compose
+                        },
+                        containerColor = Color.Black,
+                        contentColor = Color.White
+                    ) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose))
                     }
                 }
-            }
+            },
+            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
         ) { padding ->
             Box(modifier = Modifier.padding(padding).imePadding()) {
                 when (currentScreen) {
@@ -228,10 +235,12 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                                 email = email,
                                 textSize = textSize,
                                 onReply = {
+                                    selectedEmail = email
                                     composeMode = ComposeMode.Reply
                                     currentScreen = Screen.Compose
                                 },
                                 onForward = {
+                                    selectedEmail = email
                                     composeMode = ComposeMode.Forward
                                     currentScreen = Screen.Compose
                                 },
@@ -285,7 +294,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                 }
             }
         }
-        
+
         if (isLoading) {
             Box(
                 modifier = Modifier
@@ -480,6 +489,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEmail: EmailMessage?, textSize: Float, onFinished: () -> Unit) {
     val context = LocalContext.current
@@ -506,115 +516,141 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
     var content by remember { mutableStateOf("") }
     var showContactPicker by remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-            Text(text = stringResource(R.string.from_label, accountEmail), fontSize = (textSize * 0.8f).sp, modifier = Modifier.padding(bottom = 8.dp))
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = to, 
-                    onValueChange = { to = it }, 
-                    label = { Text(stringResource(R.string.to_label)) }, 
-                    modifier = Modifier.weight(1f),
-                    textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
-                )
-                IconButton(onClick = { showContactPicker = true }) { Icon(Icons.Default.Person, contentDescription = null) }
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = subject, 
-                onValueChange = { subject = it }, 
-                label = { Text(stringResource(R.string.subject_label)) }, 
-                modifier = Modifier.fillMaxWidth(),
-                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = content, 
-                onValueChange = { content = it }, 
-                label = { Text(stringResource(R.string.your_message_label)) }, 
-                modifier = Modifier.fillMaxWidth(), 
-                minLines = 10,
-                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
-            Spacer(modifier = Modifier.height(16.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Button(onClick = onFinished) { Text(stringResource(R.string.cancel)) }
-                Button(onClick = {
-                    val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
-                        "$content\n\n--\n$signature\n\n--- Original Message ---\n${originalEmail.content}"
-                    } else {
-                        "$content\n\n--\n$signature"
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { 
+                    Text(
+                        stringResource(when(mode) {
+                            ComposeMode.Reply -> R.string.reply
+                            ComposeMode.Forward -> R.string.forward
+                            ComposeMode.New -> R.string.new_email
+                        }),
+                        fontWeight = FontWeight.Bold
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = onFinished) {
+                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel))
                     }
-                    viewModel.sendEmail(to, subject, fullBody) { success ->
-                        if (success) {
-                            Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
-                            onFinished()
+                },
+                actions = {
+                    IconButton(onClick = {
+                        if (to.isEmpty()) {
+                            Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
+                            return@IconButton
+                        }
+                        val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
+                            "$content\n\n--\n$signature\n\n--- Original Message ---\n${originalEmail.content}"
                         } else {
-                            Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                            "$content\n\n--\n$signature"
                         }
+                        viewModel.sendEmail(to, subject, fullBody) { success ->
+                            if (success) {
+                                Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                                onFinished()
+                            } else {
+                                Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }) {
+                        Icon(Icons.Default.Send, contentDescription = stringResource(R.string.send))
                     }
-                }) { Text(stringResource(R.string.send)) }
-            }
+                }
+            )
         }
+    ) { padding ->
+        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+                Text(text = stringResource(R.string.from_label, accountEmail), fontSize = (textSize * 0.8f).sp, modifier = Modifier.padding(bottom = 8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = to, 
+                        onValueChange = { to = it }, 
+                        label = { Text(stringResource(R.string.to_label)) }, 
+                        modifier = Modifier.weight(1f),
+                        textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
+                    )
+                    IconButton(onClick = { showContactPicker = true }) { Icon(Icons.Default.Person, contentDescription = null) }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = subject, 
+                    onValueChange = { subject = it }, 
+                    label = { Text(stringResource(R.string.subject_label)) }, 
+                    modifier = Modifier.fillMaxWidth(),
+                    textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = content, 
+                    onValueChange = { content = it }, 
+                    label = { Text(stringResource(R.string.your_message_label)) }, 
+                    modifier = Modifier.fillMaxWidth(), 
+                    minLines = 10,
+                    textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
+            }
 
-        if (showContactPicker) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black)
-                    .clickable(enabled = false) {}
-            ) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp)
+            if (showContactPicker) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black)
+                        .clickable(enabled = false) {}
                 ) {
-                    item {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.select_contact),
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 20.sp
-                            )
-                            IconButton(onClick = { showContactPicker = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        
-                        if (contacts.isEmpty()) {
-                            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp)
+                    ) {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = "No contacts selected",
-                                    color = Color.White.copy(alpha = 0.5f),
-                                    fontSize = 18.sp
+                                    text = stringResource(R.string.select_contact),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp
                                 )
+                                IconButton(onClick = { showContactPicker = false }) {
+                                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            
+                            if (contacts.isEmpty()) {
+                                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = "No contacts selected",
+                                        color = Color.White.copy(alpha = 0.5f),
+                                        fontSize = 18.sp
+                                    )
+                                }
                             }
                         }
-                    }
-                    
-                    if (contacts.isNotEmpty()) {
-                        items(contacts) { contact ->
-                            Text(
-                                text = "${contact.name} <${contact.email}>",
-                                color = Color.White,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        to = contact.email
-                                        showContactPicker = false
-                                    }
-                                    .padding(vertical = 16.dp)
-                            )
-                            HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+                        
+                        if (contacts.isNotEmpty()) {
+                            items(contacts) { contact ->
+                                Text(
+                                    text = "${contact.name} <${contact.email}>",
+                                    color = Color.White,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            to = contact.email
+                                            showContactPicker = false
+                                        }
+                                        .padding(vertical = 16.dp)
+                                )
+                                HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+                            }
                         }
                     }
                 }
@@ -671,7 +707,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                     }
                 }) { Text(if (editingContact == null) stringResource(R.string.add) else stringResource(R.string.save), fontSize = textSize.sp) }
             }
-            
+
             Spacer(modifier = Modifier.height(16.dp))
             HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
@@ -724,11 +760,11 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 
     // Auto-save settings
     LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature) {
-        if (email != emailVal || password != passwordVal || imapHost != imapHostVal || 
-            smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal || 
-            syncInterval != syncIntervalVal || enablePush != enablePushVal || 
+        if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
+            smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
+            syncInterval != syncIntervalVal || enablePush != enablePushVal ||
             textSize != textSizeVal || signature != signatureVal) {
-            
+
             // For account settings, we might want a longer debounce, but for others, it can be quick.
             // Let's use 1s debounce for all to be safe and avoid flickering.
             delay(1000)
