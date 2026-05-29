@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -25,6 +26,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -32,6 +34,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
@@ -215,9 +218,9 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                     }
                 }
             },
-            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal)
+            contentWindowInsets = WindowInsets.systemBars
         ) { padding ->
-            Box(modifier = Modifier.padding(padding).imePadding()) {
+            Box(modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
                 when (currentScreen) {
                     Screen.Home -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
                         selectedEmail = emailMsg
@@ -268,7 +271,6 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
     }
 }
 
-
 @Composable
 fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
     Box(modifier = Modifier.fillMaxSize()) {
@@ -287,8 +289,17 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                             .padding(16.dp)
                             .graphicsLayer(alpha = opacity)
                     ) {
-                        Text(text = email.sender, fontSize = (textSize * 0.8f).sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
-                        Text(text = email.subject, fontSize = textSize.sp, fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold)
+                        Text(
+                            text = email.sender.uppercase(), 
+                            fontSize = (textSize * 0.7f).sp, 
+                            fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
+                            color = if (email.isRead) Color.Gray else MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = email.subject, 
+                            fontSize = textSize.sp, 
+                            fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold
+                        )
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                 }
@@ -371,12 +382,34 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
             }
         }
 
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            Button(onClick = onReply) { Text(stringResource(R.string.reply)) }
-            Button(onClick = onForward) { Text(stringResource(R.string.forward)) }
-            Button(onClick = onDelete, colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { 
-                Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.onError) 
-            }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.delete).uppercase(),
+                modifier = Modifier.clickable { onDelete() }.padding(8.dp),
+                color = MaterialTheme.colorScheme.error,
+                fontWeight = FontWeight.Bold,
+                fontSize = (textSize * 0.8f).sp
+            )
+            
+            Text(
+                text = stringResource(R.string.forward).uppercase(),
+                modifier = Modifier.clickable { onForward() }.padding(8.dp),
+                fontWeight = FontWeight.Bold,
+                fontSize = (textSize * 0.8f).sp
+            )
+
+            Text(
+                text = stringResource(R.string.reply).uppercase(),
+                modifier = Modifier.clickable { onReply() }.padding(8.dp),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = (textSize * 0.8f).sp
+            )
         }
     }
 }
@@ -499,6 +532,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
 
     val replyPrefix = stringResource(R.string.reply_subject_prefix, originalEmail?.subject ?: "")
     val forwardPrefix = stringResource(R.string.forward_subject_prefix, originalEmail?.subject ?: "")
+    val attribution = originalEmail?.let { stringResource(R.string.reply_attribution, it.date, it.sender) } ?: ""
 
     var to by remember { mutableStateOf(
         when(mode) {
@@ -516,142 +550,185 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
     var content by remember { mutableStateOf("") }
     var showContactPicker by remember { mutableStateOf(false) }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        stringResource(when(mode) {
-                            ComposeMode.Reply -> R.string.reply
-                            ComposeMode.Forward -> R.string.forward
-                            ComposeMode.New -> R.string.new_email
-                        }),
-                        fontWeight = FontWeight.Bold
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = onFinished) {
-                        Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel))
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        // Custom Light Phone Style Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.cancel).uppercase(),
+                modifier = Modifier.clickable { onFinished() },
+                fontWeight = FontWeight.Bold,
+                fontSize = (textSize * 0.8f).sp,
+                letterSpacing = 1.sp
+            )
+            
+            Text(
+                text = stringResource(when(mode) {
+                    ComposeMode.Reply -> R.string.reply
+                    ComposeMode.Forward -> R.string.forward
+                    ComposeMode.New -> R.string.new_email
+                }).uppercase(),
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = textSize.sp,
+                letterSpacing = 2.sp
+            )
+
+            Text(
+                text = stringResource(R.string.send).uppercase(),
+                modifier = Modifier.clickable {
+                    if (to.isEmpty()) {
+                        Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
+                        return@clickable
+                    }
+                    val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
+                        val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
+                        "$content\n\n--\n$signature\n$attribution\n$quote"
+                    } else {
+                        "$content\n\n--\n$signature"
+                    }
+                    viewModel.sendEmail(to, subject, fullBody) { success ->
+                        if (success) {
+                            Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                            onFinished()
+                        } else {
+                            Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                        }
                     }
                 },
-                actions = {
-                    IconButton(onClick = {
-                        if (to.isEmpty()) {
-                            Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
-                            return@IconButton
-                        }
-                        val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
-                            "$content\n\n--\n$signature\n\n--- Original Message ---\n${originalEmail.content}"
-                        } else {
-                            "$content\n\n--\n$signature"
-                        }
-                        viewModel.sendEmail(to, subject, fullBody) { success ->
-                            if (success) {
-                                Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
-                                onFinished()
-                            } else {
-                                Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    }) {
-                        Icon(Icons.Default.Send, contentDescription = stringResource(R.string.send))
+                fontWeight = FontWeight.Bold,
+                fontSize = (textSize * 0.8f).sp,
+                letterSpacing = 1.sp
+            )
+        }
+
+        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.onBackground)
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp)
+                .verticalScroll(rememberScrollState())
+                .imePadding()
+        ) {
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            LightTextField(
+                value = to,
+                onValueChange = { to = it },
+                label = stringResource(R.string.to_label),
+                textSize = textSize,
+                singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = { showContactPicker = true }) {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp))
                     }
                 }
             )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            LightTextField(
+                value = subject,
+                onValueChange = { subject = it },
+                label = stringResource(R.string.subject_label),
+                textSize = textSize,
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            LightTextField(
+                value = content,
+                onValueChange = { content = it },
+                label = stringResource(R.string.your_message_label),
+                textSize = textSize,
+                minLines = 15,
+                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = stringResource(R.string.signature_preview, signature),
+                fontSize = (textSize * 0.7f).sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
         }
-    ) { padding ->
-        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-                Text(text = stringResource(R.string.from_label, accountEmail), fontSize = (textSize * 0.8f).sp, modifier = Modifier.padding(bottom = 8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    OutlinedTextField(
-                        value = to, 
-                        onValueChange = { to = it }, 
-                        label = { Text(stringResource(R.string.to_label)) }, 
-                        modifier = Modifier.weight(1f),
-                        textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp)
-                    )
-                    IconButton(onClick = { showContactPicker = true }) { Icon(Icons.Default.Person, contentDescription = null) }
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = subject, 
-                    onValueChange = { subject = it }, 
-                    label = { Text(stringResource(R.string.subject_label)) }, 
-                    modifier = Modifier.fillMaxWidth(),
-                    textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = content, 
-                    onValueChange = { content = it }, 
-                    label = { Text(stringResource(R.string.your_message_label)) }, 
-                    modifier = Modifier.fillMaxWidth(), 
-                    minLines = 10,
-                    textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(stringResource(R.string.signature_preview, signature), fontSize = (textSize * 0.7f).sp, color = Color.Gray)
-            }
+    }
 
-            if (showContactPicker) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .clickable(enabled = false) {}
-                ) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp)
+    if (showContactPicker) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable(enabled = false) {}
+        ) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp)
+            ) {
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        item {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.select_contact),
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 20.sp
-                                )
-                                IconButton(onClick = { showContactPicker = false }) {
-                                    Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
-                            if (contacts.isEmpty()) {
-                                Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = "No contacts selected",
-                                        color = Color.White.copy(alpha = 0.5f),
-                                        fontSize = 18.sp
-                                    )
-                                }
-                            }
+                        Text(
+                            text = stringResource(R.string.select_contact).uppercase(),
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = textSize.sp,
+                            letterSpacing = 1.sp
+                        )
+                        IconButton(onClick = { showContactPicker = false }) {
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
                         }
-                        
-                        if (contacts.isNotEmpty()) {
-                            items(contacts) { contact ->
-                                Text(
-                                    text = "${contact.name} <${contact.email}>",
-                                    color = Color.White,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            to = contact.email
-                                            showContactPicker = false
-                                        }
-                                        .padding(vertical = 16.dp)
-                                )
-                                HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
-                            }
+                    }
+                    Spacer(modifier = Modifier.height(24.dp))
+                    HorizontalDivider(color = Color.White, thickness = 1.dp)
+                }
+                
+                if (contacts.isEmpty()) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            Text(
+                                text = "NO CONTACTS",
+                                color = Color.White.copy(alpha = 0.5f),
+                                fontSize = (textSize * 0.8f).sp
+                            )
                         }
+                    }
+                } else {
+                    items(contacts) { contact ->
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable {
+                                    to = contact.email
+                                    showContactPicker = false
+                                }
+                                .padding(vertical = 16.dp)
+                        ) {
+                            Text(
+                                text = contact.name.uppercase(),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = (textSize * 0.9f).sp
+                            )
+                            Text(
+                                text = contact.email,
+                                color = Color.White.copy(alpha = 0.7f),
+                                fontSize = (textSize * 0.7f).sp
+                            )
+                        }
+                        HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
                     }
                 }
             }
@@ -666,69 +743,84 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
     var email by remember { mutableStateOf("") }
     var editingContact by remember { mutableStateOf<Contact?>(null) }
 
-    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(16.dp)) {
         item {
             Text(
-                text = if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact),
+                text = (if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact)).uppercase(),
                 fontWeight = FontWeight.Bold,
-                fontSize = textSize.sp
+                fontSize = (textSize * 0.9f).sp,
+                letterSpacing = 1.sp
             )
-            OutlinedTextField(
+            Spacer(modifier = Modifier.height(16.dp))
+            LightTextField(
                 value = name, 
                 onValueChange = { name = it }, 
-                label = { Text(stringResource(R.string.name_label)) }, 
-                modifier = Modifier.fillMaxWidth(), 
-                textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp),
+                label = stringResource(R.string.name_label), 
+                textSize = textSize,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
             )
-            OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth(), textStyle = LocalTextStyle.current.copy(fontSize = textSize.sp))
+            Spacer(modifier = Modifier.height(16.dp))
+            LightTextField(
+                value = email, 
+                onValueChange = { email = it }, 
+                label = stringResource(R.string.email_label), 
+                textSize = textSize
+            )
             
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.End) {
+            Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
                 if (editingContact != null) {
-                    TextButton(onClick = {
-                        editingContact = null
-                        name = ""
-                        email = ""
-                    }) {
-                        Text(stringResource(R.string.cancel), fontSize = textSize.sp)
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                }
-                Button(onClick = {
-                    if (name.isNotEmpty() && email.isNotEmpty()) {
-                        if (editingContact == null) {
-                            viewModel.addContact(name, email)
-                        } else {
-                            viewModel.updateContact(editingContact!!.copy(name = name, email = email))
+                    Text(
+                        stringResource(R.string.cancel).uppercase(), 
+                        modifier = Modifier.clickable {
                             editingContact = null
+                            name = ""
+                            email = ""
+                        }.padding(8.dp),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = (textSize * 0.8f).sp
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                }
+                Text(
+                    (if (editingContact == null) stringResource(R.string.add) else stringResource(R.string.save)).uppercase(),
+                    modifier = Modifier.clickable {
+                        if (name.isNotEmpty() && email.isNotEmpty()) {
+                            if (editingContact == null) {
+                                viewModel.addContact(name, email)
+                            } else {
+                                viewModel.updateContact(editingContact!!.copy(name = name, email = email))
+                                editingContact = null
+                            }
+                            name = ""
+                            email = ""
                         }
-                        name = ""
-                        email = ""
-                    }
-                }) { Text(if (editingContact == null) stringResource(R.string.add) else stringResource(R.string.save), fontSize = textSize.sp) }
+                    }.padding(8.dp),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = (textSize * 0.8f).sp
+                )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(thickness = 1.dp)
+            Spacer(modifier = Modifier.height(24.dp))
         }
 
         items(contacts) { contact ->
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(contact.name, fontWeight = FontWeight.Bold, fontSize = textSize.sp)
-                    Text(contact.email, fontSize = (textSize * 0.8f).sp)
+                    Text(contact.name.uppercase(), fontWeight = FontWeight.Bold, fontSize = (textSize * 0.9f).sp)
+                    Text(contact.email, fontSize = (textSize * 0.7f).sp, color = Color.Gray)
                 }
                 Row {
                     IconButton(onClick = {
                         editingContact = contact
                         name = contact.name
                         email = contact.email
-                    }) { Icon(Icons.Default.Edit, contentDescription = "Edit") }
-                    IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = "Delete") }
+                    }) { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp)) }
+                    IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(20.dp)) }
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
         }
     }
 }
@@ -764,57 +856,61 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
             syncInterval != syncIntervalVal || enablePush != enablePushVal ||
             textSize != textSizeVal || signature != signatureVal) {
-
-            // For account settings, we might want a longer debounce, but for others, it can be quick.
-            // Let's use 1s debounce for all to be safe and avoid flickering.
             delay(1000)
             viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature)
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Text(stringResource(R.string.settings_title), fontWeight = FontWeight.Bold, fontSize = 20.sp)
-        Spacer(modifier = Modifier.height(16.dp))
+    Column(modifier = Modifier.fillMaxSize().imePadding().padding(16.dp).verticalScroll(rememberScrollState())) {
+        Text(stringResource(R.string.settings_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, letterSpacing = 2.sp)
+        Spacer(modifier = Modifier.height(24.dp))
 
         Text(
             text = stringResource(R.string.outlook_oauth_warning),
             color = MaterialTheme.colorScheme.error,
-            fontSize = 12.sp,
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontSize = 11.sp,
+            modifier = Modifier.padding(bottom = 16.dp)
         )
 
-        Text(stringResource(R.string.add_imap_account_title), fontWeight = FontWeight.Bold)
-        OutlinedTextField(value = email, onValueChange = { email = it }, label = { Text(stringResource(R.string.email_label)) }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(
+        Text(stringResource(R.string.add_imap_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+        LightTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label), textSize = 16f)
+        Spacer(modifier = Modifier.height(16.dp))
+        LightTextField(
             value = password, onValueChange = { password = it },
-            label = { Text(stringResource(R.string.password_label)) },
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.password_label),
+            textSize = 16f,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, modifier = Modifier.size(20.dp))
                 }
             }
         )
-        OutlinedTextField(value = imapHost, onValueChange = { imapHost = it }, label = { Text(stringResource(R.string.imap_server_label)) }, modifier = Modifier.fillMaxWidth())
-        
         Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.add_smtp_account_title), fontWeight = FontWeight.Bold)
-        OutlinedTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = { Text(stringResource(R.string.smtp_server_label)) }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = { Text(stringResource(R.string.smtp_port_label)) }, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(
+        LightTextField(value = imapHost, onValueChange = { imapHost = it }, label = stringResource(R.string.imap_server_label), textSize = 16f)
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(stringResource(R.string.add_smtp_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(8.dp))
+        LightTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = stringResource(R.string.smtp_server_label), textSize = 16f)
+        Spacer(modifier = Modifier.height(16.dp))
+        LightTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = stringResource(R.string.smtp_port_label), textSize = 16f)
+        Spacer(modifier = Modifier.height(16.dp))
+        LightTextField(
             value = senderName, 
             onValueChange = { senderName = it }, 
-            label = { Text(stringResource(R.string.sender_name_label)) }, 
-            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(R.string.sender_name_label),
+            textSize = 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.sync_interval_label), fontWeight = FontWeight.Bold)
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(stringResource(R.string.sync_interval_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.Start) {
             listOf(3, 5, 15).forEach { min ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(end = 16.dp)) {
                     RadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
                     val label = when(min) {
                         3 -> stringResource(R.string.sync_3_min)
@@ -822,64 +918,44 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                         15 -> stringResource(R.string.sync_15_min)
                         else -> "$min min"
                     }
-                    Text(
-                        text = label,
-                        fontSize = 14.sp,
-                        color = if (min < 15 && syncInterval == min) MaterialTheme.colorScheme.error else Color.Unspecified
-                    )
+                    Text(text = label, fontSize = 14.sp)
                 }
-            }
-        }
-
-        if (syncInterval == 3 || syncInterval == 5) {
-            Text(
-                text = stringResource(R.string.sync_warning),
-                color = MaterialTheme.colorScheme.error,
-                fontSize = 11.sp,
-                modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { enablePush = !enablePush }) {
-            LightSwitch(checked = enablePush, onCheckedChange = { enablePush = it })
-            Spacer(modifier = Modifier.width(8.dp))
-            Column {
-                Text(stringResource(R.string.enable_push_label), fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-                Text(
-                    stringResource(R.string.push_battery_warning),
-                    fontSize = 10.sp,
-                    color = Color.White,
-                    modifier = Modifier.background(Color.Black).padding(horizontal = 4.dp)
-                )
             }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.text_size_label, textSize.toInt()), fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { enablePush = !enablePush }) {
+            LightSwitch(checked = enablePush, onCheckedChange = { enablePush = it })
+            Spacer(modifier = Modifier.width(12.dp))
+            Column {
+                Text(stringResource(R.string.enable_push_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(stringResource(R.string.push_battery_warning), fontSize = 10.sp, color = Color.Gray)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${size.toInt()}", fontSize = 12.sp, color = if (textSize == size) Color.White else Color.Gray)
-                    LightSwitch(
-                        checked = textSize == size,
-                        onCheckedChange = { if (it) textSize = size }
-                    )
+                    Text("${size.toInt()}", fontSize = 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
+                    LightSwitch(checked = textSize == size, onCheckedChange = { if (it) textSize = size })
                 }
             }
         }
 
-        Text(stringResource(R.string.email_signature_title), fontWeight = FontWeight.Bold)
-        OutlinedTextField(
+        Spacer(modifier = Modifier.height(16.dp))
+        LightTextField(
             value = signature, 
             onValueChange = { signature = it }, 
-            modifier = Modifier.fillMaxWidth(), 
-            label = { Text(stringResource(R.string.signature_label)) },
+            label = stringResource(R.string.signature_label),
+            textSize = 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
@@ -900,23 +976,17 @@ fun AboutScreen() {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            imageVector = Icons.Default.Info,
-            contentDescription = null,
-            modifier = Modifier.size(100.dp),
-            tint = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, fontSize = 24.sp)
-        Text(stringResource(R.string.version_label, versionName ?: "1.0"), fontSize = 14.sp)
-        Spacer(modifier = Modifier.height(24.dp))
+        Text(stringResource(R.string.app_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, letterSpacing = 4.sp)
+        Text(stringResource(R.string.version_label, versionName ?: "1.0").uppercase(), fontSize = 12.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(48.dp))
         Text(
             text = stringResource(R.string.app_description),
             textAlign = TextAlign.Center,
-            fontSize = 12.sp
+            fontSize = 13.sp,
+            lineHeight = 20.sp
         )
-        Spacer(modifier = Modifier.height(32.dp))
-        Text(stringResource(R.string.copyright), fontSize = 14.sp)
+        Spacer(modifier = Modifier.height(48.dp))
+        Text(stringResource(R.string.copyright).uppercase(), fontSize = 10.sp, color = Color.Gray)
     }
 }
 
@@ -928,25 +998,71 @@ fun LightSwitch(
 ) {
     Box(
         modifier = modifier
-            .width(30.dp)
-            .height(18.dp)
+            .width(40.dp)
+            .height(24.dp)
             .clickable { onCheckedChange(!checked) },
         contentAlignment = Alignment.Center
     ) {
-        // Track
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(1.dp)
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.onBackground)
         )
-        // Thumb
         Box(
             modifier = Modifier
                 .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
-                .size(12.dp)
-                .background(Color.Black)
-                .border(1.5.dp, Color.White, androidx.compose.foundation.shape.CircleShape)
+                .size(16.dp)
+                .background(MaterialTheme.colorScheme.background)
+                .border(2.dp, MaterialTheme.colorScheme.onBackground, androidx.compose.foundation.shape.CircleShape)
+        )
+    }
+}
+
+@Composable
+fun LightTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    modifier: Modifier = Modifier,
+    textSize: Float = 16f,
+    singleLine: Boolean = false,
+    minLines: Int = 1,
+    keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    trailingIcon: @Composable (() -> Unit)? = null
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Text(
+            text = label.uppercase(),
+            fontSize = (textSize * 0.7f).sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Gray,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                modifier = Modifier.weight(1f),
+                textStyle = LocalTextStyle.current.copy(
+                    fontSize = textSize.sp,
+                    color = MaterialTheme.colorScheme.onBackground
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                singleLine = singleLine,
+                minLines = minLines,
+                keyboardOptions = keyboardOptions,
+                visualTransformation = visualTransformation
+            )
+            if (trailingIcon != null) {
+                trailingIcon()
+            }
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(top = 4.dp),
+            thickness = 1.dp,
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
         )
     }
 }
