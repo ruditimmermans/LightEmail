@@ -281,25 +281,35 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
                 items(emails) { email ->
-                    val opacity = if (email.isRead) 0.5f else 1.0f
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onEmailClick(email) }
-                            .padding(16.dp)
-                            .graphicsLayer(alpha = opacity)
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = email.sender.uppercase(), 
-                            fontSize = (textSize * 0.7f).sp, 
-                            fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
-                            color = if (email.isRead) Color.Gray else MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = email.subject, 
-                            fontSize = textSize.sp, 
-                            fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = email.sender.uppercase(), 
+                                fontSize = (textSize * 0.7f).sp, 
+                                fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                            Text(
+                                text = email.subject, 
+                                fontSize = textSize.sp, 
+                                fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+                        if (email.isRead) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                     HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                 }
@@ -1013,8 +1023,8 @@ fun LightSwitch(
             modifier = Modifier
                 .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
                 .size(16.dp)
-                .background(MaterialTheme.colorScheme.background)
-                .border(2.dp, MaterialTheme.colorScheme.onBackground, androidx.compose.foundation.shape.CircleShape)
+                .background(if (checked) Color.White else MaterialTheme.colorScheme.background, androidx.compose.foundation.shape.CircleShape)
+                .border(2.dp, if (checked) Color.White else MaterialTheme.colorScheme.onBackground, androidx.compose.foundation.shape.CircleShape)
         )
     }
 }
