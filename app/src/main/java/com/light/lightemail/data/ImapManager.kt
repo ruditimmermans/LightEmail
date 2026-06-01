@@ -52,22 +52,36 @@ class ImapManager {
             folder = store.getFolder(folderName) as IMAPFolder
             folder.open(Folder.READ_ONLY)
 
+            if (store is com.sun.mail.imap.IMAPStore && !store.hasCapability("IDLE")) {
+                // If IDLE is not supported, we can't do much here except return
+                // and let the caller handle it (e.g. by falling back to polling)
+                return
+            }
+
             folder.addMessageCountListener(object : MessageCountAdapter() {
                 override fun messagesAdded(e: MessageCountEvent) {
-                    onNewMessage()
-                }
-                override fun messagesRemoved(e: MessageCountEvent) {
                     onNewMessage()
                 }
             })
 
             while (!Thread.interrupted() && store.isConnected) {
                 if (!folder.isOpen) folder.open(Folder.READ_ONLY)
-                // idle() blocks until a change or timeout (approx 30 mins)
-                folder.idle()
+                
+                try {
+                    // Start IDLE. This blocks until a message arrives or server kicks us.
+                    folder.idle()
+                } catch (e: Exception) {
+                    // If IDLE fails, try to recover
+                    if (!store.isConnected) break
+                }
+                
+                // Periodically check if connection is still alive if idle() returns
+                // or just loop back and re-enter IDLE.
+                // Some servers time out after 29-30 minutes.
             }
         } catch (e: Exception) {
             e.printStackTrace()
+            throw e // Rethrow to let EmailPushService handle the delay/restart
         } finally {
             try {
                 folder?.close(false)

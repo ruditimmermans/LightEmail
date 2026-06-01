@@ -5,10 +5,12 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,11 +27,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -921,7 +927,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.Start) {
             listOf(3, 5, 15).forEach { min ->
                 Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(end = 16.dp)) {
-                    RadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
+                    LightRadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
+                    Spacer(modifier = Modifier.width(8.dp))
                     val label = when(min) {
                         3 -> stringResource(R.string.sync_3_min)
                         5 -> stringResource(R.string.sync_5_min)
@@ -934,11 +941,17 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         }
 
         Spacer(modifier = Modifier.height(16.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().clickable { enablePush = !enablePush }) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 44.dp)
+                .clickable { enablePush = !enablePush }
+        ) {
             LightSwitch(checked = enablePush, onCheckedChange = { enablePush = it })
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(18.dp))
             Column {
-                Text(stringResource(R.string.enable_push_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                Text(stringResource(R.string.enable_push_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Text(stringResource(R.string.push_battery_warning), fontSize = 10.sp, color = Color.Gray)
             }
         }
@@ -952,7 +965,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("${size.toInt()}", fontSize = 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
-                    LightSwitch(checked = textSize == size, onCheckedChange = { if (it) textSize = size })
+                    Spacer(modifier = Modifier.height(4.dp))
+                    LightRadioButton(selected = textSize == size, onClick = { textSize = size })
                 }
             }
         }
@@ -1001,31 +1015,84 @@ fun AboutScreen() {
 }
 
 @Composable
+fun LightRadioButton(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(16.dp)
+            .clickable { onClick() }
+            .border(1.dp, MaterialTheme.colorScheme.onBackground),
+        contentAlignment = Alignment.Center
+    ) {
+        if (selected) {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .background(MaterialTheme.colorScheme.onBackground)
+            )
+        }
+    }
+}
+
+@Composable
 fun LightSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(
+    val color = MaterialTheme.colorScheme.onBackground
+    val density = LocalDensity.current
+
+    // Values from the Light OS style code provided
+    val circleSize = 13.dp
+    val lineWidth = 19.dp
+    val lineHeight = 3.dp
+    val borderSize = 3.dp
+
+    Canvas(
         modifier = modifier
-            .width(40.dp)
-            .height(24.dp)
-            .clickable { onCheckedChange(!checked) },
-        contentAlignment = Alignment.Center
+            .size(width = circleSize + lineWidth, height = circleSize)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onCheckedChange(!checked) }
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .background(MaterialTheme.colorScheme.onBackground)
-        )
-        Box(
-            modifier = Modifier
-                .align(if (checked) Alignment.CenterEnd else Alignment.CenterStart)
-                .size(16.dp)
-                .background(if (checked) Color.White else MaterialTheme.colorScheme.background, androidx.compose.foundation.shape.CircleShape)
-                .border(2.dp, if (checked) Color.White else MaterialTheme.colorScheme.onBackground, androidx.compose.foundation.shape.CircleShape)
-        )
+        val cy = size.height / 2f
+        val r = circleSize.toPx() / 2f
+        val lw = lineWidth.toPx()
+        val lh = lineHeight.toPx()
+        val b = borderSize.toPx()
+        val cs = circleSize.toPx()
+
+        if (checked) {
+            // line on the left, filled dot on the right
+            drawRect(
+                color = color,
+                topLeft = Offset(0f, cy - lh / 2),
+                size = Size(lw, lh)
+            )
+            drawCircle(
+                color = color,
+                radius = r,
+                center = Offset(lw + r, cy)
+            )
+        } else {
+            // hollow dot on the left, line on the right
+            drawCircle(
+                color = color,
+                radius = r - b / 2,
+                center = Offset(r, cy),
+                style = Stroke(width = b)
+            )
+            drawRect(
+                color = color,
+                topLeft = Offset(cs, cy - lh / 2),
+                size = Size(lw, lh)
+            )
+        }
     }
 }
 

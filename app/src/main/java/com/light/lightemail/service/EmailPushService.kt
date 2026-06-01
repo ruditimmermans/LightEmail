@@ -4,6 +4,10 @@ import android.app.*
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
@@ -18,6 +22,22 @@ import kotlinx.coroutines.*
 class EmailPushService : Service() {
     private val serviceScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private var idleJob: Job? = null
+    private var connectivityManager: ConnectivityManager? = null
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            startIdleListening()
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val request = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+        connectivityManager?.registerNetworkCallback(request, networkCallback)
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -58,17 +78,23 @@ class EmailPushService : Service() {
         idleJob?.cancel()
         idleJob = serviceScope.launch {
             val prefs = getSharedPreferences("light_email_prefs", Context.MODE_PRIVATE)
-            val email = prefs.getString("email", null)
-            val password = prefs.getString("password", null)
-            val host = prefs.getString("host", null)
+            
+            while (isActive) {
+                val email = prefs.getString("email", null)
+                val password = prefs.getString("password", null)
+                val host = prefs.getString("host", null)
 
-            if (email != null && password != null && host != null) {
-                val imapManager = ImapManager()
-                while (isActive) {
+                if (email != null && password != null && host != null) {
+                    val imapManager = ImapManager()
                     try {
                         imapManager.startIdle(email, password, host) {
                             // Trigger SyncWorker to fetch details and notify
                             val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                                .setConstraints(
+                                    androidx.work.Constraints.Builder()
+                                        .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                        .build()
+                                )
                                 .build()
                             WorkManager.getInstance(applicationContext).enqueueUniqueWork(
                                 "email_sync_push",
@@ -78,18 +104,21 @@ class EmailPushService : Service() {
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        // Use a shorter delay if it was a timeout, or longer if it's a real error
-                        delay(60000) // 1 minute
+                        // If it fails, wait a bit before retrying.
+                        // Shorter delay for potential transient network issues.
+                        delay(30000) 
                     }
+                } else {
+                    stopSelf()
+                    break
                 }
-            } else {
-                stopSelf()
             }
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        connectivityManager?.unregisterNetworkCallback(networkCallback)
         serviceScope.cancel()
     }
 }

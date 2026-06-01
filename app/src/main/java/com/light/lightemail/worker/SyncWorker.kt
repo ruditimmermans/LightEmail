@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -26,27 +27,25 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             email = email,
             password = password,
             host = host,
-            limit = 1,
+            limit = 5, // Fetch more than 1 to catch multiple new emails
             noSubjectString = applicationContext.getString(R.string.no_subject),
             unknownSenderString = applicationContext.getString(R.string.unknown_sender),
             errorReadingContentString = applicationContext.getString(R.string.error_reading_content),
-            fetchContent = false // Don't fetch content in background to save battery/data
+            fetchContent = false
         )
 
         if (emails.isNotEmpty()) {
-            val latestEmail = emails.first()
             val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+            val newEmails = emails.filter { it.uid > lastSeenUid && !it.isRead }
             
-            if (latestEmail.uid > lastSeenUid) {
-                if (!latestEmail.isRead) {
-                    showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid)
-                }
-                // Update last_seen_uid even if read, so we don't process it again
-                prefs.edit().putLong("last_seen_uid", latestEmail.uid).commit()
-            } else if (latestEmail.uid < lastSeenUid || (latestEmail.uid == lastSeenUid && latestEmail.isRead)) {
-                // If the latest email is now older than what we last saw, 
-                // it means the one we notified for was likely deleted.
-                // Or if the latest is the same but now marked as read.
+            if (newEmails.isNotEmpty()) {
+                val latestEmail = newEmails.first()
+                showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid, newEmails.size)
+                
+                val maxUid = newEmails.maxOf { it.uid }
+                prefs.edit().putLong("last_seen_uid", maxUid).apply()
+            } else {
+                // No new unread emails found, possibly they were read or deleted elsewhere
                 cancelNotification()
             }
         } else {
@@ -100,12 +99,23 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         return Result.success()
     }
 
-    private fun showNotification(sender: String, subject: String, uid: Long) {
-        val channelId = "new_email_channel"
+    private fun showNotification(sender: String, subject: String, uid: Long, count: Int = 1) {
+        val channelId = "new_email_channel_v2"
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val channel = NotificationChannel(channelId, "New Emails", NotificationManager.IMPORTANCE_DEFAULT)
-        notificationManager.createNotificationChannel(channel)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                channelId,
+                applicationContext.getString(R.string.new_emails_channel_name),
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = applicationContext.getString(R.string.new_emails_channel_desc)
+                enableLights(true)
+                enableVibration(true)
+                setShowBadge(true)
+            }
+            notificationManager.createNotificationChannel(channel)
+        }
 
         val intent = Intent(applicationContext, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -118,13 +128,22 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val title = if (count > 1) {
+            applicationContext.getString(R.string.new_emails_count, count)
+        } else {
+            applicationContext.getString(R.string.new_email_from, sender)
+        }
+
         val notification = NotificationCompat.Builder(applicationContext, channelId)
             .setSmallIcon(android.R.drawable.ic_dialog_email)
-            .setContentTitle("New Email from $sender")
+            .setContentTitle(title)
             .setContentText(subject)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setNumber(count)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
+            .setCategory(NotificationCompat.CATEGORY_EMAIL)
             .build()
 
         notificationManager.notify(1, notification)
