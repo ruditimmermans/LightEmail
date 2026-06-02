@@ -31,10 +31,11 @@ You can download directly from GitHub.
 
 ## Screenshots 📷
 
-| | | |
-|---|---|---|
-| <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/1.png" /> | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/2.png" /> | <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/3.png" /> |
-| <img width="250" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/4.png" /> |
+<img width="2160" height="900" alt="image" src="https://github.com/ruditimmermans/LightEmail/blob/main/screenshots/combined.png" />
+
+### [LightEmail](https://github.com/ruditimmermans/LightEmail) ([ruditimmermans](https://github.com/ruditimmermans))
+
+An Simply E-Mail client for the Light Phone.
 
 ## GitHub
 The latest releases can be found here: [releases](https://github.com/ruditimmermans/LightEmail/releases). You may need to enable downloading tools from unknown sources to install it.
