@@ -849,8 +849,6 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val smtpHostVal by viewModel.smtpHost.collectAsState()
     val smtpPortVal by viewModel.smtpPort.collectAsState()
     val senderNameVal by viewModel.senderName.collectAsState()
-    val syncIntervalVal by viewModel.syncInterval.collectAsState()
-    val enablePushVal by viewModel.enablePush.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
 
@@ -860,20 +858,17 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var smtpHost by remember { mutableStateOf(smtpHostVal) }
     var smtpPort by remember { mutableStateOf(smtpPortVal) }
     var senderName by remember { mutableStateOf(senderNameVal) }
-    var syncInterval by remember { mutableIntStateOf(syncIntervalVal) }
-    var enablePush by remember { mutableStateOf(enablePushVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
-            syncInterval != syncIntervalVal || enablePush != enablePushVal ||
             textSize != textSizeVal || signature != signatureVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, syncInterval, enablePush, textSize, signature)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature)
         }
     }
 
@@ -923,38 +918,6 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         )
 
         Spacer(modifier = Modifier.height(24.dp))
-        Text(stringResource(R.string.sync_interval_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.Start) {
-            listOf(3, 5, 15).forEach { min ->
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable { syncInterval = min }.padding(end = 16.dp)) {
-                    LightRadioButton(selected = syncInterval == min, onClick = { syncInterval = min })
-                    Spacer(modifier = Modifier.width(8.dp))
-                    val label = when(min) {
-                        3 -> stringResource(R.string.sync_3_min)
-                        5 -> stringResource(R.string.sync_5_min)
-                        15 -> stringResource(R.string.sync_15_min)
-                        else -> "$min min"
-                    }
-                    Text(text = label, fontSize = 14.sp)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 44.dp)
-                .clickable { enablePush = !enablePush }
-        ) {
-            LightSwitch(checked = enablePush, onCheckedChange = { enablePush = it })
-            Spacer(modifier = Modifier.width(18.dp))
-            Column {
-                Text(stringResource(R.string.enable_push_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(stringResource(R.string.push_battery_warning), fontSize = 10.sp, color = Color.Gray)
-            }
-        }
 
         Spacer(modifier = Modifier.height(24.dp))
         Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)

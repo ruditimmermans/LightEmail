@@ -49,10 +49,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _senderName = MutableStateFlow(prefs.getString("sender_name", "") ?: "")
     val senderName: StateFlow<String> = _senderName
 
-    private val _syncInterval = MutableStateFlow(prefs.getInt("sync_interval", 15))
-    val syncInterval: StateFlow<Int> = _syncInterval
-
-    private val _enablePush = MutableStateFlow(prefs.getBoolean("enable_push", false))
+    private val _enablePush = MutableStateFlow(true)
     val enablePush: StateFlow<Boolean> = _enablePush
 
     private val _textSize = MutableStateFlow(prefs.getFloat("text_size", 16f))
@@ -74,13 +71,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (_accountEmail.value.isNotEmpty()) {
             refreshEmails()
             refreshFolders()
-            scheduleSync(_syncInterval.value)
-            updatePushService(_enablePush.value)
+            updatePushService(true)
         }
 
         viewModelScope.launch {
             SyncEvent.events.collectLatest {
-                refreshEmails()
+                refreshEmails(showLoading = false)
                 refreshFolders()
             }
         }
@@ -93,8 +89,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         smtpHost: String,
         smtpPort: String,
         senderName: String,
-        syncInterval: Int,
-        enablePush: Boolean,
         textSize: Float,
         signature: String
     ) {
@@ -104,8 +98,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _smtpHost.value = smtpHost
         _smtpPort.value = smtpPort
         _senderName.value = senderName
-        _syncInterval.value = syncInterval
-        _enablePush.value = enablePush
         _textSize.value = textSize
         _signature.value = signature
 
@@ -116,8 +108,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putString("smtp_host", smtpHost)
             putString("smtp_port", smtpPort)
             putString("sender_name", senderName)
-            putInt("sync_interval", syncInterval)
-            putBoolean("enable_push", enablePush)
+            putBoolean("enable_push", true)
             putFloat("text_size", textSize)
             putString("signature", signature)
             apply()
@@ -125,8 +116,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         
         refreshEmails()
         refreshFolders()
-        scheduleSync(syncInterval)
-        updatePushService(enablePush)
+        updatePushService(true)
     }
 
     private fun updatePushService(enabled: Boolean) {
@@ -138,39 +128,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun scheduleSync(intervalMinutes: Int) {
-        val workManager = WorkManager.getInstance(getApplication())
-        workManager.cancelUniqueWork("email_sync")
-
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .setRequiresBatteryNotLow(true)
-            .build()
-
-        if (intervalMinutes >= 15) {
-            val syncRequest = PeriodicWorkRequestBuilder<SyncWorker>(intervalMinutes.toLong(), TimeUnit.MINUTES)
-                .setConstraints(constraints)
-                .build()
-            
-            workManager.enqueueUniquePeriodicWork(
-                "email_sync",
-                ExistingPeriodicWorkPolicy.UPDATE,
-                syncRequest
-            )
-        } else {
-            // For intervals < 15 min, we use OneTimeWorkRequest and the worker will reschedule itself
-            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-                .setInitialDelay(intervalMinutes.toLong(), TimeUnit.MINUTES)
-                .setConstraints(constraints)
-                .build()
-            
-            workManager.enqueueUniqueWork(
-                "email_sync",
-                ExistingWorkPolicy.REPLACE,
-                syncRequest
-            )
-        }
-    }
 
     fun selectFolder(folder: String) {
         _currentFolder.value = folder

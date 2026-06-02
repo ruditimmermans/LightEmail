@@ -16,6 +16,28 @@ import com.light.lightemail.data.SyncEvent
 
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
+    override suspend fun getForegroundInfo(): androidx.work.ForegroundInfo {
+        val channelId = "push_service_channel"
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val channel = NotificationChannel(
+                channelId,
+                applicationContext.getString(R.string.push_service_channel_name),
+                NotificationManager.IMPORTANCE_LOW
+            )
+            notificationManager.createNotificationChannel(channel)
+        }
+
+        val notification = NotificationCompat.Builder(applicationContext, channelId)
+            .setContentTitle(applicationContext.getString(R.string.push_service_title))
+            .setContentText(applicationContext.getString(R.string.push_service_desc))
+            .setSmallIcon(android.R.drawable.ic_dialog_email)
+            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .build()
+
+        return androidx.work.ForegroundInfo(1001, notification)
+    }
+
     override suspend fun doWork(): Result {
         val prefs = applicationContext.getSharedPreferences("light_email_prefs", Context.MODE_PRIVATE)
         val email = prefs.getString("email", null) ?: return Result.success()
@@ -27,7 +49,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             email = email,
             password = password,
             host = host,
-            limit = 5, // Fetch more than 1 to catch multiple new emails
+            limit = 10, // Fetch 10 to be sure we catch multiple new emails
             noSubjectString = applicationContext.getString(R.string.no_subject),
             unknownSenderString = applicationContext.getString(R.string.unknown_sender),
             errorReadingContentString = applicationContext.getString(R.string.error_reading_content),
@@ -55,46 +77,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         // Trigger UI refresh if app is in foreground
         SyncEvent.trigger()
-
-        // Reschedule if interval < 15 minutes and push is not enabled
-        val syncInterval = prefs.getInt("sync_interval", 15)
-        val enablePush = prefs.getBoolean("enable_push", false)
-        
-        if (syncInterval < 15 && !enablePush) {
-            val workManager = androidx.work.WorkManager.getInstance(applicationContext)
-            
-            // Check battery level manually for aggressive rescheduling
-            val batteryStatus: android.content.Intent? = android.content.IntentFilter(android.content.Intent.ACTION_BATTERY_CHANGED).let { ifilter ->
-                applicationContext.registerReceiver(null, ifilter)
-            }
-            val status: Int = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_STATUS, -1) ?: -1
-            val isCharging: Boolean = status == android.os.BatteryManager.BATTERY_STATUS_CHARGING ||
-                                     status == android.os.BatteryManager.BATTERY_STATUS_FULL
-            
-            // If battery is low and not charging, force a longer interval (at least 15 min)
-            val effectiveInterval = if (!isCharging && syncInterval < 15) {
-                val level: Int = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_LEVEL, -1) ?: -1
-                val scale: Int = batteryStatus?.getIntExtra(android.os.BatteryManager.EXTRA_SCALE, -1) ?: -1
-                val batteryPct = level * 100 / scale.toFloat()
-                if (batteryPct < 20) 15 else syncInterval
-            } else {
-                syncInterval
-            }
-
-            val syncRequest = androidx.work.OneTimeWorkRequestBuilder<SyncWorker>()
-                .setInitialDelay(effectiveInterval.toLong(), java.util.concurrent.TimeUnit.MINUTES)
-                .setConstraints(androidx.work.Constraints.Builder()
-                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                    .setRequiresBatteryNotLow(true)
-                    .build())
-                .build()
-            
-            workManager.enqueueUniqueWork(
-                "email_sync",
-                androidx.work.ExistingWorkPolicy.REPLACE,
-                syncRequest
-            )
-        }
 
         return Result.success()
     }

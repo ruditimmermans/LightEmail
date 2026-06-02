@@ -42,10 +42,6 @@
     <string name="smtp_server_label">SMTP-server</string>
     <string name="smtp_port_label">SMTP-poort</string>
     <string name="sender_name_label">Naam afzender</string>
-    <string name="sync_interval_label">Synchronisatie-interval</string>
-    <string name="sync_3_min">3 Minuten</string>
-    <string name="sync_5_min">5 Minuten</string>
-    <string name="sync_15_min">15 Minuten</string>
     <string name="add">Toevoegen</string>
     <string name="save">Opslaan</string>
     <string name="show_password">Toon wachtwoord</string>
@@ -69,11 +65,8 @@
     <string name="push_service_channel_name">E-mail Push-service</string>
     <string name="push_service_title">LightEmail is actief</string>
     <string name="push_service_desc">Luisteren naar nieuwe e-mails (Batterijgeoptimaliseerd)…</string>
-    <string name="enable_push_label">Push inschakelen (Real-time meldingen)</string>
-    <string name="push_battery_warning">Push kan de batterijduur beïnvloeden op Light Phone 3.</string>
     <string name="new_emails_channel_name">Nieuwe e-mails</string>
     <string name="new_emails_channel_desc">Meldingen voor nieuwe inkomende e-mails</string>
     <string name="new_email_from">Nieuwe e-mail van %1$s</string>
     <string name="new_emails_count">%1$d nieuwe e-mails</string>
-    <string name="sync_warning">Opmerking: Frequent synchroniseren kan de batterijduur beïnvloeden op Light Phone 3.</string>
 </resources>

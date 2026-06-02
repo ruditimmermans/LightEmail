@@ -90,6 +90,7 @@ class EmailPushService : Service() {
                         imapManager.startIdle(email, password, host) {
                             // Trigger SyncWorker to fetch details and notify
                             val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                                .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                                 .setConstraints(
                                     androidx.work.Constraints.Builder()
                                         .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
