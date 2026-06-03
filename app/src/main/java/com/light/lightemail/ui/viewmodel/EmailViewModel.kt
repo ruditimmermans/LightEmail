@@ -217,29 +217,34 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             if (showLoading) _isLoading.value = true
-            val fetchedEmails = withContext(Dispatchers.IO) {
-                imapManager.fetchEmails(
-                    email = email,
-                    password = password,
-                    host = host,
-                    folderName = folder,
-                    noSubjectString = getApplication<Application>().getString(R.string.no_subject),
-                    unknownSenderString = getApplication<Application>().getString(R.string.unknown_sender),
-                    errorReadingContentString = getApplication<Application>().getString(R.string.error_reading_content)
-                )
-            }
-            _emails.value = fetchedEmails
-            
-            // Update last seen UID to avoid duplicate notifications for emails already seen in app
-            if (folder == "Inbox" && fetchedEmails.isNotEmpty()) {
-                val latestUid = fetchedEmails.first().uid
-                val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
-                if (latestUid > lastSeenUid) {
-                    prefs.edit().putLong("last_seen_uid", latestUid).apply()
+            try {
+                val fetchedEmails = withContext(Dispatchers.IO) {
+                    imapManager.fetchEmails(
+                        email = email,
+                        password = password,
+                        host = host,
+                        folderName = folder,
+                        noSubjectString = getApplication<Application>().getString(R.string.no_subject),
+                        unknownSenderString = getApplication<Application>().getString(R.string.unknown_sender),
+                        errorReadingContentString = getApplication<Application>().getString(R.string.error_reading_content)
+                    )
                 }
+                _emails.value = fetchedEmails
+                
+                // Update last seen UID to avoid duplicate notifications for emails already seen in app
+                if (folder == "Inbox" && fetchedEmails.isNotEmpty()) {
+                    val latestUid = fetchedEmails.first().uid
+                    val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                    if (latestUid > lastSeenUid) {
+                        prefs.edit().putLong("last_seen_uid", latestUid).apply()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                // Optionally show error to user
+            } finally {
+                if (showLoading) _isLoading.value = false
             }
-
-            if (showLoading) _isLoading.value = false
         }
     }
 

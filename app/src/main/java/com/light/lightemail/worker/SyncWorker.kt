@@ -45,34 +45,39 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val host = prefs.getString("host", null) ?: return Result.success()
 
         val imapManager = ImapManager()
-        val emails = imapManager.fetchEmails(
-            email = email,
-            password = password,
-            host = host,
-            limit = 10, // Fetch 10 to be sure we catch multiple new emails
-            noSubjectString = applicationContext.getString(R.string.no_subject),
-            unknownSenderString = applicationContext.getString(R.string.unknown_sender),
-            errorReadingContentString = applicationContext.getString(R.string.error_reading_content),
-            fetchContent = false
-        )
+        try {
+            val emails = imapManager.fetchEmails(
+                email = email,
+                password = password,
+                host = host,
+                limit = 10, // Fetch 10 to be sure we catch multiple new emails
+                noSubjectString = applicationContext.getString(R.string.no_subject),
+                unknownSenderString = applicationContext.getString(R.string.unknown_sender),
+                errorReadingContentString = applicationContext.getString(R.string.error_reading_content),
+                fetchContent = false
+            )
 
-        if (emails.isNotEmpty()) {
-            val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
-            val newEmails = emails.filter { it.uid > lastSeenUid && !it.isRead }
-            
-            if (newEmails.isNotEmpty()) {
-                val latestEmail = newEmails.first()
-                showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid, newEmails.size)
+            if (emails.isNotEmpty()) {
+                val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                val newEmails = emails.filter { it.uid > lastSeenUid && !it.isRead }
                 
-                val maxUid = newEmails.maxOf { it.uid }
-                prefs.edit().putLong("last_seen_uid", maxUid).apply()
+                if (newEmails.isNotEmpty()) {
+                    val latestEmail = newEmails.first()
+                    showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid, newEmails.size)
+                    
+                    val maxUid = newEmails.maxOf { it.uid }
+                    prefs.edit().putLong("last_seen_uid", maxUid).apply()
+                } else {
+                    // No new unread emails found, possibly they were read or deleted elsewhere
+                    cancelNotification()
+                }
             } else {
-                // No new unread emails found, possibly they were read or deleted elsewhere
+                // No emails in folder, clear any pending notification
                 cancelNotification()
             }
-        } else {
-            // No emails in folder, clear any pending notification
-            cancelNotification()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return Result.retry()
         }
 
         // Trigger UI refresh if app is in foreground

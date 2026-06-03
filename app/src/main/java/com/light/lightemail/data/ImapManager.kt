@@ -3,8 +3,7 @@ package com.light.lightemail.data
 import com.sun.mail.imap.IMAPFolder
 import java.util.Properties
 import javax.mail.*
-import javax.mail.event.MessageCountAdapter
-import javax.mail.event.MessageCountEvent
+import javax.mail.event.*
 import javax.mail.internet.InternetAddress
 import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
@@ -35,7 +34,7 @@ class ImapManager {
         password: String,
         host: String,
         folderName: String = "Inbox",
-        onNewMessage: () -> Unit
+        onFolderChanged: () -> Unit
     ) {
         val properties = getImapProperties(host)
         // IDLE requires keeping the connection open
@@ -58,9 +57,21 @@ class ImapManager {
                 return
             }
 
-            folder.addMessageCountListener(object : MessageCountAdapter() {
+            val listener = object : MessageCountAdapter() {
                 override fun messagesAdded(e: MessageCountEvent) {
-                    onNewMessage()
+                    onFolderChanged()
+                }
+
+                override fun messagesRemoved(e: MessageCountEvent) {
+                    onFolderChanged()
+                }
+            }
+            folder.addMessageCountListener(listener)
+
+            // Also listen for flag changes (e.g. marked as read on other device)
+            folder.addMessageChangedListener(object : MessageChangedListener {
+                override fun messageChanged(e: MessageChangedEvent) {
+                    onFolderChanged()
                 }
             })
 
@@ -160,7 +171,7 @@ class ImapManager {
             result
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
+            throw e
         }
     }
 
