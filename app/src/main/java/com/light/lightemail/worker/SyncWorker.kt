@@ -46,33 +46,26 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         val imapManager = ImapManager()
         try {
-            val emails = imapManager.fetchEmails(
+            val unreadEmails = imapManager.fetchUnreadEmails(
                 email = email,
                 password = password,
                 host = host,
-                limit = 10, // Fetch 10 to be sure we catch multiple new emails
+                limit = 10,
                 noSubjectString = applicationContext.getString(R.string.no_subject),
-                unknownSenderString = applicationContext.getString(R.string.unknown_sender),
-                errorReadingContentString = applicationContext.getString(R.string.error_reading_content),
-                fetchContent = false
+                unknownSenderString = applicationContext.getString(R.string.unknown_sender)
             )
 
-            if (emails.isNotEmpty()) {
-                val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
-                val newEmails = emails.filter { it.uid > lastSeenUid && !it.isRead }
+            if (unreadEmails.isNotEmpty()) {
+                val latestEmail = unreadEmails.first()
+                showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid, unreadEmails.size)
                 
-                if (newEmails.isNotEmpty()) {
-                    val latestEmail = newEmails.first()
-                    showNotification(latestEmail.sender, latestEmail.subject, latestEmail.uid, newEmails.size)
-                    
-                    val maxUid = newEmails.maxOf { it.uid }
+                val maxUid = unreadEmails.maxOf { it.uid }
+                val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                if (maxUid > lastSeenUid) {
                     prefs.edit().putLong("last_seen_uid", maxUid).apply()
-                } else {
-                    // No new unread emails found, possibly they were read or deleted elsewhere
-                    cancelNotification()
                 }
             } else {
-                // No emails in folder, clear any pending notification
+                // No unread emails found (all read or deleted)
                 cancelNotification()
             }
         } catch (e: Exception) {

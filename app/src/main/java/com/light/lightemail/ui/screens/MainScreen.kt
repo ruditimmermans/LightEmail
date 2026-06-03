@@ -230,15 +230,20 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                 when (currentScreen) {
                     Screen.Home -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
                         selectedEmail = emailMsg
-                        viewModel.markAsRead(emailMsg)
                         currentScreen = Screen.ViewEmail
+                        viewModel.markAsRead(emailMsg)
                     }
                     Screen.About -> AboutScreen()
                     Screen.Settings -> SettingsScreen(viewModel = viewModel)
                     Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
                     Screen.ViewEmail -> {
-                        // Find the email in the list to get the one with content once it's fetched
-                        val emailToDisplay = emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+                        // Use derivedStateOf to avoid unnecessary recompositions while viewing
+                        val emailToDisplay by remember(selectedEmail, emails) {
+                            derivedStateOf {
+                                emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+                            }
+                        }
+
                         emailToDisplay?.let { email ->
                             EmailDetailScreen(
                                 email = email,
@@ -286,7 +291,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(emails) { email ->
+                items(emails, key = { it.uid }) { email ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -498,6 +503,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             )
         }
     } else {
+        val lastLoadedHtml = remember { mutableStateOf("") }
         AndroidView(
             factory = { context ->
                 try {
@@ -529,8 +535,9 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
                 }
             },
             update = { webView ->
-                if (webView is WebView) {
+                if (webView is WebView && lastLoadedHtml.value != styledHtml) {
                     webView.loadDataWithBaseURL(null, styledHtml, "text/html", "utf-8", null)
+                    lastLoadedHtml.value = styledHtml
                 }
             },
             modifier = Modifier.fillMaxSize().background(Color.Black)

@@ -23,7 +23,9 @@ class ImapManager {
         properties["mail.imaps.timeout"] = "10000" // 10s
         properties["mail.imaps.compress.enable"] = "true" // Enable compression
         properties["mail.imaps.partialfetch"] = "true"
-        properties["mail.imaps.fetchsize"] = "16384"
+        properties["mail.imaps.fetchsize"] = "1048576" // Increase fetch size to 1MB for faster transfers
+        properties["mail.imaps.connectionpoolsize"] = "5"
+        properties["mail.imaps.connectionpooltimeout"] = "300000"
         // IDLE optimization
         properties["mail.imaps.peek"] = "true"
         return properties
@@ -141,7 +143,9 @@ class ImapManager {
             val fp = FetchProfile()
             fp.add(FetchProfile.Item.ENVELOPE)
             fp.add(FetchProfile.Item.FLAGS)
-            fp.add(FetchProfile.Item.CONTENT_INFO)
+            if (fetchContent) {
+                fp.add(FetchProfile.Item.CONTENT_INFO)
+            }
             if (folder is IMAPFolder) {
                 fp.add(UIDFolder.FetchProfileItem.UID)
             }
@@ -163,6 +167,67 @@ class ImapManager {
                     date = msg.sentDate?.toString() ?: "",
                     folder = folderName,
                     isRead = msg.flags.contains(Flags.Flag.SEEN)
+                )
+            }
+
+            folder.close(false)
+            store.close()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            throw e
+        }
+    }
+
+    fun fetchUnreadEmails(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String = "Inbox",
+        limit: Int = 10,
+        noSubjectString: String = "(No Subject)",
+        unknownSenderString: String = "Unknown"
+    ): List<EmailMessage> {
+        val properties = getImapProperties(host)
+
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = store.getFolder(folderName)
+            folder.open(Folder.READ_ONLY)
+
+            val unreadMessages = folder.search(FlagTerm(Flags(Flags.Flag.SEEN), false))
+            
+            if (unreadMessages.isEmpty()) {
+                folder.close(false)
+                store.close()
+                return emptyList()
+            }
+
+            // Take the latest 'limit' unread messages
+            val lastUnread = unreadMessages.reversedArray().take(limit).toTypedArray()
+            
+            val fp = FetchProfile()
+            fp.add(FetchProfile.Item.ENVELOPE)
+            fp.add(FetchProfile.Item.FLAGS)
+            if (folder is IMAPFolder) {
+                fp.add(UIDFolder.FetchProfileItem.UID)
+            }
+            folder.fetch(lastUnread, fp)
+
+            val result = lastUnread.map { msg ->
+                EmailMessage(
+                    id = msg.messageNumber.toString(),
+                    uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
+                    subject = msg.subject ?: noSubjectString,
+                    sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
+                    content = "",
+                    htmlContent = null,
+                    date = msg.sentDate?.toString() ?: "",
+                    folder = folderName,
+                    isRead = false
                 )
             }
 

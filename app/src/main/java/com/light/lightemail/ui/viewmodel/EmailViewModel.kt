@@ -130,27 +130,31 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
 
     fun selectFolder(folder: String) {
+        if (_currentFolder.value == folder) return
         _currentFolder.value = folder
         refreshEmails()
     }
 
     fun markAsRead(emailMessage: EmailMessage) {
-        if (emailMessage.isRead) {
-            // Even if already read, we might need to fetch content if it's missing
-            if (emailMessage.content.isEmpty() || (emailMessage.content == getApplication<Application>().getString(R.string.error_reading_content))) {
-                fetchEmailContent(emailMessage)
-            }
-            return
-        }
-
         // Remove notification when email is read
         val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(1)
 
-        viewModelScope.launch {
-            // Fetch content if missing while marking as read
-            fetchEmailContent(emailMessage)
+        // Update local state to show as read immediately (optimistic UI)
+        if (!emailMessage.isRead) {
+            _emails.value = _emails.value.map {
+                if (it.uid == emailMessage.uid) it.copy(isRead = true) else it
+            }
+        }
 
+        // Always try to fetch content if it's missing, even if already read
+        if (emailMessage.content.isEmpty() || (emailMessage.content == getApplication<Application>().getString(R.string.error_reading_content))) {
+            fetchEmailContent(emailMessage)
+        }
+
+        if (emailMessage.isRead) return
+
+        viewModelScope.launch {
             withContext(Dispatchers.IO) {
                 imapManager.markAsRead(
                     _accountEmail.value,
@@ -160,10 +164,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     emailMessage.id.toInt()
                 )
             }
-            // Update local state to show as read immediately
-            _emails.value = _emails.value.map {
-                if (it.uid == emailMessage.uid) it.copy(isRead = true) else it
-            }
+            // Update folders to reflect unread count change
             refreshFolders()
         }
     }
@@ -211,10 +212,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
         if (email.isEmpty()) return
 
-        // Clear notification when refreshing emails (viewing the list)
-        val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(1)
-
         viewModelScope.launch {
             if (showLoading) _isLoading.value = true
             try {
@@ -229,9 +226,56 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                         errorReadingContentString = getApplication<Application>().getString(R.string.error_reading_content)
                     )
                 }
-                _emails.value = fetchedEmails
                 
-                // Update last seen UID to avoid duplicate notifications for emails already seen in app
+                // Merge with existing emails to preserve fetched content and avoid flickering
+                val currentEmailsMap = _emails.value.associateBy { it.uid }
+                val mergedEmails = fetchedEmails.map { newEmail ->
+                    val existing = currentEmailsMap[newEmail.uid]
+                    if (existing != null) {
+                        newEmail.copy(
+                            content = if (newEmail.content.isEmpty()) existing.content else newEmail.content,
+                            htmlContent = newEmail.htmlContent ?: existing.htmlContent,
+                            // Preserve local read status if it was changed recently
+                            isRead = if (existing.isRead) true else newEmail.isRead
+                        )
+                    } else {
+                        newEmail
+                    }
+                }
+                _emails.value = mergedEmails
+                
+                // Pre-fetch content for the latest emails in the background to make them open "immediately"
+                launch(Dispatchers.IO) {
+                    val currentList = _emails.value.toMutableList()
+                    var anyChanged = false
+                    
+                    // Fetch content for top 10 emails that don't have it yet
+                    mergedEmails.take(10).forEach { email ->
+                        if (email.content.isEmpty() || email.content == getApplication<Application>().getString(R.string.error_reading_content)) {
+                            val (text, html) = imapManager.fetchEmailContent(
+                                _accountEmail.value,
+                                _accountPassword.value,
+                                _imapHost.value,
+                                email.folder,
+                                email.uid,
+                                getApplication<Application>().getString(R.string.error_reading_content)
+                            )
+                            val index = currentList.indexOfFirst { it.uid == email.uid }
+                            if (index != -1) {
+                                currentList[index] = currentList[index].copy(content = text, htmlContent = html)
+                                anyChanged = true
+                            }
+                        }
+                    }
+                    
+                    if (anyChanged) {
+                        withContext(Dispatchers.Main) {
+                            _emails.value = currentList.toList()
+                        }
+                    }
+                }
+
+                // Update last seen UID to avoid duplicate notifications
                 if (folder == "Inbox" && fetchedEmails.isNotEmpty()) {
                     val latestUid = fetchedEmails.first().uid
                     val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
@@ -241,7 +285,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                // Optionally show error to user
             } finally {
                 if (showLoading) _isLoading.value = false
             }
