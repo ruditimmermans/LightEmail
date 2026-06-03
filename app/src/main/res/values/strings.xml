@@ -69,4 +69,11 @@
     <string name="new_emails_channel_desc">Notifications for new incoming emails</string>
     <string name="new_email_from">New Email from %1$s</string>
     <string name="new_emails_count">%1$d new emails</string>
+
+    <string name="background_settings_title">Background Settings</string>
+    <string name="battery_optimization_label">Unlimited Battery Mode</string>
+    <string name="battery_optimization_desc">Ensure the app runs in the background without being killed.</string>
+    <string name="app_hibernation_label">Disable App Hibernation</string>
+    <string name="app_hibernation_desc">Prevent the system from pausing the app if it\'s not used for a while.</string>
+    <string name="configure">Configure</string>
 </resources>

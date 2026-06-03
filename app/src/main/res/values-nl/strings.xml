@@ -69,4 +69,11 @@
     <string name="new_emails_channel_desc">Meldingen voor nieuwe inkomende e-mails</string>
     <string name="new_email_from">Nieuwe e-mail van %1$s</string>
     <string name="new_emails_count">%1$d nieuwe e-mails</string>
+
+    <string name="background_settings_title">Achtergrondinstellingen</string>
+    <string name="battery_optimization_label">Onbeperkte Batterijmodus</string>
+    <string name="battery_optimization_desc">Zorg ervoor dat de app op de achtergrond blijft draaien.</string>
+    <string name="app_hibernation_label">App-hibernatie Uitschakelen</string>
+    <string name="app_hibernation_desc">Voorkom dat het systeem de app pauzeert als deze een tijdje niet wordt gebruikt.</string>
+    <string name="configure">Configureren</string>
 </resources>

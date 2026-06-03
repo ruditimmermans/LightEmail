@@ -33,6 +33,7 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
         requestNotificationPermission()
         requestIgnoreBatteryOptimizations()
+        startPushService()
 
         enableEdgeToEdge()
         setContent {
@@ -77,6 +78,15 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+    }
+
+    private fun startPushService() {
+        val serviceIntent = Intent(this, com.light.lightemail.service.EmailPushService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(serviceIntent)
+        } else {
+            startService(serviceIntent)
         }
     }
 }

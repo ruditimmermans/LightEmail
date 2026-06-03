@@ -1,5 +1,10 @@
 package com.light.lightemail.ui.screens
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings
 import android.view.View
 import android.webkit.WebSettings
 import android.webkit.WebView
@@ -949,7 +954,46 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             textSize = 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
+
         Spacer(modifier = Modifier.height(32.dp))
+
+        // Background Settings Section
+        Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Battery Optimization
+        val context = LocalContext.current
+        Column(modifier = Modifier.fillMaxWidth().clickable {
+            try {
+                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                    data = Uri.parse("package:${context.packageName}")
+                }
+                context.startActivity(intent)
+            } catch (e: Exception) {
+                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                context.startActivity(intent)
+            }
+        }) {
+            Text(stringResource(R.string.battery_optimization_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(stringResource(R.string.battery_optimization_desc), fontSize = 12.sp, color = Color.Gray)
+            Text(stringResource(R.string.configure).uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // App Hibernation / Pause if unused
+        Column(modifier = Modifier.fillMaxWidth().clickable {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:${context.packageName}")
+            }
+            context.startActivity(intent)
+        }) {
+            Text(stringResource(R.string.app_hibernation_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(stringResource(R.string.app_hibernation_desc), fontSize = 12.sp, color = Color.Gray)
+            Text(stringResource(R.string.configure).uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+        }
+
+        Spacer(modifier = Modifier.height(48.dp))
     }
 }
 
