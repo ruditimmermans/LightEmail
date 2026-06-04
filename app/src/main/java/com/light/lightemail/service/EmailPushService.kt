@@ -74,6 +74,8 @@ class EmailPushService : Service() {
         }
     }
 
+    private var lastSyncTime = 0L
+
     private fun startIdleListening() {
         idleJob?.cancel()
         idleJob = serviceScope.launch {
@@ -88,20 +90,25 @@ class EmailPushService : Service() {
                     val imapManager = ImapManager()
                     try {
                         imapManager.startIdle(email, password, host) {
-                            // Trigger SyncWorker to fetch details and notify
-                            val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-                                .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                                .setConstraints(
-                                    androidx.work.Constraints.Builder()
-                                        .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                                        .build()
+                            val now = System.currentTimeMillis()
+                            // Debounce sync requests to avoid double notifications from rapid folder events
+                            if (now - lastSyncTime > 2000) {
+                                lastSyncTime = now
+                                // Trigger SyncWorker to fetch details and notify
+                                val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                                    .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                                    .setConstraints(
+                                        androidx.work.Constraints.Builder()
+                                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                            .build()
+                                    )
+                                    .build()
+                                WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+                                    "email_sync_push",
+                                    ExistingWorkPolicy.REPLACE,
+                                    syncRequest
                                 )
-                                .build()
-                            WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-                                "email_sync_push",
-                                ExistingWorkPolicy.REPLACE,
-                                syncRequest
-                            )
+                            }
                         }
                     } catch (e: Exception) {
                         e.printStackTrace()

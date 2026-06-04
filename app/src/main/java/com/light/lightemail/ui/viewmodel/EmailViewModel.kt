@@ -275,12 +275,17 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
 
-                // Update last seen UID to avoid duplicate notifications
+                // Update last seen UID and count to avoid duplicate notifications
                 if (folder == "Inbox" && fetchedEmails.isNotEmpty()) {
                     val latestUid = fetchedEmails.first().uid
                     val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
-                    if (latestUid > lastSeenUid) {
-                        prefs.edit().putLong("last_seen_uid", latestUid).apply()
+                    val unreadCount = fetchedEmails.count { !it.isRead }
+                    
+                    if (latestUid > lastSeenUid || unreadCount.toLong() != prefs.getLong("last_unread_count", -1L)) {
+                        prefs.edit()
+                            .putLong("last_seen_uid", maxOf(latestUid, lastSeenUid))
+                            .putLong("last_unread_count", unreadCount.toLong())
+                            .apply()
                     }
                 }
             } catch (e: Exception) {
