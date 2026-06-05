@@ -34,6 +34,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -578,7 +580,14 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
     var content by remember { mutableStateOf("") }
     var showContactPicker by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    val toFocusRequester = remember { FocusRequester() }
+    val contentFocusRequester = remember { FocusRequester() }
+
+    LaunchedEffect(Unit) {
+        toFocusRequester.requestFocus()
+    }
+
+    Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
         // Custom Light Phone Style Header
         Row(
             modifier = Modifier
@@ -638,10 +647,9 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
-                .imePadding()
         ) {
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -651,6 +659,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 label = stringResource(R.string.to_label),
                 textSize = textSize,
                 singleLine = true,
+                focusRequester = toFocusRequester,
                 trailingIcon = {
                     IconButton(onClick = { showContactPicker = true }) {
                         Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp))
@@ -676,10 +685,34 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 onValueChange = { content = it },
                 label = stringResource(R.string.your_message_label),
                 textSize = textSize,
-                minLines = 15,
+                minLines = 8,
+                focusRequester = contentFocusRequester,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
             
+            if (mode != ComposeMode.New && originalEmail != null) {
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    text = stringResource(R.string.reply_attribution, originalEmail.date, originalEmail.sender).trim(),
+                    fontSize = (textSize * 0.8f).sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .border(1.dp, Color.Gray.copy(alpha = 0.3f))
+                        .padding(12.dp)
+                ) {
+                    Text(
+                        text = originalEmail.content,
+                        fontSize = (textSize * 0.8f).sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
             
             Text(
@@ -1121,7 +1154,8 @@ fun LightTextField(
     minLines: Int = 1,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
-    trailingIcon: @Composable (() -> Unit)? = null
+    trailingIcon: @Composable (() -> Unit)? = null,
+    focusRequester: FocusRequester? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -1132,10 +1166,15 @@ fun LightTextField(
             modifier = Modifier.padding(bottom = 4.dp)
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
+            val textFieldModifier = if (focusRequester != null) {
+                Modifier.weight(1f).focusRequester(focusRequester)
+            } else {
+                Modifier.weight(1f)
+            }
             BasicTextField(
                 value = value,
                 onValueChange = onValueChange,
-                modifier = Modifier.weight(1f),
+                modifier = textFieldModifier,
                 textStyle = LocalTextStyle.current.copy(
                     fontSize = textSize.sp,
                     color = MaterialTheme.colorScheme.onBackground
