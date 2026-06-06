@@ -277,13 +277,18 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                             )
                         }
                     }
-                    Screen.Compose -> ComposeEmailScreen(
-                        viewModel = viewModel,
-                        mode = composeMode,
-                        originalEmail = selectedEmail,
-                        textSize = textSize,
-                        onFinished = { currentScreen = Screen.Home }
-                    )
+                    Screen.Compose -> {
+                        val activeEmail = remember(selectedEmail, emails) {
+                            emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+                        }
+                        ComposeEmailScreen(
+                            viewModel = viewModel,
+                            mode = composeMode,
+                            originalEmail = activeEmail,
+                            textSize = textSize,
+                            onFinished = { currentScreen = Screen.Home }
+                        )
+                    }
                 }
             }
         }
@@ -420,7 +425,7 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
         ) {
             Text(
                 text = stringResource(R.string.delete).uppercase(),
-                modifier = Modifier.clickable { onDelete() }.padding(8.dp),
+                modifier = Modifier.padding(8.dp).clickable { onDelete() },
                 color = MaterialTheme.colorScheme.error,
                 fontWeight = FontWeight.Bold,
                 fontSize = (textSize * 0.8f).sp
@@ -428,14 +433,14 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
             
             Text(
                 text = stringResource(R.string.forward).uppercase(),
-                modifier = Modifier.clickable { onForward() }.padding(8.dp),
+                modifier = Modifier.padding(8.dp).clickable { onForward() },
                 fontWeight = FontWeight.Bold,
                 fontSize = (textSize * 0.8f).sp
             )
 
             Text(
                 text = stringResource(R.string.reply).uppercase(),
-                modifier = Modifier.clickable { onReply() }.padding(8.dp),
+                modifier = Modifier.padding(8.dp).clickable { onReply() },
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = (textSize * 0.8f).sp
             )
@@ -622,6 +627,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 modifier = Modifier
                     .alpha(if (isSending) 0.5f else 1f)
                     .clickable(enabled = !isSending) {
+                        if (isSending) return@clickable
                         if (to.isEmpty()) {
                             Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
                             return@clickable
@@ -709,13 +715,22 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                     modifier = Modifier
                         .fillMaxWidth()
                         .border(1.dp, Color.Gray.copy(alpha = 0.3f))
-                        .padding(12.dp)
+                        .padding(12.dp),
+                    contentAlignment = Alignment.CenterStart
                 ) {
-                    Text(
-                        text = originalEmail.content,
-                        fontSize = (textSize * 0.8f).sp,
-                        color = Color.Gray
-                    )
+                    if (originalEmail.content.isEmpty()) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.Gray
+                        )
+                    } else {
+                        Text(
+                            text = originalEmail.content,
+                            fontSize = (textSize * 0.8f).sp,
+                            color = Color.Gray
+                        )
+                    }
                 }
             }
 
