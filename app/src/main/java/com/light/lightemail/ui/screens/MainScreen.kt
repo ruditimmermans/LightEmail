@@ -32,6 +32,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
@@ -579,6 +580,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
     ) }
     var content by remember { mutableStateOf("") }
     var showContactPicker by remember { mutableStateOf(false) }
+    var isSending by remember { mutableStateOf(false) }
 
     val toFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
@@ -617,26 +619,30 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
 
             Text(
                 text = stringResource(R.string.send).uppercase(),
-                modifier = Modifier.clickable {
-                    if (to.isEmpty()) {
-                        Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
-                        return@clickable
-                    }
-                    val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
-                        val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
-                        "$content\n\n--\n$signature\n$attribution\n$quote"
-                    } else {
-                        "$content\n\n--\n$signature"
-                    }
-                    viewModel.sendEmail(to, subject, fullBody) { success ->
-                        if (success) {
-                            Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
-                            onFinished()
-                        } else {
-                            Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                modifier = Modifier
+                    .alpha(if (isSending) 0.5f else 1f)
+                    .clickable(enabled = !isSending) {
+                        if (to.isEmpty()) {
+                            Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
+                            return@clickable
                         }
-                    }
-                },
+                        val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
+                            val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
+                            "$content\n\n--\n$signature\n$attribution\n$quote"
+                        } else {
+                            "$content\n\n--\n$signature"
+                        }
+                        isSending = true
+                        viewModel.sendEmail(to, subject, fullBody) { success ->
+                            if (success) {
+                                Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                                onFinished()
+                            } else {
+                                isSending = false
+                                Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    },
                 fontWeight = FontWeight.Bold,
                 fontSize = (textSize * 0.8f).sp,
                 letterSpacing = 1.sp
