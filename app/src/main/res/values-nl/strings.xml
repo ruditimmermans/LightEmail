@@ -76,4 +76,11 @@
     <string name="app_hibernation_label">App-hibernatie Uitschakelen</string>
     <string name="app_hibernation_desc">Voorkom dat het systeem de app pauzeert als deze een tijdje niet wordt gebruikt.</string>
     <string name="configure">Configureren</string>
+    <string name="backup_restore_title">Back-up &amp; Herstel</string>
+    <string name="backup_label">Back-up Instellingen &amp; Accounts</string>
+    <string name="restore_label">Herstel Instellingen &amp; Accounts</string>
+    <string name="backup_success">Back-up geslaagd</string>
+    <string name="backup_failed">Back-up mislukt</string>
+    <string name="restore_success">Herstel geslaagd. Start de app opnieuw op.</string>
+    <string name="restore_failed">Herstel mislukt</string>
 </resources>

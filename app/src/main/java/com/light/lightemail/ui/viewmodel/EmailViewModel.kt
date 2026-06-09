@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.work.*
 import com.light.lightemail.R
 import com.light.lightemail.data.AppDatabase
+import com.light.lightemail.data.BackupManager
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.data.ImapManager
@@ -67,6 +68,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val db = AppDatabase.getDatabase(application)
     val contacts = db.contactDao().getAllContacts()
 
+    private val backupManager = BackupManager(application)
+
     init {
         if (_accountEmail.value.isNotEmpty()) {
             refreshEmails()
@@ -79,6 +82,35 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 refreshEmails(showLoading = false)
                 refreshFolders()
             }
+        }
+    }
+
+    fun exportBackup(outputStream: java.io.OutputStream, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.exportBackup(outputStream)
+            onResult(success)
+        }
+    }
+
+    fun importBackup(inputStream: java.io.InputStream, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = backupManager.importBackup(inputStream)
+            if (success) {
+                // Reload settings into StateFlows
+                _accountEmail.value = prefs.getString("email", "") ?: ""
+                _accountPassword.value = prefs.getString("password", "") ?: ""
+                _imapHost.value = prefs.getString("host", "posteo.de") ?: "posteo.de"
+                _smtpHost.value = prefs.getString("smtp_host", "posteo.de") ?: "posteo.de"
+                _smtpPort.value = prefs.getString("smtp_port", "465") ?: "465"
+                _senderName.value = prefs.getString("sender_name", "") ?: ""
+                _textSize.value = prefs.getFloat("text_size", 16f)
+                _signature.value = prefs.getString("signature", getApplication<Application>().getString(R.string.default_signature)) ?: getApplication<Application>().getString(R.string.default_signature)
+                
+                refreshEmails()
+                refreshFolders()
+                updatePushService(true)
+            }
+            onResult(success)
         }
     }
 

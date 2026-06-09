@@ -10,6 +10,8 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -909,6 +911,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
 
 @Composable
 fun SettingsScreen(viewModel: EmailViewModel) {
+    val context = LocalContext.current
     val emailVal by viewModel.accountEmail.collectAsState()
     val passwordVal by viewModel.accountPassword.collectAsState()
     val imapHostVal by viewModel.imapHost.collectAsState()
@@ -927,6 +930,32 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    val backupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/json"),
+        onResult = { uri ->
+            uri?.let {
+                context.contentResolver.openOutputStream(it)?.let { outputStream ->
+                    viewModel.exportBackup(outputStream) { success ->
+                        Toast.makeText(context, if (success) R.string.backup_success else R.string.backup_failed, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
+    )
+
+    val restoreLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+        onResult = { uri ->
+            uri?.let {
+                context.contentResolver.openInputStream(it)?.let { inputStream ->
+                    viewModel.importBackup(inputStream) { success ->
+                        Toast.makeText(context, if (success) R.string.restore_success else R.string.restore_failed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            }
+        }
+    )
 
     // Auto-save settings
     LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature) {
@@ -1045,6 +1074,26 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             Text(stringResource(R.string.app_hibernation_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
             Text(stringResource(R.string.app_hibernation_desc), fontSize = 12.sp, color = Color.Gray)
             Text(stringResource(R.string.configure).uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+        }
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        // Backup & Restore
+        Text(stringResource(R.string.backup_restore_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Column(modifier = Modifier.fillMaxWidth().clickable {
+            backupLauncher.launch("lightemail_backup.json")
+        }) {
+            Text(stringResource(R.string.backup_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Column(modifier = Modifier.fillMaxWidth().clickable {
+            restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "*/*"))
+        }) {
+            Text(stringResource(R.string.restore_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
         }
 
         Spacer(modifier = Modifier.height(48.dp))
