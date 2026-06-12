@@ -1,0 +1,18 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- L-shape layer -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M18,42 v48 h58 v-10 h-48 v-38 z" />
+    <!-- Main envelope body -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M32,22 h64 v48 h-64 v-48 z M42,32 h44 v28 h-44 v-28 z" />
+    <!-- Envelope flap -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M32,22 l32,25 l32,-25 v10 l-32,25 l-32,-25 z" />
+</vector>

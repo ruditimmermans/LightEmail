@@ -91,6 +91,11 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
+    val isVerySmallScreen = configuration.screenHeightDp < 480
 
     // Handle deep link from notification
     LaunchedEffect(initialEmailUid, emails) {
@@ -109,25 +114,25 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text(stringResource(R.string.folders), modifier = Modifier.padding(16.dp), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.folders), modifier = Modifier.padding(if (isVerySmallScreen) 8.dp else 16.dp), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
                 HorizontalDivider()
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(folders) { folder ->
                         NavigationDrawerItem(
                             label = { 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(folder.name, modifier = Modifier.weight(1f))
+                                    Text(folder.name, modifier = Modifier.weight(1f), fontSize = if (isVerySmallScreen) 13.sp else 14.sp)
                                     if (folder.unreadCount > 0) {
-                                        Badge(containerColor = MaterialTheme.colorScheme.primary) {
-                                            Text(folder.unreadCount.toString(), color = Color.White)
+                                        Badge(containerColor = MaterialTheme.colorScheme.primary, modifier = if (isVerySmallScreen) Modifier.size(16.dp) else Modifier) {
+                                            Text(folder.unreadCount.toString(), color = Color.White, fontSize = if (isVerySmallScreen) 10.sp else 12.sp)
                                         }
-                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Spacer(modifier = Modifier.width(if (isVerySmallScreen) 4.dp else 8.dp))
                                     }
-                                    Text("(${folder.messageCount})", fontSize = 12.sp, color = Color.Gray)
+                                    Text("(${folder.messageCount})", fontSize = if (isVerySmallScreen) 10.sp else 12.sp, color = Color.Gray)
                                     if (folder.name.lowercase().contains("trash")) {
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        IconButton(onClick = { viewModel.emptyTrash() }, modifier = Modifier.size(24.dp)) {
-                                            Icon(Icons.Default.DeleteSweep, contentDescription = "Empty Trash", modifier = Modifier.size(16.dp))
+                                        Spacer(modifier = Modifier.width(if (isVerySmallScreen) 4.dp else 8.dp))
+                                        IconButton(onClick = { viewModel.emptyTrash() }, modifier = Modifier.size(if (isVerySmallScreen) 20.dp else 24.dp)) {
+                                            Icon(Icons.Default.DeleteSweep, contentDescription = "Empty Trash", modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp))
                                         }
                                     }
                                 }
@@ -137,7 +142,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                                 viewModel.selectFolder(folder.name)
                                 scope.launch { drawerState.close() }
                             },
-                            modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                            modifier = Modifier.padding(if (isVerySmallScreen) PaddingValues(horizontal = 8.dp, vertical = 2.dp) else NavigationDrawerItemDefaults.ItemPadding)
                         )
                     }
                 }
@@ -149,29 +154,38 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
         Scaffold(
             topBar = {
                 if (currentScreen != Screen.Compose) {
+                    val titleStyle = if (isVerySmallScreen)
+                        MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    else if (isShortScreen) 
+                        MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    else 
+                        MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+
                     CenterAlignedTopAppBar(
-                        title = { Text(stringResource(R.string.app_title), fontWeight = FontWeight.Bold, letterSpacing = 2.sp) },
+                        title = { Text(stringResource(R.string.app_title), style = titleStyle) },
                         navigationIcon = {
                             val isTopLevelScreen = currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)
                             if (isTopLevelScreen) {
                                 if (currentScreen == Screen.Home) {
                                     IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                        Icon(Icons.Default.Menu, contentDescription = "Menu", modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
                                     }
                                 }
                             } else {
                                 IconButton(onClick = { currentScreen = Screen.Home }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
                                 }
                             }
                         },
                         actions = {
                             if (currentScreen == Screen.Home && accountEmail.isNotEmpty()) {
                                 IconButton(onClick = { viewModel.refreshEmails() }) {
-                                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh))
+                                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
                                 }
                             }
-                        }
+                        },
+                        windowInsets = TopAppBarDefaults.windowInsets,
+                        modifier = if (isVerySmallScreen) Modifier.height(56.dp) else Modifier
                     )
                 }
             },
@@ -179,7 +193,9 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                 if (currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)) {
                     NavigationBar(
                         containerColor = Color.Black,
-                        contentColor = Color.White
+                        contentColor = Color.White,
+                        windowInsets = NavigationBarDefaults.windowInsets,
+                        modifier = if (isVerySmallScreen) Modifier.height(48.dp) else if (isShortScreen) Modifier.height(64.dp) else Modifier
                     ) {
                         val itemColors = NavigationBarItemDefaults.colors(
                             selectedIconColor = Color.White,
@@ -191,30 +207,34 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
                             onClick = { currentScreen = Screen.Home },
-                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null) },
-                            label = { Text(stringResource(R.string.home)) },
-                            colors = itemColors
+                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
+                            label = { if (!isShortScreen) Text(stringResource(R.string.home)) },
+                            colors = itemColors,
+                            alwaysShowLabel = !isShortScreen
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.AddressBook,
                             onClick = { currentScreen = Screen.AddressBook },
-                            icon = { Icon(Icons.Outlined.Person, contentDescription = null) },
-                            label = { Text(stringResource(R.string.address_book)) },
-                            colors = itemColors
+                            icon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
+                            label = { if (!isShortScreen) Text(stringResource(R.string.address_book)) },
+                            colors = itemColors,
+                            alwaysShowLabel = !isShortScreen
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
                             onClick = { currentScreen = Screen.Settings },
-                            icon = { Icon(Icons.Outlined.Settings, contentDescription = null) },
-                            label = { Text(stringResource(R.string.settings)) },
-                            colors = itemColors
+                            icon = { Icon(Icons.Outlined.Settings, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
+                            label = { if (!isShortScreen) Text(stringResource(R.string.settings)) },
+                            colors = itemColors,
+                            alwaysShowLabel = !isShortScreen
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
                             onClick = { currentScreen = Screen.About },
-                            icon = { Icon(Icons.Outlined.Info, contentDescription = null) },
-                            label = { Text(stringResource(R.string.about)) },
-                            colors = itemColors
+                            icon = { Icon(Icons.Outlined.Info, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
+                            label = { if (!isShortScreen) Text(stringResource(R.string.about)) },
+                            colors = itemColors,
+                            alwaysShowLabel = !isShortScreen
                         )
                     }
                 }
@@ -228,9 +248,10 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                             currentScreen = Screen.Compose
                         },
                         containerColor = Color.Black,
-                        contentColor = Color.White
+                        contentColor = Color.White,
+                        modifier = if (isVerySmallScreen) Modifier.size(48.dp) else Modifier
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose))
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
                     }
                 }
             },
@@ -299,6 +320,9 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
 
 @Composable
 fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+    
     Box(modifier = Modifier.fillMaxSize()) {
         if (emails.isEmpty() && !isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -311,7 +335,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { onEmailClick(email) }
-                            .padding(16.dp),
+                            .padding(if (isVerySmallScreen) 8.dp else 16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
@@ -325,7 +349,8 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                                 text = email.subject, 
                                 fontSize = textSize.sp, 
                                 fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
-                                color = Color.White
+                                color = Color.White,
+                                maxLines = if (isVerySmallScreen) 1 else 2
                             )
                         }
                         if (email.isRead) {
@@ -333,7 +358,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(if (isVerySmallScreen) 12.dp else 16.dp)
                             )
                         }
                     }
@@ -362,9 +387,13 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
 @Composable
 fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onAddContact: (String, String) -> Unit) {
     val isDark = isSystemInDarkTheme()
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+
+    Column(modifier = Modifier.fillMaxSize().padding(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = email.subject, fontSize = (textSize * 1.2f).sp, fontWeight = FontWeight.Bold)
+            Text(text = email.subject, fontSize = (textSize * (if (isVerySmallScreen) 1.0f else if (isShortScreen) 1.1f else 1.2f)).sp, fontWeight = FontWeight.Bold)
             
             // Clickable sender to add to contact
             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable {
@@ -378,15 +407,15 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                     emailAddr = email.sender.trim()
                 }
                 onAddContact(if (name.isNotEmpty()) name else emailAddr, emailAddr)
-            }) {
-                Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp, modifier = Modifier.weight(1f))
-                Icon(Icons.Default.PersonAdd, contentDescription = "Add Contact", modifier = Modifier.size(18.dp))
+            }.padding(vertical = if (isVerySmallScreen) 1.dp else if (isShortScreen) 2.dp else 4.dp)) {
+                Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp, modifier = Modifier.weight(1f), maxLines = 1)
+                Icon(Icons.Default.PersonAdd, contentDescription = "Add Contact", modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 18.dp))
             }
             
             Text(text = stringResource(R.string.date_label, email.date), fontSize = (textSize * 0.8f).sp)
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
             HorizontalDivider()
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
             
             if (email.htmlContent != null) {
                 HtmlView(html = email.htmlContent, isDark = isDark, textSize = textSize)
@@ -395,15 +424,17 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                     modifier = Modifier
                         .fillMaxSize()
                         .background(Color.Black)
-                        .padding(8.dp)
+                        .padding(if (isVerySmallScreen) 4.dp else 8.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.secure_text_email),
-                        color = Color.Green,
-                        fontSize = (textSize * 0.7f).sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                    if (!isVerySmallScreen) {
+                        Text(
+                            text = stringResource(R.string.secure_text_email),
+                            color = Color.Green,
+                            fontSize = (textSize * 0.7f).sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
                     Text(
                         text = email.content,
                         fontSize = textSize.sp,
@@ -421,31 +452,43 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
+                .padding(vertical = if (isVerySmallScreen) 4.dp else 8.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = stringResource(R.string.delete).uppercase(),
-                modifier = Modifier.padding(8.dp).clickable { onDelete() },
-                color = MaterialTheme.colorScheme.error,
-                fontWeight = FontWeight.Bold,
-                fontSize = (textSize * 0.8f).sp
-            )
-            
-            Text(
-                text = stringResource(R.string.forward).uppercase(),
-                modifier = Modifier.padding(8.dp).clickable { onForward() },
-                fontWeight = FontWeight.Bold,
-                fontSize = (textSize * 0.8f).sp
-            )
+            if (isVerySmallScreen) {
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error)
+                }
+                IconButton(onClick = onForward) {
+                    Icon(Icons.Default.Forward, contentDescription = stringResource(R.string.forward))
+                }
+                IconButton(onClick = onReply) {
+                    Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply))
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.delete).uppercase(),
+                    modifier = Modifier.padding(8.dp).clickable { onDelete() },
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (textSize * 0.8f).sp
+                )
+                
+                Text(
+                    text = stringResource(R.string.forward).uppercase(),
+                    modifier = Modifier.padding(8.dp).clickable { onForward() },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = (textSize * 0.8f).sp
+                )
 
-            Text(
-                text = stringResource(R.string.reply).uppercase(),
-                modifier = Modifier.padding(8.dp).clickable { onReply() },
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = (textSize * 0.8f).sp
-            )
+                Text(
+                    text = stringResource(R.string.reply).uppercase(),
+                    modifier = Modifier.padding(8.dp).clickable { onReply() },
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = (textSize * 0.8f).sp
+                )
+            }
         }
     }
 }
@@ -453,6 +496,9 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
 @Composable
 fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+    
     // Force black background for HTML emails as requested by user
     val backgroundColor = "#000000"
     val textColor = "#FFFFFF"
@@ -474,7 +520,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             font-size: ${textSize}px !important;
             line-height: 1.5 !important;
             margin: 0;
-            padding: 12px;
+            padding: ${if (isVerySmallScreen) "4px" else "12px"};
         }
         /* Ensure images are visible and responsive */
         img { 
@@ -534,8 +580,8 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
                             }
                         }
                         settings.javaScriptEnabled = false
-                        settings.loadWithOverviewMode = false
-                        settings.useWideViewPort = false
+                        settings.loadWithOverviewMode = true
+                        settings.useWideViewPort = true
                         settings.textZoom = 100
                         settings.domStorageEnabled = true
                         settings.loadsImagesAutomatically = true
@@ -564,6 +610,10 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
 @Composable
 fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEmail: EmailMessage?, textSize: Float, onFinished: () -> Unit) {
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+    
     val accountEmail by viewModel.accountEmail.collectAsState()
     val signature by viewModel.signature.collectAsState()
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
@@ -601,7 +651,12 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 16.dp, start = 16.dp, end = 16.dp, bottom = 8.dp),
+                .padding(
+                    top = if (isVerySmallScreen) 8.dp else if (isShortScreen) 12.dp else 16.dp, 
+                    start = 16.dp, 
+                    end = 16.dp, 
+                    bottom = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 8.dp
+                ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -613,16 +668,18 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 letterSpacing = 1.sp
             )
             
-            Text(
-                text = stringResource(when(mode) {
-                    ComposeMode.Reply -> R.string.reply
-                    ComposeMode.Forward -> R.string.forward
-                    ComposeMode.New -> R.string.new_email
-                }).uppercase(),
-                fontWeight = FontWeight.ExtraBold,
-                fontSize = textSize.sp,
-                letterSpacing = 2.sp
-            )
+            if (!isVerySmallScreen) {
+                Text(
+                    text = stringResource(when(mode) {
+                        ComposeMode.Reply -> R.string.reply
+                        ComposeMode.Forward -> R.string.forward
+                        ComposeMode.New -> R.string.new_email
+                    }).uppercase(),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = (if (isShortScreen) textSize * 0.9f else textSize).sp,
+                    letterSpacing = if (isShortScreen) 1.sp else 2.sp
+                )
+            }
 
             Text(
                 text = stringResource(R.string.send).uppercase(),
@@ -657,7 +714,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
             )
         }
 
-        HorizontalDivider(thickness = 2.dp, color = MaterialTheme.colorScheme.onBackground)
+        HorizontalDivider(thickness = if (isShortScreen) 1.dp else 2.dp, color = MaterialTheme.colorScheme.onBackground)
 
         Column(
             modifier = Modifier
@@ -665,7 +722,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 .padding(horizontal = 16.dp)
                 .verticalScroll(rememberScrollState())
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
             
             LightTextField(
                 value = to,
@@ -675,13 +732,13 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 singleLine = true,
                 focusRequester = toFocusRequester,
                 trailingIcon = {
-                    IconButton(onClick = { showContactPicker = true }) {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(24.dp))
+                    IconButton(onClick = { showContactPicker = true }, modifier = Modifier.size(if (isShortScreen) 32.dp else 48.dp)) {
+                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(if (isShortScreen) 20.dp else 24.dp))
                     }
                 }
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
             
             LightTextField(
                 value = subject,
@@ -692,14 +749,14 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
             
             LightTextField(
                 value = content,
                 onValueChange = { content = it },
                 label = stringResource(R.string.your_message_label),
                 textSize = textSize,
-                minLines = 8,
+                minLines = if (isVerySmallScreen) 3 else if (isShortScreen) 4 else 8,
                 focusRequester = contentFocusRequester,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
             )
@@ -823,11 +880,15 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
 @Composable
 fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+    
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var editingContact by remember { mutableStateOf<Contact?>(null) }
 
-    LazyColumn(modifier = Modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(16.dp)) {
+    LazyColumn(modifier = Modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)) {
         item {
             Text(
                 text = (if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact)).uppercase(),
@@ -835,7 +896,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                 fontSize = (textSize * 0.9f).sp,
                 letterSpacing = 1.sp
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
             LightTextField(
                 value = name, 
                 onValueChange = { name = it }, 
@@ -843,7 +904,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                 textSize = textSize,
                 keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
             )
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
             LightTextField(
                 value = email, 
                 onValueChange = { email = it }, 
@@ -851,7 +912,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                 textSize = textSize
             )
             
-            Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.End) {
+            Row(modifier = Modifier.fillMaxWidth().padding(top = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp), horizontalArrangement = Arrangement.End) {
                 if (editingContact != null) {
                     Text(
                         stringResource(R.string.cancel).uppercase(), 
@@ -884,13 +945,13 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
             HorizontalDivider(thickness = 1.dp)
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
         }
 
         items(contacts) { contact ->
-            Row(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(contact.name.uppercase(), fontWeight = FontWeight.Bold, fontSize = (textSize * 0.9f).sp)
                     Text(contact.email, fontSize = (textSize * 0.7f).sp, color = Color.Gray)
@@ -900,8 +961,8 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                         editingContact = contact
                         name = contact.name
                         email = contact.email
-                    }) { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp)) }
-                    IconButton(onClick = { viewModel.deleteContact(contact) }) { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(20.dp)) }
+                    }, modifier = Modifier.size(if (isShortScreen) 32.dp else 48.dp)) { Icon(Icons.Default.Edit, contentDescription = "Edit", modifier = Modifier.size(20.dp)) }
+                    IconButton(onClick = { viewModel.deleteContact(contact) }, modifier = Modifier.size(if (isShortScreen) 32.dp else 48.dp)) { Icon(Icons.Default.Delete, contentDescription = "Delete", modifier = Modifier.size(20.dp)) }
                 }
             }
             HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
@@ -912,6 +973,10 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
 @Composable
 fun SettingsScreen(viewModel: EmailViewModel) {
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+
     val emailVal by viewModel.accountEmail.collectAsState()
     val passwordVal by viewModel.accountPassword.collectAsState()
     val imapHostVal by viewModel.imapHost.collectAsState()
@@ -967,85 +1032,83 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().imePadding().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Text(stringResource(R.string.settings_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = 20.sp, letterSpacing = 2.sp)
-        Spacer(modifier = Modifier.height(24.dp))
+    Column(modifier = Modifier.fillMaxSize().imePadding().padding(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp).verticalScroll(rememberScrollState())) {
+        Text(stringResource(R.string.settings_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 14.sp else if (isShortScreen) 16.sp else 20.sp, letterSpacing = 2.sp)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Text(
             text = stringResource(R.string.outlook_oauth_warning),
             color = MaterialTheme.colorScheme.error,
-            fontSize = 11.sp,
-            modifier = Modifier.padding(bottom = 16.dp)
+            fontSize = if (isVerySmallScreen) 9.sp else 11.sp,
+            modifier = Modifier.padding(bottom = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)
         )
 
-        Text(stringResource(R.string.add_imap_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(8.dp))
-        LightTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label), textSize = 16f)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.add_imap_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else 8.dp))
+        LightTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label), textSize = if (isVerySmallScreen) 14f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
         LightTextField(
             value = password, onValueChange = { password = it },
             label = stringResource(R.string.password_label),
-            textSize = 16f,
+            textSize = if (isVerySmallScreen) 14f else 16f,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             trailingIcon = {
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, modifier = Modifier.size(20.dp))
+                IconButton(onClick = { passwordVisible = !passwordVisible }, modifier = if (isVerySmallScreen) Modifier.size(24.dp) else Modifier) {
+                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 20.dp))
                 }
             }
         )
-        Spacer(modifier = Modifier.height(16.dp))
-        LightTextField(value = imapHost, onValueChange = { imapHost = it }, label = stringResource(R.string.imap_server_label), textSize = 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        LightTextField(value = imapHost, onValueChange = { imapHost = it }, label = stringResource(R.string.imap_server_label), textSize = if (isVerySmallScreen) 14f else 16f)
         
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(stringResource(R.string.add_smtp_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(8.dp))
-        LightTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = stringResource(R.string.smtp_server_label), textSize = 16f)
-        Spacer(modifier = Modifier.height(16.dp))
-        LightTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = stringResource(R.string.smtp_port_label), textSize = 16f)
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Text(stringResource(R.string.add_smtp_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else 8.dp))
+        LightTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = stringResource(R.string.smtp_server_label), textSize = if (isVerySmallScreen) 14f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        LightTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = stringResource(R.string.smtp_port_label), textSize = if (isVerySmallScreen) 14f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
         LightTextField(
             value = senderName, 
             onValueChange = { senderName = it }, 
             label = stringResource(R.string.sender_name_label),
-            textSize = 16f,
+            textSize = if (isVerySmallScreen) 14f else 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
 
-        Spacer(modifier = Modifier.height(24.dp))
-        Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
+        Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${size.toInt()}", fontSize = 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    LightRadioButton(selected = textSize == size, onClick = { textSize = size })
+                    Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
+                    Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
+                    LightRadioButton(selected = textSize == size, onClick = { textSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
         LightTextField(
             value = signature, 
             onValueChange = { signature = it }, 
             label = stringResource(R.string.signature_label),
-            textSize = 16f,
+            textSize = if (isVerySmallScreen) 14f else 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
 
         // Background Settings Section
-        Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
 
         // Battery Optimization
-        val context = LocalContext.current
         Column(modifier = Modifier.fillMaxWidth().clickable {
             try {
                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
@@ -1057,12 +1120,12 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                 context.startActivity(intent)
             }
         }) {
-            Text(stringResource(R.string.battery_optimization_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(stringResource(R.string.battery_optimization_desc), fontSize = 12.sp, color = Color.Gray)
-            Text(stringResource(R.string.configure).uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.battery_optimization_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+            Text(stringResource(R.string.battery_optimization_desc), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, color = Color.Gray)
+            Text(stringResource(R.string.configure).uppercase(), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
 
         // App Hibernation / Pause if unused
         Column(modifier = Modifier.fillMaxWidth().clickable {
@@ -1071,38 +1134,42 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             }
             context.startActivity(intent)
         }) {
-            Text(stringResource(R.string.app_hibernation_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Text(stringResource(R.string.app_hibernation_desc), fontSize = 12.sp, color = Color.Gray)
-            Text(stringResource(R.string.configure).uppercase(), fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.app_hibernation_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+            Text(stringResource(R.string.app_hibernation_desc), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, color = Color.Gray)
+            Text(stringResource(R.string.configure).uppercase(), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
 
         // Backup & Restore
-        Text(stringResource(R.string.backup_restore_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(16.dp))
+        Text(stringResource(R.string.backup_restore_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
 
         Column(modifier = Modifier.fillMaxWidth().clickable {
             backupLauncher.launch("lightemail_backup.json")
         }) {
-            Text(stringResource(R.string.backup_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(stringResource(R.string.backup_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Column(modifier = Modifier.fillMaxWidth().clickable {
             restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "*/*"))
         }) {
-            Text(stringResource(R.string.restore_label), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Text(stringResource(R.string.restore_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
     }
 }
 
 @Composable
 fun AboutScreen() {
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+
     val versionName = try {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
     } catch (e: Exception) {
@@ -1112,21 +1179,21 @@ fun AboutScreen() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .padding(if (isVerySmallScreen) 8.dp else 16.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text(stringResource(R.string.app_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, letterSpacing = 4.sp)
-        Text(stringResource(R.string.version_label, versionName ?: "1.0").uppercase(), fontSize = 12.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(48.dp))
+        Text(stringResource(R.string.app_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 18.sp else if (isShortScreen) 24.sp else 32.sp, letterSpacing = if (isShortScreen) 2.sp else 4.sp)
+        Text(stringResource(R.string.version_label, versionName ?: "1.0").uppercase(), fontSize = 10.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
         Text(
             text = stringResource(R.string.app_description),
             textAlign = TextAlign.Center,
-            fontSize = 13.sp,
-            lineHeight = 20.sp
+            fontSize = if (isVerySmallScreen) 11.sp else 13.sp,
+            lineHeight = if (isVerySmallScreen) 16.sp else 20.sp
         )
-        Spacer(modifier = Modifier.height(48.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
         Text(stringResource(R.string.copyright).uppercase(), fontSize = 10.sp, color = Color.Gray)
     }
 }
