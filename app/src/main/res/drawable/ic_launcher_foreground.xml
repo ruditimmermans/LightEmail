@@ -3,19 +3,15 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <group
-        android:translateX="11"
-        android:translateY="30">
-        <!-- Envelope body -->
-        <path
-            android:fillColor="#000000"
-            android:pathData="M4,10h78c2.2,0 4,1.8 4,4v40c0,2.2 -1.8,4 -4,4h-78c-2.2,0 -4,-1.8 -4,-4v-40c0,-2.2 1.8,-4 4,-4z" />
-        <!-- The "V" opening/flap line -->
-        <path
-            android:strokeColor="@color/ic_launcher_background"
-            android:strokeWidth="2.5"
-            android:strokeLineCap="round"
-            android:strokeLineJoin="round"
-            android:pathData="M4,12 L43,40 L82,12" />
-    </group>
+    <!-- Envelope Body -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M22,34h64c3.3,0 6,2.7 6,6v28c0,3.3 -2.7,6 -6,6h-64c-3.3,0 -6,-2.7 -6,-6v-28c0,-3.3 2.7,-6 6,-6z" />
+    <!-- Flap detail (White line) -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M24,36l30,22l30,-22" />
 </vector>
