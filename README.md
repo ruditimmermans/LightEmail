@@ -1,6 +1,6 @@
 # LightEmail
 
-A Free Software, minimalistic and privacy friendly email app for the Ikko MindOne.
+A Free Software, minimalistic and privacy friendly email app.
 
 LightEmail is primarily made for personal use; I only want to share the tool with others if they want to use it and are able to use it.
 
@@ -35,7 +35,7 @@ You can download directly from GitHub.
 
 ### [LightEmail](https://github.com/ruditimmermans/LightEmail) ([ruditimmermans](https://github.com/ruditimmermans))
 
-An Simply E-Mail client for the Ikko MindOne.
+An Simply E-Mail client.
 
 ## GitHub
 The latest releases can be found here: [releases](https://github.com/ruditimmermans/LightEmail/releases). You may need to enable downloading tools from unknown sources to install it.
