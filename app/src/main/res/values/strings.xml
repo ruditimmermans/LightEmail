@@ -16,6 +16,9 @@
     <string name="version_label">Version: %1$s</string>
     <string name="copyright">Copyright Ⓒ 2026-2027 By Rudi Timmermans</string>
     <string name="settings_title">Settings</string>
+    <string name="theme_mode_label">Theme Mode</string>
+    <string name="black_mode_label">Black Mode</string>
+    <string name="color_mode_label">Color Mode (Thunderbird)</string>
     <string name="text_size_label">Text Size: %1$d sp</string>
     <string name="email_signature_title">Email Signature</string>
     <string name="signature_label">Signature</string>

@@ -14,9 +14,12 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.core.content.ContextCompat
 import com.light.lightemail.ui.theme.LightEmailTheme
 import com.light.lightemail.ui.screens.MainScreen
+import com.light.lightemail.ui.viewmodel.EmailViewModel
 
 class MainActivity : ComponentActivity() {
     private var initialEmailUid by mutableStateOf<Long?>(null)
@@ -37,8 +40,12 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            LightEmailTheme {
+            val viewModel: EmailViewModel = viewModel()
+            val useColorMode by viewModel.useColorMode.collectAsState()
+            
+            LightEmailTheme(useColorMode = useColorMode) {
                 MainScreen(
+                    viewModel = viewModel,
                     initialEmailUid = initialEmailUid,
                     onEmailOpened = { initialEmailUid = null }
                 )

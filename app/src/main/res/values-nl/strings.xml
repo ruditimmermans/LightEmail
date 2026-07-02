@@ -16,6 +16,9 @@
     <string name="version_label">Versie: %1$s</string>
     <string name="copyright">Copyright Ⓒ 2026-2027 door Rudi Timmermans</string>
     <string name="settings_title">Instellingen</string>
+    <string name="theme_mode_label">Thema modus</string>
+    <string name="black_mode_label">Zwarte modus</string>
+    <string name="color_mode_label">Kleurmodus (Thunderbird)</string>
     <string name="text_size_label">Tekengrootte: %1$d sp</string>
     <string name="email_signature_title">E-mailhandtekening</string>
     <string name="signature_label">Handtekening</string>

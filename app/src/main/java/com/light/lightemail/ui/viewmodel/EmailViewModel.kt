@@ -56,6 +56,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _textSize = MutableStateFlow(prefs.getFloat("text_size", 16f))
     val textSize: StateFlow<Float> = _textSize
 
+    private val _useColorMode = MutableStateFlow(prefs.getBoolean("use_color_mode", false))
+    val useColorMode: StateFlow<Boolean> = _useColorMode
+
     private val _signature = MutableStateFlow(prefs.getString("signature", application.getString(R.string.default_signature)) ?: application.getString(R.string.default_signature))
     val signature: StateFlow<String> = _signature
 
@@ -104,6 +107,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _smtpPort.value = prefs.getString("smtp_port", "465") ?: "465"
                 _senderName.value = prefs.getString("sender_name", "") ?: ""
                 _textSize.value = prefs.getFloat("text_size", 16f)
+                _useColorMode.value = prefs.getBoolean("use_color_mode", false)
                 _signature.value = prefs.getString("signature", getApplication<Application>().getString(R.string.default_signature)) ?: getApplication<Application>().getString(R.string.default_signature)
                 
                 refreshEmails()
@@ -122,7 +126,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         smtpPort: String,
         senderName: String,
         textSize: Float,
-        signature: String
+        signature: String,
+        useColorMode: Boolean
     ) {
         _accountEmail.value = email
         _accountPassword.value = password
@@ -132,6 +137,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _senderName.value = senderName
         _textSize.value = textSize
         _signature.value = signature
+        _useColorMode.value = useColorMode
 
         prefs.edit().apply {
             putString("email", email)
@@ -143,6 +149,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putBoolean("enable_push", true)
             putFloat("text_size", textSize)
             putString("signature", signature)
+            putBoolean("use_color_mode", useColorMode)
             apply()
         }
         

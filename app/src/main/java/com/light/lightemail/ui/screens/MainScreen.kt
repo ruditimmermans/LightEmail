@@ -124,7 +124,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                                     Text(folder.name, modifier = Modifier.weight(1f), fontSize = if (isVerySmallScreen) 13.sp else 14.sp)
                                     if (folder.unreadCount > 0) {
                                         Badge(containerColor = MaterialTheme.colorScheme.primary, modifier = if (isVerySmallScreen) Modifier.size(16.dp) else Modifier) {
-                                            Text(folder.unreadCount.toString(), color = Color.White, fontSize = if (isVerySmallScreen) 10.sp else 12.sp)
+                                            Text(folder.unreadCount.toString(), color = MaterialTheme.colorScheme.onPrimary, fontSize = if (isVerySmallScreen) 10.sp else 12.sp)
                                         }
                                         Spacer(modifier = Modifier.width(if (isVerySmallScreen) 4.dp else 8.dp))
                                     }
@@ -192,16 +192,16 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
             bottomBar = {
                 if (currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)) {
                     NavigationBar(
-                        containerColor = Color.Black,
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface,
                         windowInsets = NavigationBarDefaults.windowInsets,
                         modifier = if (isVerySmallScreen) Modifier.height(48.dp) else if (isShortScreen) Modifier.height(64.dp) else Modifier
                     ) {
                         val itemColors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = Color.White,
-                            selectedTextColor = Color.White,
-                            unselectedIconColor = Color.White.copy(alpha = 0.4f),
-                            unselectedTextColor = Color.White.copy(alpha = 0.4f),
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
+                            unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             indicatorColor = Color.Transparent
                         )
                         NavigationBarItem(
@@ -247,8 +247,8 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                             composeMode = ComposeMode.New
                             currentScreen = Screen.Compose
                         },
-                        containerColor = Color.Black,
-                        contentColor = Color.White,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
                         modifier = if (isVerySmallScreen) Modifier.size(48.dp) else Modifier
                     ) {
                         Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.compose), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
@@ -343,13 +343,13 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                                 text = email.sender.uppercase(), 
                                 fontSize = (textSize * 0.7f).sp, 
                                 fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
-                                color = Color.White
+                                color = MaterialTheme.colorScheme.onBackground
                             )
                             Text(
                                 text = email.subject, 
                                 fontSize = textSize.sp, 
                                 fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onBackground,
                                 maxLines = if (isVerySmallScreen) 1 else 2
                             )
                         }
@@ -357,7 +357,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
                             Icon(
                                 imageVector = Icons.Default.Check,
                                 contentDescription = null,
-                                tint = Color.White,
+                                tint = MaterialTheme.colorScheme.onBackground,
                                 modifier = Modifier.size(if (isVerySmallScreen) 12.dp else 16.dp)
                             )
                         }
@@ -438,7 +438,7 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                     Text(
                         text = email.content,
                         fontSize = textSize.sp,
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onBackground,
                         modifier = Modifier.verticalScroll(rememberScrollState())
                     )
                 }
@@ -499,9 +499,11 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
     
-    // Force black background for HTML emails as requested by user
-    val backgroundColor = "#000000"
-    val textColor = "#FFFFFF"
+    // Use theme colors for HTML emails
+    val backgroundColor = String.format("#%06X", (MaterialTheme.colorScheme.background.toArgb() and 0xFFFFFF))
+    val textColor = String.format("#%06X", (MaterialTheme.colorScheme.onBackground.toArgb() and 0xFFFFFF))
+    val linkColor = if (isSystemInDarkTheme()) "#58a6ff" else "#0000EE"
+    
     val styledHtml = """
         <html>
         <head>
@@ -531,7 +533,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
         }
         /* Keep links visible */
         a {
-            color: #58a6ff !important;
+            color: $linkColor !important;
             text-decoration: underline !important;
         }
         </style>
@@ -546,7 +548,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.background)
                 .padding(8.dp)
                 .verticalScroll(rememberScrollState())
         ) {
@@ -559,7 +561,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             )
             Text(
                 text = html,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontSize = textSize.sp
             )
         }
@@ -588,7 +590,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
                         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         settings.builtInZoomControls = true
                         settings.displayZoomControls = false
-                        setBackgroundColor(android.graphics.Color.BLACK)
+                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
                     }
                 } catch (e: Exception) {
                     webViewError = true
@@ -823,17 +825,17 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                     ) {
                         Text(
                             text = stringResource(R.string.select_contact).uppercase(),
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.Bold,
                             fontSize = textSize.sp,
                             letterSpacing = 1.sp
                         )
                         IconButton(onClick = { showContactPicker = false }) {
-                            Icon(Icons.Default.Close, contentDescription = "Close", tint = Color.White)
+                            Icon(Icons.Default.Close, contentDescription = "Close", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     }
                     Spacer(modifier = Modifier.height(24.dp))
-                    HorizontalDivider(color = Color.White, thickness = 1.dp)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f), thickness = 1.dp)
                 }
                 
                 if (contacts.isEmpty()) {
@@ -841,7 +843,7 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                         Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                             Text(
                                 text = "NO CONTACTS",
-                                color = Color.White.copy(alpha = 0.5f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                                 fontSize = (textSize * 0.8f).sp
                             )
                         }
@@ -859,17 +861,17 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                         ) {
                             Text(
                                 text = contact.name.uppercase(),
-                                color = Color.White,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
                                 fontSize = (textSize * 0.9f).sp
                             )
                             Text(
                                 text = contact.email,
-                                color = Color.White.copy(alpha = 0.7f),
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                                 fontSize = (textSize * 0.7f).sp
                             )
                         }
-                        HorizontalDivider(color = Color.White.copy(alpha = 0.2f))
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
                     }
                 }
             }
@@ -984,6 +986,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val smtpPortVal by viewModel.smtpPort.collectAsState()
     val senderNameVal by viewModel.senderName.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
+    val useColorModeVal by viewModel.useColorMode.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
 
     var email by remember { mutableStateOf(emailVal) }
@@ -993,6 +996,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var smtpPort by remember { mutableStateOf(smtpPortVal) }
     var senderName by remember { mutableStateOf(senderNameVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
+    var useColorMode by remember { mutableStateOf(useColorModeVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -1023,12 +1027,12 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
-            textSize != textSizeVal || signature != signatureVal) {
+            textSize != textSizeVal || signature != signatureVal || useColorMode != useColorModeVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode)
         }
     }
 
@@ -1076,6 +1080,25 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             textSize = if (isVerySmallScreen) 14f else 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
         )
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+
+        Text(stringResource(R.string.theme_mode_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useColorMode = false }) {
+                Text(stringResource(R.string.black_mode_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (!useColorMode) FontWeight.Bold else FontWeight.Normal)
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
+                LightRadioButton(selected = !useColorMode, onClick = { useColorMode = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useColorMode = true }) {
+                Text(stringResource(R.string.color_mode_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (useColorMode) FontWeight.Bold else FontWeight.Normal)
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
+                LightRadioButton(selected = useColorMode, onClick = { useColorMode = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+            }
+        }
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
 
