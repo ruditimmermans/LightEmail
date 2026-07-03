@@ -86,4 +86,8 @@
     <string name="backup_failed">Backup failed</string>
     <string name="restore_success">Restore successful. Please restart the app.</string>
     <string name="restore_failed">Restore failed</string>
+    <string name="update_available">New version available: %1$s</string>
+    <string name="check_for_updates">Check for Updates</string>
+    <string name="download_update">Download Update</string>
+    <string name="auto_check_updates_label">Auto check for updates</string>
 </resources>

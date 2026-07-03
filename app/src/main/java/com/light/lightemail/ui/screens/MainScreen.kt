@@ -88,6 +88,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
     val signature by viewModel.signature.collectAsState()
     val folders by viewModel.folders.collectAsState()
     val currentFolder by viewModel.currentFolder.collectAsState()
+    val updateAvailable by viewModel.updateAvailable.collectAsState()
 
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -231,7 +232,17 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
                             onClick = { currentScreen = Screen.About },
-                            icon = { Icon(Icons.Outlined.Info, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
+                            icon = { 
+                                BadgedBox(
+                                    badge = {
+                                        if (updateAvailable != null) {
+                                            Badge(containerColor = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Outlined.Info, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                }
+                            },
                             label = { if (!isShortScreen) Text(stringResource(R.string.about)) },
                             colors = itemColors,
                             alwaysShowLabel = !isShortScreen
@@ -264,7 +275,7 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                         currentScreen = Screen.ViewEmail
                         viewModel.markAsRead(emailMsg)
                     }
-                    Screen.About -> AboutScreen()
+                    Screen.About -> AboutScreen(viewModel = viewModel)
                     Screen.Settings -> SettingsScreen(viewModel = viewModel)
                     Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
                     Screen.ViewEmail -> {
@@ -987,7 +998,9 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val senderNameVal by viewModel.senderName.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
     val useColorModeVal by viewModel.useColorMode.collectAsState()
+    val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
+    val updateAvailable by viewModel.updateAvailable.collectAsState()
 
     var email by remember { mutableStateOf(emailVal) }
     var password by remember { mutableStateOf(passwordVal) }
@@ -997,6 +1010,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var senderName by remember { mutableStateOf(senderNameVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var useColorMode by remember { mutableStateOf(useColorModeVal) }
+    var autoCheckUpdates by remember { mutableStateOf(autoCheckUpdatesVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -1027,12 +1041,13 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, autoCheckUpdates) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
-            textSize != textSizeVal || signature != signatureVal || useColorMode != useColorModeVal) {
+            textSize != textSizeVal || signature != signatureVal || useColorMode != useColorModeVal ||
+            autoCheckUpdates != autoCheckUpdatesVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, autoCheckUpdates)
         }
     }
 
@@ -1127,6 +1142,55 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
 
+        // Updates Section
+        Text(stringResource(R.string.check_for_updates).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+
+        if (updateAvailable != null) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, MaterialTheme.colorScheme.primary)
+                    .padding(if (isVerySmallScreen) 8.dp else 12.dp)
+                    .clickable {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ruditimmermans/LightEmail/releases"))
+                        context.startActivity(intent)
+                    }
+            ) {
+                Column {
+                    Text(
+                        text = stringResource(R.string.update_available, updateAvailable!!).uppercase(),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = if (isVerySmallScreen) 10.sp else 12.sp
+                    )
+                    Text(
+                        text = stringResource(R.string.download_update).uppercase(),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        } else {
+            Column(modifier = Modifier.fillMaxWidth().clickable { viewModel.checkForUpdates() }) {
+                Text(stringResource(R.string.check_for_updates), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { autoCheckUpdates = !autoCheckUpdates },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(stringResource(R.string.auto_check_updates_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+            LightSwitch(checked = autoCheckUpdates, onCheckedChange = { autoCheckUpdates = it })
+        }
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
+
         // Background Settings Section
         Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
@@ -1187,11 +1251,13 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 }
 
 @Composable
-fun AboutScreen() {
+fun AboutScreen(viewModel: EmailViewModel) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
+
+    val updateAvailable by viewModel.updateAvailable.collectAsState()
 
     val versionName = try {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
@@ -1209,6 +1275,7 @@ fun AboutScreen() {
     ) {
         Text(stringResource(R.string.app_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 18.sp else if (isShortScreen) 24.sp else 32.sp, letterSpacing = if (isShortScreen) 2.sp else 4.sp)
         Text(stringResource(R.string.version_label, versionName ?: "1.0").uppercase(), fontSize = 10.sp, color = Color.Gray)
+        
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
         Text(
             text = stringResource(R.string.app_description),

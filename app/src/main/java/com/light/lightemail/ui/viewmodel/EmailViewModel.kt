@@ -59,6 +59,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _useColorMode = MutableStateFlow(prefs.getBoolean("use_color_mode", false))
     val useColorMode: StateFlow<Boolean> = _useColorMode
 
+    private val _autoCheckUpdates = MutableStateFlow(prefs.getBoolean("auto_check_updates", true))
+    val autoCheckUpdates: StateFlow<Boolean> = _autoCheckUpdates
+
     private val _signature = MutableStateFlow(prefs.getString("signature", application.getString(R.string.default_signature)) ?: application.getString(R.string.default_signature))
     val signature: StateFlow<String> = _signature
 
@@ -67,6 +70,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _currentFolder = MutableStateFlow("Inbox")
     val currentFolder: StateFlow<String> = _currentFolder
+
+    private val _updateAvailable = MutableStateFlow<String?>(null)
+    val updateAvailable: StateFlow<String?> = _updateAvailable
 
     private val db = AppDatabase.getDatabase(application)
     val contacts = db.contactDao().getAllContacts()
@@ -78,6 +84,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             refreshEmails()
             refreshFolders()
             updatePushService(true)
+        }
+
+        if (_autoCheckUpdates.value) {
+            checkForUpdates()
         }
 
         viewModelScope.launch {
@@ -108,6 +118,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _senderName.value = prefs.getString("sender_name", "") ?: ""
                 _textSize.value = prefs.getFloat("text_size", 16f)
                 _useColorMode.value = prefs.getBoolean("use_color_mode", false)
+                _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
                 _signature.value = prefs.getString("signature", getApplication<Application>().getString(R.string.default_signature)) ?: getApplication<Application>().getString(R.string.default_signature)
                 
                 refreshEmails()
@@ -127,7 +138,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         senderName: String,
         textSize: Float,
         signature: String,
-        useColorMode: Boolean
+        useColorMode: Boolean,
+        autoCheckUpdates: Boolean
     ) {
         _accountEmail.value = email
         _accountPassword.value = password
@@ -138,6 +150,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _textSize.value = textSize
         _signature.value = signature
         _useColorMode.value = useColorMode
+        _autoCheckUpdates.value = autoCheckUpdates
 
         prefs.edit().apply {
             putString("email", email)
@@ -150,6 +163,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putFloat("text_size", textSize)
             putString("signature", signature)
             putBoolean("use_color_mode", useColorMode)
+            putBoolean("auto_check_updates", autoCheckUpdates)
             apply()
         }
         
@@ -418,5 +432,51 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             db.contactDao().deleteContact(contact)
         }
+    }
+
+    fun checkForUpdates() {
+        viewModelScope.launch(Dispatchers.IO) {
+            try {
+                val url = java.net.URL("https://api.github.com/repos/ruditimmermans/LightEmail/releases/latest")
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.requestMethod = "GET"
+                connection.setRequestProperty("Accept", "application/vnd.github.v3+json")
+                connection.connect()
+
+                if (connection.responseCode == 200) {
+                    val response = connection.inputStream.bufferedReader().readText()
+                    // Simple regex to extract tag_name from JSON
+                    val regex = "\"tag_name\"\\s*:\\s*\"([^\"]+)\"".toRegex()
+                    val matchResult = regex.find(response)
+                    val latestVersion = matchResult?.groupValues?.get(1)?.removePrefix("v")
+
+                    val currentVersion = try {
+                        getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0).versionName
+                    } catch (e: Exception) {
+                        null
+                    }
+
+                    if (latestVersion != null && currentVersion != null && isNewerVersion(currentVersion, latestVersion)) {
+                        _updateAvailable.value = latestVersion
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun isNewerVersion(current: String, latest: String): Boolean {
+        val currentParts = current.split(".").mapNotNull { it.toIntOrNull() }
+        val latestParts = latest.split(".").mapNotNull { it.toIntOrNull() }
+        
+        val length = maxOf(currentParts.size, latestParts.size)
+        for (i in 0 until length) {
+            val curr = if (i < currentParts.size) currentParts[i] else 0
+            val late = if (i < latestParts.size) latestParts[i] else 0
+            if (late > curr) return true
+            if (curr > late) return false
+        }
+        return false
     }
 }

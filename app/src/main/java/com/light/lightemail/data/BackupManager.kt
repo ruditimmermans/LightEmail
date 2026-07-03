@@ -60,7 +60,7 @@ class BackupManager(private val context: Context) {
                         "email", "password", "host", "smtp_host", "smtp_port", "sender_name", "signature" -> {
                             editor.putString(key, prefsJson.getString(key))
                         }
-                        "enable_push" -> {
+                        "enable_push", "use_color_mode", "auto_check_updates" -> {
                             editor.putBoolean(key, prefsJson.getBoolean(key))
                         }
                         "text_size" -> {

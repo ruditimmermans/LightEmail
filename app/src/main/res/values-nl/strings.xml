@@ -86,4 +86,8 @@
     <string name="backup_failed">Back-up mislukt</string>
     <string name="restore_success">Herstel geslaagd. Start de app opnieuw op.</string>
     <string name="restore_failed">Herstel mislukt</string>
+    <string name="update_available">Nieuwe versie beschikbaar: %1$s</string>
+    <string name="check_for_updates">Controleren op updates</string>
+    <string name="download_update">Update downloaden</string>
+    <string name="auto_check_updates_label">Automatisch controleren op updates</string>
 </resources>
