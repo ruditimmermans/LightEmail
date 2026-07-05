@@ -854,7 +854,7 @@ fun ComposeEmailScreen(
                         .heightIn(max = 300.dp)
                         .border(1.dp, Color.Gray.copy(alpha = 0.3f))
                         .padding(12.dp),
-                    contentAlignment = Alignment.CenterStart
+                    contentAlignment = Alignment.TopStart
                 ) {
                     if (originalEmail.htmlContent != null) {
                         HtmlView(html = originalEmail.htmlContent, isDark = isSystemInDarkTheme(), textSize = textSize * 0.8f)
@@ -862,7 +862,8 @@ fun ComposeEmailScreen(
                         Text(
                             text = originalEmail.content,
                             fontSize = (textSize * 0.8f).sp,
-                            color = Color.Gray
+                            color = Color.Gray,
+                            modifier = Modifier.verticalScroll(rememberScrollState())
                         )
                     } else {
                         CircularProgressIndicator(
