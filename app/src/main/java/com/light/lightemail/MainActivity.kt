@@ -20,9 +20,11 @@ import androidx.core.content.ContextCompat
 import com.light.lightemail.ui.theme.LightEmailTheme
 import com.light.lightemail.ui.screens.MainScreen
 import com.light.lightemail.ui.viewmodel.EmailViewModel
+import com.light.lightemail.data.ComposeData
 
 class MainActivity : ComponentActivity() {
     private var initialEmailUid by mutableStateOf<Long?>(null)
+    private var initialComposeData by mutableStateOf<ComposeData?>(null)
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -47,7 +49,9 @@ class MainActivity : ComponentActivity() {
                 MainScreen(
                     viewModel = viewModel,
                     initialEmailUid = initialEmailUid,
-                    onEmailOpened = { initialEmailUid = null }
+                    initialComposeData = initialComposeData,
+                    onEmailOpened = { initialEmailUid = null },
+                    onComposeStarted = { initialComposeData = null }
                 )
             }
         }
@@ -55,13 +59,59 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIntent(intent)
     }
 
     private fun handleIntent(intent: Intent?) {
-        val uid = intent?.getLongExtra("EXTRA_EMAIL_UID", -1L) ?: -1L
+        if (intent == null) return
+
+        val uid = intent.getLongExtra("EXTRA_EMAIL_UID", -1L)
         if (uid != -1L) {
             initialEmailUid = uid
+            return
+        }
+
+        when (intent.action) {
+            Intent.ACTION_SENDTO, Intent.ACTION_VIEW -> {
+                if (intent.data?.scheme == "mailto") {
+                    val mailto = intent.dataString ?: ""
+                    var to = ""
+                    var subject = ""
+                    var body = ""
+
+                    try {
+                        val mt = android.net.MailTo.parse(mailto)
+                        to = mt.to ?: ""
+                        subject = mt.subject ?: ""
+                        body = mt.body ?: ""
+                    } catch (e: Exception) {
+                        val uri = Uri.parse(mailto)
+                        to = uri.schemeSpecificPart?.split("?")?.firstOrNull() ?: ""
+                        subject = uri.getQueryParameter("subject") ?: ""
+                        body = uri.getQueryParameter("body") ?: ""
+                    }
+
+                    if (subject.isEmpty()) subject = intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: ""
+                    if (body.isEmpty()) body = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: ""
+                    if (to.isEmpty()) {
+                        val toArray = intent.getStringArrayExtra(Intent.EXTRA_EMAIL)
+                        to = toArray?.joinToString(", ") ?: intent.getStringExtra(Intent.EXTRA_EMAIL) ?: ""
+                    }
+
+                    initialComposeData = ComposeData(to, subject, body)
+                }
+            }
+            Intent.ACTION_SEND -> {
+                val type = intent.type
+                if (type == null || type.startsWith("text/") || type == "*/*") {
+                    val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: ""
+                    val body = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: ""
+                    val toArray = intent.getStringArrayExtra(Intent.EXTRA_EMAIL)
+                    val to = toArray?.joinToString(", ") ?: intent.getStringExtra(Intent.EXTRA_EMAIL) ?: ""
+                    initialComposeData = ComposeData(to, subject, body)
+                }
+            }
         }
     }
 

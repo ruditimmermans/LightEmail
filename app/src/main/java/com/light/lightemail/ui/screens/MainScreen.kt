@@ -61,6 +61,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.light.lightemail.R
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
+import com.light.lightemail.data.ComposeData
 import com.light.lightemail.ui.viewmodel.EmailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -75,11 +76,21 @@ enum class ComposeMode {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? = null, onEmailOpened: () -> Unit = {}) {
+fun MainScreen(
+    viewModel: EmailViewModel = viewModel(), 
+    initialEmailUid: Long? = null, 
+    initialComposeData: ComposeData? = null,
+    onEmailOpened: () -> Unit = {},
+    onComposeStarted: () -> Unit = {}
+) {
     val context = LocalContext.current
     var currentScreen by remember { mutableStateOf(Screen.Home) }
     var selectedEmail by remember { mutableStateOf<EmailMessage?>(null) }
     var composeMode by remember { mutableStateOf(ComposeMode.New) }
+    
+    var initialTo by remember { mutableStateOf("") }
+    var initialSubject by remember { mutableStateOf("") }
+    var initialBody by remember { mutableStateOf("") }
     
     val emails by viewModel.emails.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -108,6 +119,19 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                 currentScreen = Screen.ViewEmail
                 onEmailOpened()
             }
+        }
+    }
+
+    // Handle initial compose data from other apps
+    LaunchedEffect(initialComposeData) {
+        if (initialComposeData != null) {
+            initialTo = initialComposeData.to
+            initialSubject = initialComposeData.subject
+            initialBody = initialComposeData.body
+            selectedEmail = null
+            composeMode = ComposeMode.New
+            currentScreen = Screen.Compose
+            onComposeStarted()
         }
     }
 
@@ -320,7 +344,15 @@ fun MainScreen(viewModel: EmailViewModel = viewModel(), initialEmailUid: Long? =
                             mode = composeMode,
                             originalEmail = activeEmail,
                             textSize = textSize,
-                            onFinished = { currentScreen = Screen.Home }
+                            onFinished = { 
+                                initialTo = ""
+                                initialSubject = ""
+                                initialBody = ""
+                                currentScreen = Screen.Home 
+                            },
+                            initialTo = initialTo,
+                            initialSubject = initialSubject,
+                            initialBody = initialBody
                         )
                     }
                 }
@@ -621,7 +653,16 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEmail: EmailMessage?, textSize: Float, onFinished: () -> Unit) {
+fun ComposeEmailScreen(
+    viewModel: EmailViewModel, 
+    mode: ComposeMode, 
+    originalEmail: EmailMessage?, 
+    textSize: Float, 
+    onFinished: () -> Unit,
+    initialTo: String = "",
+    initialSubject: String = "",
+    initialBody: String = ""
+) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
@@ -635,20 +676,20 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
     val forwardPrefix = stringResource(R.string.forward_subject_prefix, originalEmail?.subject ?: "")
     val attribution = originalEmail?.let { stringResource(R.string.reply_attribution, it.date, it.sender) } ?: ""
 
-    var to by remember { mutableStateOf(
-        when(mode) {
+    var to by remember(initialTo, mode, originalEmail) { mutableStateOf(
+        if (initialTo.isNotEmpty()) initialTo else when(mode) {
             ComposeMode.New, ComposeMode.Forward -> ""
             ComposeMode.Reply -> originalEmail?.sender ?: ""
         }
     ) }
-    var subject by remember { mutableStateOf(
-        when(mode) {
+    var subject by remember(initialSubject, mode, originalEmail) { mutableStateOf(
+        if (initialSubject.isNotEmpty()) initialSubject else when(mode) {
             ComposeMode.Reply -> replyPrefix
             ComposeMode.Forward -> forwardPrefix
             ComposeMode.New -> ""
         }
     ) }
-    var content by remember { mutableStateOf("") }
+    var content by remember(initialBody) { mutableStateOf(initialBody) }
     var showContactPicker by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
 
@@ -704,14 +745,38 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                             Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
                             return@clickable
                         }
+                        
+                        val isHtml = mode != ComposeMode.New && originalEmail?.htmlContent != null
                         val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
-                            val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
-                            "$content\n\n--\n$signature\n$attribution\n$quote"
+                            if (isHtml) {
+                                val userMessageHtml = content.replace("\n", "<br>")
+                                val signatureHtml = signature.replace("\n", "<br>")
+                                val attributionHtml = attribution.trim().replace("\n", "<br>")
+                                """
+                                    <div dir="ltr">
+                                        $userMessageHtml
+                                        <br><br>
+                                        --<br>
+                                        $signatureHtml
+                                        <br><br>
+                                        <div class="gmail_quote">
+                                            <div dir="ltr" class="gmail_attr">$attributionHtml</div>
+                                            <blockquote class="gmail_quote" style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+                                                ${originalEmail.htmlContent}
+                                            </blockquote>
+                                        </div>
+                                    </div>
+                                """.trimIndent()
+                            } else {
+                                val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
+                                "$content\n\n--\n$signature\n$attribution\n$quote"
+                            }
                         } else {
                             "$content\n\n--\n$signature"
                         }
+                        
                         isSending = true
-                        viewModel.sendEmail(to, subject, fullBody) { success ->
+                        viewModel.sendEmail(to, subject, fullBody, isHtml) { success ->
                             if (success) {
                                 Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
                                 onFinished()
@@ -786,20 +851,23 @@ fun ComposeEmailScreen(viewModel: EmailViewModel, mode: ComposeMode, originalEma
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(max = 300.dp)
                         .border(1.dp, Color.Gray.copy(alpha = 0.3f))
                         .padding(12.dp),
                     contentAlignment = Alignment.CenterStart
                 ) {
-                    if (originalEmail.content.isEmpty()) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp,
-                            color = Color.Gray
-                        )
-                    } else {
+                    if (originalEmail.htmlContent != null) {
+                        HtmlView(html = originalEmail.htmlContent, isDark = isSystemInDarkTheme(), textSize = textSize * 0.8f)
+                    } else if (originalEmail.content.isNotEmpty()) {
                         Text(
                             text = originalEmail.content,
                             fontSize = (textSize * 0.8f).sp,
+                            color = Color.Gray
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp,
                             color = Color.Gray
                         )
                     }

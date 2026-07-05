@@ -276,12 +276,34 @@ class ImapManager {
             val images = mutableMapOf<String, String>()
             extractContent(message, textBuilder, htmlBuilder, images)
             
-            val text = textBuilder.toString().ifEmpty { errorReadingContentString }
-            var html = htmlBuilder.toString().ifEmpty { null }
+            var text = textBuilder.toString().trim()
+            var html = htmlBuilder.toString().trim().ifEmpty { null }
             
-            if (html != null && images.isNotEmpty()) {
-                for ((cid, base64) in images) {
-                    html = html!!.replace("cid:$cid", base64)
+            // Fallback: if text is empty or looks like a placeholder, and HTML is not, strip HTML to get text
+            val isPlaceholder = text.isEmpty() || 
+                               text.lowercase().contains("cannot load") || 
+                               text.lowercase().contains("view this email in a browser") ||
+                               text.lowercase().contains("fout bij lezen") ||
+                               text == errorReadingContentString
+
+            if (isPlaceholder && html != null) {
+                val stripped = stripHtml(html)
+                if (stripped.length > text.length) {
+                    text = stripped
+                }
+            }
+            
+            if (text.isEmpty()) {
+                text = errorReadingContentString
+            }
+            
+            html?.let { h ->
+                if (images.isNotEmpty()) {
+                    var updatedHtml = h
+                    for ((cid, base64) in images) {
+                        updatedHtml = updatedHtml.replace("cid:$cid", base64)
+                    }
+                    html = updatedHtml
                 }
             }
             
@@ -291,24 +313,74 @@ class ImapManager {
         }
     }
 
+    private fun stripHtml(html: String): String {
+        return html.replace(Regex("<style.*?>.*?</style>", RegexOption.DOT_MATCHES_ALL), "")
+            .replace(Regex("<script.*?>.*?</script>", RegexOption.DOT_MATCHES_ALL), "")
+            .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n\n")
+            .replace(Regex("</div>", RegexOption.IGNORE_CASE), "\n")
+            .replace(Regex("<[^>]*>"), "")
+            .replace("&nbsp;", " ")
+            .replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .lines()
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString("\n")
+    }
+
     private fun extractContent(part: Part, text: StringBuilder, html: StringBuilder, images: MutableMap<String, String>) {
-        if (part.isMimeType("text/plain")) {
-            text.append(part.content.toString())
-        } else if (part.isMimeType("text/html")) {
-            html.append(part.content.toString())
-        } else if (part.isMimeType("multipart/*")) {
-            val multiPart = part.content as MimeMultipart
-            for (i in 0 until multiPart.count) {
-                extractContent(multiPart.getBodyPart(i), text, html, images)
+        try {
+            if (part.isMimeType("text/plain")) {
+                val content = try { part.content } catch (e: Exception) { null }
+                if (content is String) {
+                    text.append(content)
+                } else {
+                    // Fallback to input stream if content is not a string or failed to parse
+                    try {
+                        part.inputStream.bufferedReader().use { text.append(it.readText()) }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            } else if (part.isMimeType("text/html")) {
+                val content = try { part.content } catch (e: Exception) { null }
+                if (content is String) {
+                    html.append(content)
+                } else {
+                    // Fallback to input stream if content is not a string
+                    try {
+                        part.inputStream.bufferedReader().use { html.append(it.readText()) }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            } else if (part.isMimeType("multipart/*")) {
+                val multiPart = part.content as MimeMultipart
+                for (i in 0 until multiPart.count) {
+                    extractContent(multiPart.getBodyPart(i), text, html, images)
+                }
+            } else if (part.isMimeType("message/rfc822")) {
+                val content = part.content
+                if (content is Part) {
+                    extractContent(content, text, html, images)
+                }
+            } else if (part.isMimeType("image/*")) {
+                val cid = part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
+                if (cid != null) {
+                    try {
+                        val inputStream = part.inputStream
+                        val bytes = inputStream.readBytes()
+                        val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
+                        images[cid] = "data:${part.contentType.substringBefore(";")};base64,$base64"
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
             }
-        } else if (part.isMimeType("image/*")) {
-            val cid = part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
-            if (cid != null) {
-                val inputStream = part.inputStream
-                val bytes = inputStream.readBytes()
-                val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                images[cid] = "data:${part.contentType.substringBefore(";")};base64,$base64"
-            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
