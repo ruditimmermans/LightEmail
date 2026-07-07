@@ -267,15 +267,7 @@ fun MainScreen(
                             selected = currentScreen == Screen.About,
                             onClick = { currentScreen = Screen.About },
                             icon = { 
-                                BadgedBox(
-                                    badge = {
-                                        if (updateAvailable != null) {
-                                            Badge(containerColor = MaterialTheme.colorScheme.primary)
-                                        }
-                                    }
-                                ) {
-                                    Icon(Icons.Outlined.Info, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
-                                }
+                                Icon(Icons.Outlined.Info, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
                             },
                             label = { if (!isShortScreen) Text(stringResource(R.string.about)) },
                             colors = itemColors,
@@ -1366,8 +1358,6 @@ fun AboutScreen(viewModel: EmailViewModel) {
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
-
-    val updateAvailable by viewModel.updateAvailable.collectAsState()
 
     val versionName = try {
         context.packageManager.getPackageInfo(context.packageName, 0).versionName
