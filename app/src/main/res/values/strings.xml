@@ -90,4 +90,7 @@
     <string name="check_for_updates">Check for Updates</string>
     <string name="download_update">Download Update</string>
     <string name="auto_check_updates_label">Auto check for updates</string>
+    <string name="app_icon_label">App Icon Style</string>
+    <string name="black_icon_label">Black &amp; White Icon</string>
+    <string name="blue_icon_label">Color Icon (Blue)</string>
 </resources>

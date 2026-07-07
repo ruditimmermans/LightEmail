@@ -90,4 +90,7 @@
     <string name="check_for_updates">Controleren op updates</string>
     <string name="download_update">Update downloaden</string>
     <string name="auto_check_updates_label">Automatisch controleren op updates</string>
+    <string name="app_icon_label">App Icoon Stijl</string>
+    <string name="black_icon_label">Zwart-wit Icoon</string>
+    <string name="blue_icon_label">Kleur Icoon (Blauw)</string>
 </resources>

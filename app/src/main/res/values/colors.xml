@@ -2,5 +2,6 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="thunderbird_blue">#0082FC</color>
     <color name="ic_launcher_background">#FFFFFF</color>
 </resources>

@@ -248,7 +248,17 @@ fun MainScreen(
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
                             onClick = { currentScreen = Screen.Settings },
-                            icon = { Icon(Icons.Outlined.Settings, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
+                            icon = { 
+                                BadgedBox(
+                                    badge = {
+                                        if (updateAvailable != null) {
+                                            Badge(containerColor = MaterialTheme.colorScheme.primary)
+                                        }
+                                    }
+                                ) {
+                                    Icon(Icons.Outlined.Settings, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                }
+                            },
                             label = { if (!isShortScreen) Text(stringResource(R.string.settings)) },
                             colors = itemColors,
                             alwaysShowLabel = !isShortScreen
@@ -1067,6 +1077,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val senderNameVal by viewModel.senderName.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
     val useColorModeVal by viewModel.useColorMode.collectAsState()
+    val useBlueIconVal by viewModel.useBlueIcon.collectAsState()
     val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
     val updateAvailable by viewModel.updateAvailable.collectAsState()
@@ -1080,6 +1091,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var senderName by remember { mutableStateOf(senderNameVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var useColorMode by remember { mutableStateOf(useColorModeVal) }
+    var useBlueIcon by remember { mutableStateOf(useBlueIconVal) }
     var autoCheckUpdates by remember { mutableStateOf(autoCheckUpdatesVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -1111,13 +1123,13 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, autoCheckUpdates) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, useBlueIcon, autoCheckUpdates) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
             textSize != textSizeVal || signature != signatureVal || useColorMode != useColorModeVal ||
-            autoCheckUpdates != autoCheckUpdatesVal) {
+            useBlueIcon != useBlueIconVal || autoCheckUpdates != autoCheckUpdatesVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, autoCheckUpdates)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, autoCheckUpdates, useBlueIcon)
         }
     }
 
@@ -1182,6 +1194,25 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                 Text(stringResource(R.string.color_mode_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (useColorMode) FontWeight.Bold else FontWeight.Normal)
                 Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
                 LightRadioButton(selected = useColorMode, onClick = { useColorMode = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+
+        Text(stringResource(R.string.app_icon_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useBlueIcon = false }) {
+                Text(stringResource(R.string.black_icon_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (!useBlueIcon) FontWeight.Bold else FontWeight.Normal)
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
+                LightRadioButton(selected = !useBlueIcon, onClick = { useBlueIcon = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useBlueIcon = true }) {
+                Text(stringResource(R.string.blue_icon_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (useBlueIcon) FontWeight.Bold else FontWeight.Normal)
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
+                LightRadioButton(selected = useBlueIcon, onClick = { useBlueIcon = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
             }
         }
 
