@@ -74,6 +74,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _updateAvailable = MutableStateFlow<String?>(null)
     val updateAvailable: StateFlow<String?> = _updateAvailable
 
+    private val _updateInfo = MutableStateFlow<String?>(null)
+    val updateInfo: StateFlow<String?> = _updateInfo
+
     private val db = AppDatabase.getDatabase(application)
     val contacts = db.contactDao().getAllContacts()
 
@@ -445,10 +448,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
                 if (connection.responseCode == 200) {
                     val response = connection.inputStream.bufferedReader().readText()
-                    // Simple regex to extract tag_name from JSON
-                    val regex = "\"tag_name\"\\s*:\\s*\"([^\"]+)\"".toRegex()
-                    val matchResult = regex.find(response)
-                    val latestVersion = matchResult?.groupValues?.get(1)?.removePrefix("v")
+                    val json = org.json.JSONObject(response)
+                    val tagName = json.getString("tag_name")
+                    val latestVersion = tagName.removePrefix("v")
+                    val releaseNotes = json.optString("body")
 
                     val currentVersion = try {
                         getApplication<Application>().packageManager.getPackageInfo(getApplication<Application>().packageName, 0).versionName
@@ -456,8 +459,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                         null
                     }
 
-                    if (latestVersion != null && currentVersion != null && isNewerVersion(currentVersion, latestVersion)) {
+                    if (currentVersion != null && isNewerVersion(currentVersion, latestVersion)) {
                         _updateAvailable.value = latestVersion
+                        _updateInfo.value = releaseNotes
                     }
                 }
             } catch (e: Exception) {

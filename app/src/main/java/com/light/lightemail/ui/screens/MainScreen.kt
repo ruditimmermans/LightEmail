@@ -1070,6 +1070,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
     val updateAvailable by viewModel.updateAvailable.collectAsState()
+    val updateInfo by viewModel.updateInfo.collectAsState()
 
     var email by remember { mutableStateOf(emailVal) }
     var password by remember { mutableStateOf(passwordVal) }
@@ -1233,6 +1234,15 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                         fontWeight = FontWeight.Bold,
                         fontSize = if (isVerySmallScreen) 10.sp else 12.sp
                     )
+                    if (updateInfo != null && updateInfo!!.isNotEmpty()) {
+                        Text(
+                            text = updateInfo!!,
+                            fontSize = if (isVerySmallScreen) 9.sp else 11.sp,
+                            color = Color.Gray,
+                            maxLines = 3,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
                     Text(
                         text = stringResource(R.string.download_update).uppercase(),
                         fontWeight = FontWeight.ExtraBold,
