@@ -1074,6 +1074,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val signatureVal by viewModel.signature.collectAsState()
     val updateAvailable by viewModel.updateAvailable.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
+    val isCheckingUpdates by viewModel.isCheckingUpdates.collectAsState()
+    val hasCheckedForUpdates by viewModel.hasCheckedForUpdates.collectAsState()
 
     var email by remember { mutableStateOf(emailVal) }
     var password by remember { mutableStateOf(passwordVal) }
@@ -1274,9 +1276,21 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                     )
                 }
             }
+        } else if (isCheckingUpdates) {
+            Text(
+                text = stringResource(R.string.checking_for_updates).uppercase(),
+                fontWeight = FontWeight.Bold,
+                fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
+                color = MaterialTheme.colorScheme.primary
+            )
         } else {
             Column(modifier = Modifier.fillMaxWidth().clickable { viewModel.checkForUpdates() }) {
-                Text(stringResource(R.string.check_for_updates), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+                Text(
+                    text = stringResource(if (hasCheckedForUpdates && updateAvailable == null) R.string.no_updates_available else R.string.check_for_updates).uppercase(), 
+                    fontWeight = FontWeight.Bold, 
+                    fontSize = if (isVerySmallScreen) 14.sp else 16.sp,
+                    color = if (hasCheckedForUpdates && updateAvailable == null) Color.Gray else MaterialTheme.colorScheme.onBackground
+                )
             }
         }
 

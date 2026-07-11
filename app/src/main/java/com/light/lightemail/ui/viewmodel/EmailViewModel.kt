@@ -82,6 +82,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _updateInfo = MutableStateFlow<String?>(null)
     val updateInfo: StateFlow<String?> = _updateInfo
 
+    private val _isCheckingUpdates = MutableStateFlow(false)
+    val isCheckingUpdates: StateFlow<Boolean> = _isCheckingUpdates
+
+    private val _hasCheckedForUpdates = MutableStateFlow(false)
+    val hasCheckedForUpdates: StateFlow<Boolean> = _hasCheckedForUpdates
+
     private val db = AppDatabase.getDatabase(application)
     val contacts = db.contactDao().getAllContacts()
 
@@ -470,7 +476,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun checkForUpdates() {
+        if (_isCheckingUpdates.value) return
+        
         viewModelScope.launch(Dispatchers.IO) {
+            _isCheckingUpdates.value = true
             try {
                 val url = java.net.URL("https://api.github.com/repos/ruditimmermans/LightEmail/releases/latest")
                 val connection = url.openConnection() as java.net.HttpURLConnection
@@ -494,10 +503,16 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     if (currentVersion != null && isNewerVersion(currentVersion, latestVersion)) {
                         _updateAvailable.value = latestVersion
                         _updateInfo.value = releaseNotes
+                    } else {
+                        _updateAvailable.value = null
+                        _updateInfo.value = null
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
+            } finally {
+                _isCheckingUpdates.value = false
+                _hasCheckedForUpdates.value = true
             }
         }
     }

@@ -88,6 +88,8 @@
     <string name="restore_failed">Restore failed</string>
     <string name="update_available">New version available: %1$s</string>
     <string name="check_for_updates">Check for Updates</string>
+    <string name="checking_for_updates">Checking for updates…</string>
+    <string name="no_updates_available">System is up to date</string>
     <string name="download_update">Download Update</string>
     <string name="auto_check_updates_label">Auto check for updates</string>
     <string name="app_icon_label">App Icon Style</string>

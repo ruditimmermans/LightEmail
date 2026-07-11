@@ -88,6 +88,8 @@
     <string name="restore_failed">Herstel mislukt</string>
     <string name="update_available">Nieuwe versie beschikbaar: %1$s</string>
     <string name="check_for_updates">Controleren op updates</string>
+    <string name="checking_for_updates">Controleren op updates…</string>
+    <string name="no_updates_available">Systeem is up-to-date</string>
     <string name="download_update">Update downloaden</string>
     <string name="auto_check_updates_label">Automatisch controleren op updates</string>
     <string name="app_icon_label">App Icoon Stijl</string>
