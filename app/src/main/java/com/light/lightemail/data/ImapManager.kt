@@ -179,6 +179,99 @@ class ImapManager {
         }
     }
 
+    fun fetchLatestUids(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String = "Inbox",
+        limit: Int = 50
+    ): List<Long> {
+        val properties = getImapProperties(host)
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = store.getFolder(folderName) as IMAPFolder
+            folder.open(Folder.READ_ONLY)
+
+            val totalMessages = folder.messageCount
+            if (totalMessages == 0) {
+                folder.close(false)
+                store.close()
+                return emptyList()
+            }
+
+            val start = (totalMessages - limit + 1).coerceAtLeast(1)
+            val end = totalMessages
+            val messages = folder.getMessages(start, end)
+            
+            val fp = FetchProfile()
+            fp.add(UIDFolder.FetchProfileItem.UID)
+            folder.fetch(messages, fp)
+
+            val uids = messages.map { folder.getUID(it) }.reversed()
+            
+            folder.close(false)
+            store.close()
+            uids
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
+    fun fetchEmailsByUids(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String,
+        uids: List<Long>,
+        noSubjectString: String = "(No Subject)",
+        unknownSenderString: String = "Unknown"
+    ): List<EmailMessage> {
+        if (uids.isEmpty()) return emptyList()
+        
+        val properties = getImapProperties(host)
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = store.getFolder(folderName) as IMAPFolder
+            folder.open(Folder.READ_ONLY)
+
+            val messages = folder.getMessagesByUID(uids.toLongArray())
+            
+            val fp = FetchProfile()
+            fp.add(FetchProfile.Item.ENVELOPE)
+            fp.add(FetchProfile.Item.FLAGS)
+            fp.add(UIDFolder.FetchProfileItem.UID)
+            folder.fetch(messages, fp)
+
+            val result = messages.map { msg ->
+                EmailMessage(
+                    id = msg.messageNumber.toString(),
+                    uid = folder.getUID(msg),
+                    subject = msg.subject ?: noSubjectString,
+                    sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
+                    content = "",
+                    htmlContent = null,
+                    date = msg.sentDate?.toString() ?: "",
+                    folder = folderName,
+                    isRead = msg.flags.contains(Flags.Flag.SEEN)
+                )
+            }.reversed()
+
+            folder.close(false)
+            store.close()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+
     fun fetchUnreadEmails(
         email: String,
         password: String,

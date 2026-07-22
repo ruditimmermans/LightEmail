@@ -14,22 +14,26 @@ import com.light.lightemail.data.BackupManager
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.data.ImapManager
+import com.light.lightemail.data.EmailRepository
 import com.light.lightemail.data.SyncEvent
 import com.light.lightemail.worker.SyncWorker
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val imapManager = ImapManager()
+    private val repository = EmailRepository(application)
     private val prefs = application.getSharedPreferences("light_email_prefs", Context.MODE_PRIVATE)
-
-    private val _emails = MutableStateFlow<List<EmailMessage>>(emptyList())
-    val emails: StateFlow<List<EmailMessage>> = _emails
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
@@ -75,6 +79,11 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _currentFolder = MutableStateFlow("Inbox")
     val currentFolder: StateFlow<String> = _currentFolder
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val emails: StateFlow<List<EmailMessage>> = _currentFolder
+        .flatMapLatest { folder -> repository.getEmails(folder) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _updateAvailable = MutableStateFlow<String?>(null)
     val updateAvailable: StateFlow<String?> = _updateAvailable
@@ -234,13 +243,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(1)
 
-        // Update local state to show as read immediately (optimistic UI)
-        if (!emailMessage.isRead) {
-            _emails.value = _emails.value.map {
-                if (it.uid == emailMessage.uid) it.copy(isRead = true) else it
-            }
-        }
-
         // Always try to fetch content if it's missing, even if already read
         if (emailMessage.content.isEmpty() || (emailMessage.content == getApplication<Application>().getString(R.string.error_reading_content))) {
             fetchEmailContent(emailMessage)
@@ -249,15 +251,14 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (emailMessage.isRead) return
 
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                imapManager.markAsRead(
-                    _accountEmail.value,
-                    _accountPassword.value,
-                    _imapHost.value,
-                    emailMessage.folder,
-                    emailMessage.id.toInt()
-                )
-            }
+            repository.markAsRead(
+                _accountEmail.value,
+                _accountPassword.value,
+                _imapHost.value,
+                emailMessage.folder,
+                emailMessage.uid,
+                emailMessage.id.toInt()
+            )
             // Update folders to reflect unread count change
             refreshFolders()
         }
@@ -268,19 +269,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (emailMessage.content.isNotEmpty() && emailMessage.content != getApplication<Application>().getString(R.string.error_reading_content)) return
 
         viewModelScope.launch {
-            val (text, html) = withContext(Dispatchers.IO) {
-                imapManager.fetchEmailContent(
-                    _accountEmail.value,
-                    _accountPassword.value,
-                    _imapHost.value,
-                    emailMessage.folder,
-                    emailMessage.uid,
-                    getApplication<Application>().getString(R.string.error_reading_content)
-                )
-            }
-            _emails.value = _emails.value.map {
-                if (it.uid == emailMessage.uid) it.copy(content = text, htmlContent = html) else it
-            }
+            repository.fetchEmailContent(
+                _accountEmail.value,
+                _accountPassword.value,
+                _imapHost.value,
+                emailMessage
+            )
         }
     }
 
@@ -309,77 +303,42 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             if (showLoading) _isLoading.value = true
             try {
-                val fetchedEmails = withContext(Dispatchers.IO) {
-                    imapManager.fetchEmails(
-                        email = email,
-                        password = password,
-                        host = host,
-                        folderName = folder,
-                        noSubjectString = getApplication<Application>().getString(R.string.no_subject),
-                        unknownSenderString = getApplication<Application>().getString(R.string.unknown_sender),
-                        errorReadingContentString = getApplication<Application>().getString(R.string.error_reading_content)
-                    )
-                }
+                repository.syncEmails(
+                    email = email,
+                    password = password,
+                    host = host,
+                    folder = folder
+                )
                 
-                // Merge with existing emails to preserve fetched content and avoid flickering
-                val currentEmailsMap = _emails.value.associateBy { it.uid }
-                val mergedEmails = fetchedEmails.map { newEmail ->
-                    val existing = currentEmailsMap[newEmail.uid]
-                    if (existing != null) {
-                        newEmail.copy(
-                            content = if (newEmail.content.isEmpty()) existing.content else newEmail.content,
-                            htmlContent = newEmail.htmlContent ?: existing.htmlContent,
-                            // Preserve local read status if it was changed recently
-                            isRead = if (existing.isRead) true else newEmail.isRead
-                        )
-                    } else {
-                        newEmail
-                    }
-                }
-                _emails.value = mergedEmails
-                
-                // Pre-fetch content for the latest emails in the background to make them open "immediately"
-                launch(Dispatchers.IO) {
-                    val currentList = _emails.value.toMutableList()
-                    var anyChanged = false
-                    
-                    // Fetch content for top 10 emails that don't have it yet
-                    mergedEmails.take(10).forEach { email ->
-                        if (email.content.isEmpty() || email.content == getApplication<Application>().getString(R.string.error_reading_content)) {
-                            val (text, html) = imapManager.fetchEmailContent(
+                // Pre-fetch content for the latest emails in the background
+                viewModelScope.launch(Dispatchers.IO) {
+                    val currentEmails = repository.getEmails(folder).first()
+                    currentEmails.take(10).forEach { emailMsg ->
+                        if (emailMsg.content.isEmpty() || emailMsg.content == getApplication<Application>().getString(R.string.error_reading_content)) {
+                            repository.fetchEmailContent(
                                 _accountEmail.value,
                                 _accountPassword.value,
                                 _imapHost.value,
-                                email.folder,
-                                email.uid,
-                                getApplication<Application>().getString(R.string.error_reading_content)
+                                emailMsg
                             )
-                            val index = currentList.indexOfFirst { it.uid == email.uid }
-                            if (index != -1) {
-                                currentList[index] = currentList[index].copy(content = text, htmlContent = html)
-                                anyChanged = true
-                            }
-                        }
-                    }
-                    
-                    if (anyChanged) {
-                        withContext(Dispatchers.Main) {
-                            _emails.value = currentList.toList()
                         }
                     }
                 }
 
-                // Update last seen UID and count to avoid duplicate notifications
-                if (folder == "Inbox" && fetchedEmails.isNotEmpty()) {
-                    val latestUid = fetchedEmails.first().uid
-                    val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
-                    val unreadCount = fetchedEmails.count { !it.isRead }
-                    
-                    if (latestUid > lastSeenUid || unreadCount.toLong() != prefs.getLong("last_unread_count", -1L)) {
-                        prefs.edit()
-                            .putLong("last_seen_uid", maxOf(latestUid, lastSeenUid))
-                            .putLong("last_unread_count", unreadCount.toLong())
-                            .apply()
+                // Update last seen UID and count for notifications (using cached data)
+                if (folder == "Inbox") {
+                    val currentEmails = repository.getEmails(folder).first()
+                    if (currentEmails.isNotEmpty()) {
+                        val latestUid = currentEmails.first().uid
+                        val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                        val unreadCount = currentEmails.count { !it.isRead }
+                        
+                        if (latestUid > lastSeenUid || unreadCount.toLong() != prefs.getLong("last_unread_count", -1L)) {
+                            prefs.edit()
+                                .putLong("last_seen_uid", maxOf(latestUid, lastSeenUid))
+                                .putLong("last_unread_count", unreadCount.toLong())
+                                .apply()
+                        }
                     }
                 }
             } catch (e: Exception) {
@@ -395,28 +354,16 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.cancel(1)
 
-        // Optimistic UI update: remove from local list immediately
-        val originalEmails = _emails.value
-        _emails.value = _emails.value.filter { it.uid != emailMessage.uid }
-
         viewModelScope.launch {
-            val success = withContext(Dispatchers.IO) {
-                imapManager.deleteEmail(
-                    _accountEmail.value,
-                    _accountPassword.value,
-                    _imapHost.value,
-                    emailMessage.folder,
-                    emailMessage.id.toInt()
-                )
-            }
-            if (success) {
-                // Refresh folders in background to update counts, but don't force a full email refresh
-                // unless it's necessary. Since we already removed it locally, we're good.
-                refreshFolders()
-            } else {
-                // If it failed, restore the original list
-                _emails.value = originalEmails
-            }
+            repository.deleteEmail(
+                _accountEmail.value,
+                _accountPassword.value,
+                _imapHost.value,
+                emailMessage.folder,
+                emailMessage.uid,
+                emailMessage.id.toInt()
+            )
+            refreshFolders()
         }
     }
 

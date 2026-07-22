@@ -11,8 +11,9 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.light.lightemail.MainActivity
 import com.light.lightemail.R
-import com.light.lightemail.data.ImapManager
+import com.light.lightemail.data.EmailRepository
 import com.light.lightemail.data.SyncEvent
+import kotlinx.coroutines.flow.first
 
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -44,25 +45,18 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         val password = prefs.getString("password", null) ?: return Result.success()
         val host = prefs.getString("host", null) ?: return Result.success()
 
-        val imapManager = ImapManager()
+        val repository = EmailRepository(applicationContext)
         try {
-            val unreadEmails = imapManager.fetchUnreadEmails(
-                email = email,
-                password = password,
-                host = host,
-                limit = 10,
-                noSubjectString = applicationContext.getString(R.string.no_subject),
-                unknownSenderString = applicationContext.getString(R.string.unknown_sender)
-            )
+            // Perform a full sync of the Inbox
+            repository.syncEmails(email, password, host, "Inbox")
+            
+            val unreadEmails = repository.getEmails("Inbox").first().filter { !it.isRead }
 
             if (unreadEmails.isNotEmpty()) {
                 val latestEmail = unreadEmails.first()
                 val maxUid = unreadEmails.maxOf { it.uid }
                 val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
                 
-                // Only show/update notification if there's at least one unread email
-                // We show the notification if there's a new email (maxUid > lastSeenUid)
-                // or if the count changed (to keep the notification accurate)
                 if (maxUid > lastSeenUid || unreadEmails.size.toLong() != prefs.getLong("last_unread_count", -1L)) {
                     showNotification(
                         latestEmail.sender, 
@@ -78,7 +72,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                         .apply()
                 }
             } else {
-                // No unread emails found (all read or deleted)
                 cancelNotification()
                 prefs.edit().putLong("last_unread_count", 0).apply()
             }
@@ -87,9 +80,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             return Result.retry()
         }
 
-        // Trigger UI refresh if app is in foreground
         SyncEvent.trigger()
-
         return Result.success()
     }
 

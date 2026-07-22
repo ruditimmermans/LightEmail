@@ -1,10 +1,13 @@
 package com.light.lightemail.data
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import java.io.Serializable
 
+@Entity(tableName = "emails", primaryKeys = ["uid", "folder"])
 data class EmailMessage(
-    val id: String,
-    val uid: Long,
+    val id: String, // IMAP Message Number (can change, but useful for some operations)
+    val uid: Long,  // IMAP Unique ID (constant for the message)
     val subject: String,
     val sender: String,
     val content: String,
