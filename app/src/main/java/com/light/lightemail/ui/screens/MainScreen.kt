@@ -35,6 +35,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
@@ -108,6 +109,7 @@ fun MainScreen(
     val isShortScreen = configuration.screenHeightDp < 600
     val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isVerySmallScreen = configuration.screenHeightDp < 480
+    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
 
     // Handle deep link from notification
     LaunchedEffect(initialEmailUid, emails) {
@@ -220,7 +222,7 @@ fun MainScreen(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         windowInsets = NavigationBarDefaults.windowInsets,
-                        modifier = if (isVerySmallScreen) Modifier.height(48.dp) else if (isShortScreen) Modifier.height(64.dp) else Modifier
+                        modifier = if (isVerySmallScreen) Modifier.height(48.dp) else if (isLP3) Modifier.height(80.dp) else if (isShortScreen) Modifier.height(64.dp) else Modifier
                     ) {
                         val itemColors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -229,21 +231,23 @@ fun MainScreen(
                             unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             indicatorColor = Color.Transparent
                         )
+                        val iconSize = if (isVerySmallScreen) 20.dp else if (isLP3) 32.dp else 24.dp
+                        
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
                             onClick = { currentScreen = Screen.Home },
-                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
-                            label = { if (!isShortScreen) Text(stringResource(R.string.home)) },
+                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null, modifier = Modifier.size(iconSize)) },
+                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.home), fontSize = if (isLP3) 12.sp else 11.sp) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen
+                            alwaysShowLabel = !isShortScreen || isLP3
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.AddressBook,
                             onClick = { currentScreen = Screen.AddressBook },
-                            icon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier) },
-                            label = { if (!isShortScreen) Text(stringResource(R.string.address_book)) },
+                            icon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(iconSize)) },
+                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.address_book), fontSize = if (isLP3) 12.sp else 11.sp) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen
+                            alwaysShowLabel = !isShortScreen || isLP3
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
@@ -252,26 +256,26 @@ fun MainScreen(
                                 BadgedBox(
                                     badge = {
                                         if (updateAvailable != null) {
-                                            Badge(containerColor = MaterialTheme.colorScheme.primary)
+                                            Badge(containerColor = MaterialTheme.colorScheme.primary, modifier = if (isLP3) Modifier.offset(x = 4.dp, y = (-4).dp) else Modifier)
                                         }
                                     }
                                 ) {
-                                    Icon(Icons.Outlined.Settings, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                    Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(iconSize))
                                 }
                             },
-                            label = { if (!isShortScreen) Text(stringResource(R.string.settings)) },
+                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.settings), fontSize = if (isLP3) 12.sp else 11.sp) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen
+                            alwaysShowLabel = !isShortScreen || isLP3
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
                             onClick = { currentScreen = Screen.About },
                             icon = { 
-                                Icon(Icons.Outlined.Info, contentDescription = null, modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(iconSize))
                             },
-                            label = { if (!isShortScreen) Text(stringResource(R.string.about)) },
+                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.about), fontSize = if (isLP3) 12.sp else 11.sp) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen
+                            alwaysShowLabel = !isShortScreen || isLP3
                         )
                     }
                 }
@@ -1059,7 +1063,9 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
+    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isVerySmallScreen = configuration.screenHeightDp < 480
+    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
 
     val emailVal by viewModel.accountEmail.collectAsState()
     val passwordVal by viewModel.accountPassword.collectAsState()
@@ -1127,126 +1133,126 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         }
     }
 
-    Column(modifier = Modifier.fillMaxSize().imePadding().padding(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp).verticalScroll(rememberScrollState())) {
-        Text(stringResource(R.string.settings_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 14.sp else if (isShortScreen) 16.sp else 20.sp, letterSpacing = 2.sp)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+    Column(modifier = Modifier.fillMaxSize().imePadding().padding(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp).verticalScroll(rememberScrollState())) {
+        Text(stringResource(R.string.settings_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 22.sp else if (isShortScreen) 16.sp else 20.sp, letterSpacing = 2.sp)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 28.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Text(
             text = stringResource(R.string.outlook_oauth_warning),
             color = MaterialTheme.colorScheme.error,
-            fontSize = if (isVerySmallScreen) 9.sp else 11.sp,
-            modifier = Modifier.padding(bottom = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)
+            fontSize = if (isVerySmallScreen) 9.sp else if (isLP3) 13.sp else 11.sp,
+            modifier = Modifier.padding(bottom = if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp)
         )
 
-        Text(stringResource(R.string.add_imap_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else 8.dp))
-        LightTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label), textSize = if (isVerySmallScreen) 14f else 16f)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        Text(stringResource(R.string.add_imap_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
+        LightTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label), textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp))
         LightTextField(
             value = password, onValueChange = { password = it },
             label = stringResource(R.string.password_label),
-            textSize = if (isVerySmallScreen) 14f else 16f,
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f,
             visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             trailingIcon = {
                 IconButton(onClick = { passwordVisible = !passwordVisible }, modifier = if (isVerySmallScreen) Modifier.size(24.dp) else Modifier) {
-                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 20.dp))
+                    Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, modifier = Modifier.size(if (isVerySmallScreen) 16.dp else if (isLP3) 24.dp else 20.dp))
                 }
             }
         )
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
-        LightTextField(value = imapHost, onValueChange = { imapHost = it }, label = stringResource(R.string.imap_server_label), textSize = if (isVerySmallScreen) 14f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp))
+        LightTextField(value = imapHost, onValueChange = { imapHost = it }, label = stringResource(R.string.imap_server_label), textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f)
         
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
-        Text(stringResource(R.string.add_smtp_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else 8.dp))
-        LightTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = stringResource(R.string.smtp_server_label), textSize = if (isVerySmallScreen) 14f else 16f)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
-        LightTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = stringResource(R.string.smtp_port_label), textSize = if (isVerySmallScreen) 14f else 16f)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
+        Text(stringResource(R.string.add_smtp_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
+        LightTextField(value = smtpHost, onValueChange = { smtpHost = it }, label = stringResource(R.string.smtp_server_label), textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp))
+        LightTextField(value = smtpPort, onValueChange = { smtpPort = it }, label = stringResource(R.string.smtp_port_label), textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp))
         LightTextField(
             value = senderName, 
             onValueChange = { senderName = it }, 
             label = stringResource(R.string.sender_name_label),
-            textSize = if (isVerySmallScreen) 14f else 16f,
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Words)
         )
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
-        Text(stringResource(R.string.theme_mode_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Text(stringResource(R.string.theme_mode_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useColorMode = false }) {
-                Text(stringResource(R.string.black_mode_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (!useColorMode) FontWeight.Bold else FontWeight.Normal)
+                Text(stringResource(R.string.black_mode_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (!useColorMode) FontWeight.Bold else FontWeight.Normal)
                 Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = !useColorMode, onClick = { useColorMode = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+                LightRadioButton(selected = !useColorMode, onClick = { useColorMode = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useColorMode = true }) {
-                Text(stringResource(R.string.color_mode_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (useColorMode) FontWeight.Bold else FontWeight.Normal)
+                Text(stringResource(R.string.color_mode_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (useColorMode) FontWeight.Bold else FontWeight.Normal)
                 Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = useColorMode, onClick = { useColorMode = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+                LightRadioButton(selected = useColorMode, onClick = { useColorMode = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
             }
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
-        Text(stringResource(R.string.app_icon_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Text(stringResource(R.string.app_icon_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useBlueIcon = false }) {
-                Text(stringResource(R.string.black_icon_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (!useBlueIcon) FontWeight.Bold else FontWeight.Normal)
+                Text(stringResource(R.string.black_icon_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (!useBlueIcon) FontWeight.Bold else FontWeight.Normal)
                 Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = !useBlueIcon, onClick = { useBlueIcon = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+                LightRadioButton(selected = !useBlueIcon, onClick = { useBlueIcon = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useBlueIcon = true }) {
-                Text(stringResource(R.string.blue_icon_label), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (useBlueIcon) FontWeight.Bold else FontWeight.Normal)
+                Text(stringResource(R.string.blue_icon_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (useBlueIcon) FontWeight.Bold else FontWeight.Normal)
                 Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = useBlueIcon, onClick = { useBlueIcon = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+                LightRadioButton(selected = useBlueIcon, onClick = { useBlueIcon = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
             }
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
-        Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
+        Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 6.dp else 12.dp),
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
+                    Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
                     Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                    LightRadioButton(selected = textSize == size, onClick = { textSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else Modifier)
+                    LightRadioButton(selected = textSize == size, onClick = { textSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp))
         LightTextField(
             value = signature, 
             onValueChange = { signature = it }, 
             label = stringResource(R.string.signature_label),
-            textSize = if (isVerySmallScreen) 14f else 16f,
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences)
         )
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isLP3) 32.dp else if (isShortScreen) 16.dp else 32.dp))
 
         // Updates Section
-        Text(stringResource(R.string.check_for_updates).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        Text(stringResource(R.string.check_for_updates).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
 
         if (updateAvailable != null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .border(1.dp, MaterialTheme.colorScheme.primary)
-                    .padding(if (isVerySmallScreen) 8.dp else 12.dp)
+                    .padding(if (isVerySmallScreen) 8.dp else if (isLP3) 16.dp else 12.dp)
                     .clickable {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/ruditimmermans/LightEmail/releases"))
                         context.startActivity(intent)
@@ -1257,12 +1263,12 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                         text = stringResource(R.string.update_available, updateAvailable!!).uppercase(),
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
-                        fontSize = if (isVerySmallScreen) 10.sp else 12.sp
+                        fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp
                     )
                     if (updateInfo != null && updateInfo!!.isNotEmpty()) {
                         Text(
                             text = updateInfo!!,
-                            fontSize = if (isVerySmallScreen) 9.sp else 11.sp,
+                            fontSize = if (isVerySmallScreen) 9.sp else if (isLP3) 12.sp else 11.sp,
                             color = Color.Gray,
                             maxLines = 3,
                             modifier = Modifier.padding(top = 2.dp)
@@ -1271,7 +1277,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                     Text(
                         text = stringResource(R.string.download_update).uppercase(),
                         fontWeight = FontWeight.ExtraBold,
-                        fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
+                        fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -1280,7 +1286,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             Text(
                 text = stringResource(R.string.checking_for_updates).uppercase(),
                 fontWeight = FontWeight.Bold,
-                fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
+                fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp,
                 color = MaterialTheme.colorScheme.primary
             )
         } else {
@@ -1288,28 +1294,28 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                 Text(
                     text = stringResource(if (hasCheckedForUpdates && updateAvailable == null) R.string.no_updates_available else R.string.check_for_updates).uppercase(), 
                     fontWeight = FontWeight.Bold, 
-                    fontSize = if (isVerySmallScreen) 14.sp else 16.sp,
+                    fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp,
                     color = if (hasCheckedForUpdates && updateAvailable == null) Color.Gray else MaterialTheme.colorScheme.onBackground
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth().clickable { autoCheckUpdates = !autoCheckUpdates },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(stringResource(R.string.auto_check_updates_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
-            LightSwitch(checked = autoCheckUpdates, onCheckedChange = { autoCheckUpdates = it })
+            Text(stringResource(R.string.auto_check_updates_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp)
+            LightSwitch(checked = autoCheckUpdates, onCheckedChange = { autoCheckUpdates = it }, modifier = if (isLP3) Modifier.scale(1.2f) else Modifier)
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isLP3) 40.dp else if (isShortScreen) 16.dp else 32.dp))
 
         // Background Settings Section
-        Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
 
         // Battery Optimization
         Column(modifier = Modifier.fillMaxWidth().clickable {
@@ -1323,12 +1329,12 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                 context.startActivity(intent)
             }
         }) {
-            Text(stringResource(R.string.battery_optimization_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
-            Text(stringResource(R.string.battery_optimization_desc), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, color = Color.Gray)
-            Text(stringResource(R.string.configure).uppercase(), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.battery_optimization_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp)
+            Text(stringResource(R.string.battery_optimization_desc), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, color = Color.Gray)
+            Text(stringResource(R.string.configure).uppercase(), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         // App Hibernation / Pause if unused
         Column(modifier = Modifier.fillMaxWidth().clickable {
@@ -1337,32 +1343,32 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             }
             context.startActivity(intent)
         }) {
-            Text(stringResource(R.string.app_hibernation_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
-            Text(stringResource(R.string.app_hibernation_desc), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, color = Color.Gray)
-            Text(stringResource(R.string.configure).uppercase(), fontSize = if (isVerySmallScreen) 10.sp else 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
+            Text(stringResource(R.string.app_hibernation_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp)
+            Text(stringResource(R.string.app_hibernation_desc), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, color = Color.Gray)
+            Text(stringResource(R.string.configure).uppercase(), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(top = 4.dp))
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isShortScreen) 16.dp else 32.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isLP3) 40.dp else if (isShortScreen) 16.dp else 32.dp))
 
         // Backup & Restore
-        Text(stringResource(R.string.backup_restore_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else 14.sp, color = Color.Gray)
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+        Text(stringResource(R.string.backup_restore_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
 
         Column(modifier = Modifier.fillMaxWidth().clickable {
             backupLauncher.launch("lightemail_backup.json")
         }) {
-            Text(stringResource(R.string.backup_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+            Text(stringResource(R.string.backup_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Column(modifier = Modifier.fillMaxWidth().clickable {
             restoreLauncher.launch(arrayOf("application/json", "application/octet-stream", "*/*"))
         }) {
-            Text(stringResource(R.string.restore_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+            Text(stringResource(R.string.restore_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp)
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isLP3) 40.dp else if (isShortScreen) 24.dp else 48.dp))
     }
 }
 
@@ -1408,9 +1414,18 @@ fun LightRadioButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isShortScreen = configuration.screenHeightDp < 600
+    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
+
+    val outerSize = if (isLP3) 24.dp else 16.dp
+    val innerSize = if (isLP3) 14.dp else 10.dp
+
     Box(
         modifier = modifier
-            .size(16.dp)
+            .size(outerSize)
             .clickable { onClick() }
             .border(1.dp, MaterialTheme.colorScheme.onBackground),
         contentAlignment = Alignment.Center
@@ -1418,7 +1433,7 @@ fun LightRadioButton(
         if (selected) {
             Box(
                 modifier = Modifier
-                    .size(10.dp)
+                    .size(innerSize)
                     .background(MaterialTheme.colorScheme.onBackground)
             )
         }
