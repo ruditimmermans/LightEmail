@@ -19,8 +19,8 @@ class ImapManager {
         properties["mail.imaps.port"] = "993"
         properties["mail.imaps.ssl.enable"] = "true"
         // Battery and Performance Optimizations
-        properties["mail.imaps.connectiontimeout"] = "10000" // 10s
-        properties["mail.imaps.timeout"] = "10000" // 10s
+        properties["mail.imaps.connectiontimeout"] = "30000" // 30s
+        properties["mail.imaps.timeout"] = "30000" // 30s
         properties["mail.imaps.compress.enable"] = "true" // Enable compression
         properties["mail.imaps.partialfetch"] = "false"
         properties["mail.imaps.fetchsize"] = "2097152" // Increase fetch size to 2MB for faster and more complete transfers
@@ -441,7 +441,8 @@ class ImapManager {
                 } else {
                     // Fallback to input stream if content is not a string or failed to parse
                     try {
-                        part.inputStream.bufferedReader().use { text.append(it.readText()) }
+                        val bytes = part.inputStream.readBytes()
+                        text.append(bytes.toString(Charsets.UTF_8))
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -453,7 +454,8 @@ class ImapManager {
                 } else {
                     // Fallback to input stream if content is not a string
                     try {
-                        part.inputStream.bufferedReader().use { html.append(it.readText()) }
+                        val bytes = part.inputStream.readBytes()
+                        html.append(bytes.toString(Charsets.UTF_8))
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }

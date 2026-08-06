@@ -239,18 +239,18 @@ fun MainScreen(
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
                             onClick = { currentScreen = Screen.Home },
-                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null, modifier = Modifier.size(iconSize)) },
-                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.home), fontSize = footerTextSize) },
+                            icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = stringResource(R.string.home), modifier = Modifier.size(iconSize)) },
+                            label = { if (isLP3) Text(stringResource(R.string.home), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
+                            alwaysShowLabel = isLP3
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.AddressBook,
                             onClick = { currentScreen = Screen.AddressBook },
-                            icon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(iconSize)) },
-                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.address_book), fontSize = footerTextSize) },
+                            icon = { Icon(Icons.Outlined.Person, contentDescription = stringResource(R.string.address_book), modifier = Modifier.size(iconSize)) },
+                            label = { if (isLP3) Text(stringResource(R.string.address_book), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
+                            alwaysShowLabel = isLP3
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
@@ -263,22 +263,22 @@ fun MainScreen(
                                         }
                                     }
                                 ) {
-                                    Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(iconSize))
+                                    Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings), modifier = Modifier.size(iconSize))
                                 }
                             },
-                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.settings), fontSize = footerTextSize) },
+                            label = { if (isLP3) Text(stringResource(R.string.settings), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
+                            alwaysShowLabel = isLP3
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
                             onClick = { currentScreen = Screen.About },
                             icon = { 
-                                Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(iconSize))
+                                Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.about), modifier = Modifier.size(iconSize))
                             },
-                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.about), fontSize = footerTextSize) },
+                            label = { if (isLP3) Text(stringResource(R.string.about), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
+                            alwaysShowLabel = isLP3
                         )
                     }
                 }
@@ -521,63 +521,26 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
                 .padding(vertical = if (isVerySmallScreen) 4.dp else 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (isVerySmallScreen) 4.dp else 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            if (isVerySmallScreen) {
-                IconButton(onClick = onDelete) {
-                    Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error)
-                }
-                IconButton(onClick = onForward) {
-                    Icon(Icons.Default.Forward, contentDescription = stringResource(R.string.forward))
-                }
-                IconButton(onClick = onReply) {
-                    Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply))
-                }
-                IconButton(onClick = onReplyAll) {
-                    Icon(Icons.Default.ReplyAll, contentDescription = stringResource(R.string.reply_all))
-                }
-                IconButton(onClick = onReplyToSender) {
-                    Icon(Icons.Default.Person, contentDescription = stringResource(R.string.reply_to_sender))
-                }
-            } else {
-                val actionTextSize = if (isStandardPhone) (textSize * 0.7f).sp else (textSize * 0.8f).sp
-                
-                Text(
-                    text = stringResource(R.string.delete).uppercase(),
-                    modifier = Modifier.padding(8.dp).clickable { onDelete() },
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = actionTextSize
-                )
-                
-                Text(
-                    text = stringResource(R.string.forward).uppercase(),
-                    modifier = Modifier.padding(8.dp).clickable { onForward() },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = actionTextSize
-                )
-
-                Text(
-                    text = stringResource(R.string.reply_all).uppercase(),
-                    modifier = Modifier.padding(8.dp).clickable { onReplyAll() },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = actionTextSize
-                )
-
-                Text(
-                    text = stringResource(R.string.reply_to_sender).uppercase(),
-                    modifier = Modifier.padding(8.dp).clickable { onReplyToSender() },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = actionTextSize
-                )
-
-                Text(
-                    text = stringResource(R.string.reply).uppercase(),
-                    modifier = Modifier.padding(8.dp).clickable { onReply() },
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = actionTextSize
-                )
+            val iconModifier = if (isVerySmallScreen) Modifier.size(24.dp) else Modifier.size(32.dp)
+            val iconTint = MaterialTheme.colorScheme.onSurface
+            
+            IconButton(onClick = onDelete) {
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error, modifier = iconModifier)
+            }
+            IconButton(onClick = onForward) {
+                Icon(Icons.Default.Forward, contentDescription = stringResource(R.string.forward), tint = iconTint, modifier = iconModifier)
+            }
+            IconButton(onClick = onReplyToSender) {
+                Icon(Icons.Default.Person, contentDescription = stringResource(R.string.reply_to_sender), tint = iconTint, modifier = iconModifier)
+            }
+            IconButton(onClick = onReplyAll) {
+                Icon(Icons.Default.ReplyAll, contentDescription = stringResource(R.string.reply_all), tint = iconTint, modifier = iconModifier)
+            }
+            IconButton(onClick = onReply) {
+                Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply), tint = iconTint, modifier = iconModifier)
             }
         }
     }
@@ -781,15 +744,12 @@ fun ComposeEmailScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val headerTextSize = if (isStandardPhone) (textSize * 0.7f).sp else (textSize * 0.8f).sp
+            val headerIconSize = if (isVerySmallScreen) 24.dp else 28.dp
+            val headerIconTint = MaterialTheme.colorScheme.onSurface
             
-            Text(
-                text = stringResource(R.string.cancel).uppercase(),
-                modifier = Modifier.clickable { onFinished() },
-                fontWeight = FontWeight.Bold,
-                fontSize = headerTextSize,
-                letterSpacing = 1.sp
-            )
+            IconButton(onClick = { onFinished() }) {
+                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel), tint = headerIconTint, modifier = Modifier.size(headerIconSize))
+            }
             
             if (!isVerySmallScreen) {
                 Text(
@@ -806,61 +766,62 @@ fun ComposeEmailScreen(
                 )
             }
 
-            Text(
-                text = stringResource(R.string.send).uppercase(),
-                modifier = Modifier
-                    .alpha(if (isSending) 0.5f else 1f)
-                    .clickable(enabled = !isSending) {
-                        if (isSending) return@clickable
-                        if (to.isEmpty()) {
-                            Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
-                            return@clickable
-                        }
-                        
-                        val isHtml = mode != ComposeMode.New && originalEmail?.htmlContent != null
-                        val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
-                            if (isHtml) {
-                                val userMessageHtml = content.replace("\n", "<br>")
-                                val signatureHtml = signature.replace("\n", "<br>")
-                                val attributionHtml = attribution.trim().replace("\n", "<br>")
-                                """
-                                    <div dir="ltr">
-                                        $userMessageHtml
-                                        <br><br>
-                                        --<br>
-                                        $signatureHtml
-                                        <br><br>
-                                        <div class="gmail_quote">
-                                            <div dir="ltr" class="gmail_attr">$attributionHtml</div>
-                                            <blockquote class="gmail_quote" style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
-                                                ${originalEmail.htmlContent}
-                                            </blockquote>
-                                        </div>
+            IconButton(
+                enabled = !isSending,
+                onClick = {
+                    if (to.isEmpty()) {
+                        Toast.makeText(context, "Please specify a recipient", Toast.LENGTH_SHORT).show()
+                        return@IconButton
+                    }
+                    
+                    val isHtml = mode != ComposeMode.New && originalEmail?.htmlContent != null
+                    val fullBody = if (mode != ComposeMode.New && originalEmail != null) {
+                        if (isHtml) {
+                            val userMessageHtml = content.replace("\n", "<br>")
+                            val signatureHtml = signature.replace("\n", "<br>")
+                            val attributionHtml = attribution.trim().replace("\n", "<br>")
+                            """
+                                <div dir="ltr">
+                                    $userMessageHtml
+                                    <br><br>
+                                    --<br>
+                                    $signatureHtml
+                                    <br><br>
+                                    <div class="gmail_quote">
+                                        <div dir="ltr" class="gmail_attr">$attributionHtml</div>
+                                        <blockquote class="gmail_quote" style="margin:0px 0px 0px 0.8ex;border-left:1px solid rgb(204,204,204);padding-left:1ex">
+                                            ${originalEmail.htmlContent}
+                                        </blockquote>
                                     </div>
-                                """.trimIndent()
-                            } else {
-                                val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
-                                "$content\n\n--\n$signature\n$attribution\n$quote"
-                            }
+                                </div>
+                            """.trimIndent()
                         } else {
-                            "$content\n\n--\n$signature"
+                            val quote = originalEmail.content.lines().joinToString("\n") { "> $it" }
+                            "$content\n\n--\n$signature\n$attribution\n$quote"
                         }
-                        
-                        isSending = true
-                        viewModel.sendEmail(to, subject, fullBody, isHtml, cc) { success ->
-                            if (success) {
-                                Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
-                                onFinished()
-                            } else {
-                                isSending = false
-                                Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
-                            }
+                    } else {
+                        "$content\n\n--\n$signature"
+                    }
+                    
+                    isSending = true
+                    viewModel.sendEmail(to, subject, fullBody, isHtml, cc) { success ->
+                        if (success) {
+                            Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                            onFinished()
+                        } else {
+                            isSending = false
+                            Toast.makeText(context, context.getString(R.string.failed_to_send_email), Toast.LENGTH_SHORT).show()
                         }
-                    },
-                fontWeight = FontWeight.Bold,
-                fontSize = headerTextSize,
-                letterSpacing = 1.sp
-            )
+                    }
+                }
+            ) {
+                Icon(
+                    Icons.Default.Send, 
+                    contentDescription = stringResource(R.string.send), 
+                    tint = if (isSending) headerIconTint.copy(alpha = 0.5f) else headerIconTint,
+                    modifier = Modifier.size(headerIconSize)
+                )
+            }
         }
 
         HorizontalDivider(thickness = if (isShortScreen) 1.dp else 2.dp, color = MaterialTheme.colorScheme.onBackground)
