@@ -25,6 +25,7 @@
     <string name="from_label">Van: %1$s</string>
     <string name="date_label">Datum: %1$s</string>
     <string name="reply">Beantwoorden</string>
+    <string name="reply_all">Allen beantwoorden</string>
     <string name="forward">Doorsturen</string>
     <string name="delete">Verwijderen</string>
     <string name="compose">Opstellen</string>

@@ -162,6 +162,8 @@ class ImapManager {
                     uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
                     subject = msg.subject ?: noSubjectString,
                     sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
+                    toRecipients = msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() },
+                    ccRecipients = msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() },
                     content = text,
                     htmlContent = html,
                     date = msg.sentDate?.toString() ?: "",
@@ -255,6 +257,8 @@ class ImapManager {
                     uid = folder.getUID(msg),
                     subject = msg.subject ?: noSubjectString,
                     sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
+                    toRecipients = msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() },
+                    ccRecipients = msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() },
                     content = "",
                     htmlContent = null,
                     date = msg.sentDate?.toString() ?: "",
@@ -316,6 +320,8 @@ class ImapManager {
                     uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
                     subject = msg.subject ?: noSubjectString,
                     sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
+                    toRecipients = msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() },
+                    ccRecipients = msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() },
                     content = "",
                     htmlContent = null,
                     date = msg.sentDate?.toString() ?: "",
@@ -648,7 +654,8 @@ class ImapManager {
         subject: String,
         content: String,
         isHtml: Boolean = false,
-        imapHost: String? = null
+        imapHost: String? = null,
+        cc: String? = null
     ): Boolean {
         val properties = getSmtpProperties(smtpHost, smtpPort)
 
@@ -662,6 +669,11 @@ class ImapManager {
             val message = MimeMessage(session)
             message.setFrom(InternetAddress(email, senderName))
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to))
+            cc?.let {
+                if (it.isNotEmpty()) {
+                    message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(it))
+                }
+            }
             message.subject = subject
             if (isHtml) {
                 message.setContent(content, "text/html; charset=utf-8")

@@ -10,6 +10,8 @@ data class EmailMessage(
     val uid: Long,  // IMAP Unique ID (constant for the message)
     val subject: String,
     val sender: String,
+    val toRecipients: String? = null,
+    val ccRecipients: String? = null,
     val content: String,
     val htmlContent: String? = null,
     val date: String,

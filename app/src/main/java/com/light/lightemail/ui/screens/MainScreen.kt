@@ -72,7 +72,7 @@ enum class Screen {
 }
 
 enum class ComposeMode {
-    New, Reply, Forward
+    New, Reply, ReplyAll, Forward
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,6 +110,7 @@ fun MainScreen(
     val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isVerySmallScreen = configuration.screenHeightDp < 480
     val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
+    val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
     // Handle deep link from notification
     LaunchedEffect(initialEmailUid, emails) {
@@ -222,7 +223,7 @@ fun MainScreen(
                         containerColor = MaterialTheme.colorScheme.surface,
                         contentColor = MaterialTheme.colorScheme.onSurface,
                         windowInsets = NavigationBarDefaults.windowInsets,
-                        modifier = if (isVerySmallScreen) Modifier.height(48.dp) else if (isLP3) Modifier.height(80.dp) else if (isShortScreen) Modifier.height(64.dp) else Modifier
+                        modifier = if (isVerySmallScreen) Modifier.height(48.dp) else if (isLP3) Modifier.height(80.dp) else if (isStandardPhone) Modifier.height(72.dp) else if (isShortScreen) Modifier.height(64.dp) else Modifier
                     ) {
                         val itemColors = NavigationBarItemDefaults.colors(
                             selectedIconColor = MaterialTheme.colorScheme.primary,
@@ -231,23 +232,24 @@ fun MainScreen(
                             unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             indicatorColor = Color.Transparent
                         )
-                        val iconSize = if (isVerySmallScreen) 20.dp else if (isLP3) 32.dp else 24.dp
+                        val iconSize = if (isVerySmallScreen) 20.dp else if (isLP3) 32.dp else if (isStandardPhone) 26.dp else 24.dp
+                        val footerTextSize = if (isLP3) 12.sp else if (isStandardPhone) (textSize * 0.7f).sp else 11.sp
                         
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
                             onClick = { currentScreen = Screen.Home },
                             icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = null, modifier = Modifier.size(iconSize)) },
-                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.home), fontSize = if (isLP3) 12.sp else 11.sp) },
+                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.home), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3
+                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.AddressBook,
                             onClick = { currentScreen = Screen.AddressBook },
                             icon = { Icon(Icons.Outlined.Person, contentDescription = null, modifier = Modifier.size(iconSize)) },
-                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.address_book), fontSize = if (isLP3) 12.sp else 11.sp) },
+                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.address_book), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3
+                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
@@ -263,9 +265,9 @@ fun MainScreen(
                                     Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(iconSize))
                                 }
                             },
-                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.settings), fontSize = if (isLP3) 12.sp else 11.sp) },
+                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.settings), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3
+                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
@@ -273,9 +275,9 @@ fun MainScreen(
                             icon = { 
                                 Icon(Icons.Outlined.Info, contentDescription = null, modifier = Modifier.size(iconSize))
                             },
-                            label = { if (!isShortScreen || isLP3) Text(stringResource(R.string.about), fontSize = if (isLP3) 12.sp else 11.sp) },
+                            label = { if (!isShortScreen || isLP3 || isStandardPhone) Text(stringResource(R.string.about), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = !isShortScreen || isLP3
+                            alwaysShowLabel = !isShortScreen || isLP3 || isStandardPhone
                         )
                     }
                 }
@@ -317,28 +319,35 @@ fun MainScreen(
                         }
 
                         emailToDisplay?.let { email ->
-                            EmailDetailScreen(
-                                email = email,
-                                textSize = textSize,
-                                onReply = {
-                                    selectedEmail = email
-                                    composeMode = ComposeMode.Reply
-                                    currentScreen = Screen.Compose
-                                },
-                                onForward = {
-                                    selectedEmail = email
-                                    composeMode = ComposeMode.Forward
-                                    currentScreen = Screen.Compose
-                                },
-                                onDelete = {
-                                    viewModel.deleteEmail(email)
-                                    currentScreen = Screen.Home
-                                },
-                                onAddContact = { name, emailAddr ->
-                                    viewModel.addContact(name, emailAddr)
-                                    Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
-                                }
-                            )
+                            key(email.uid) {
+                                EmailDetailScreen(
+                                    email = email,
+                                    textSize = textSize,
+                                    onReply = {
+                                        selectedEmail = email
+                                        composeMode = ComposeMode.Reply
+                                        currentScreen = Screen.Compose
+                                    },
+                                    onForward = {
+                                        selectedEmail = email
+                                        composeMode = ComposeMode.Forward
+                                        currentScreen = Screen.Compose
+                                    },
+                                    onDelete = {
+                                        viewModel.deleteEmail(email)
+                                        currentScreen = Screen.Home
+                                    },
+                                    onReplyAll = {
+                                        selectedEmail = email
+                                        composeMode = ComposeMode.ReplyAll
+                                        currentScreen = Screen.Compose
+                                    },
+                                    onAddContact = { name, emailAddr ->
+                                        viewModel.addContact(name, emailAddr)
+                                        Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
+                                    }
+                                )
+                            }
                         }
                     }
                     Screen.Compose -> {
@@ -434,11 +443,14 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
 }
 
 @Composable
-fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onAddContact: (String, String) -> Unit) {
+fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onReplyAll: () -> Unit, onAddContact: (String, String) -> Unit) {
     val isDark = isSystemInDarkTheme()
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
+    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
+    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
+    val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
     Column(modifier = Modifier.fillMaxSize().padding(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)) {
         Column(modifier = Modifier.weight(1f)) {
@@ -515,27 +527,39 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                 IconButton(onClick = onReply) {
                     Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply))
                 }
+                IconButton(onClick = onReplyAll) {
+                    Icon(Icons.Default.ReplyAll, contentDescription = stringResource(R.string.reply_all))
+                }
             } else {
+                val actionTextSize = if (isStandardPhone) (textSize * 0.7f).sp else (textSize * 0.8f).sp
+                
                 Text(
                     text = stringResource(R.string.delete).uppercase(),
                     modifier = Modifier.padding(8.dp).clickable { onDelete() },
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.Bold,
-                    fontSize = (textSize * 0.8f).sp
+                    fontSize = actionTextSize
                 )
                 
                 Text(
                     text = stringResource(R.string.forward).uppercase(),
                     modifier = Modifier.padding(8.dp).clickable { onForward() },
                     fontWeight = FontWeight.Bold,
-                    fontSize = (textSize * 0.8f).sp
+                    fontSize = actionTextSize
+                )
+
+                Text(
+                    text = stringResource(R.string.reply_all).uppercase(),
+                    modifier = Modifier.padding(8.dp).clickable { onReplyAll() },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = actionTextSize
                 )
 
                 Text(
                     text = stringResource(R.string.reply).uppercase(),
                     modifier = Modifier.padding(8.dp).clickable { onReply() },
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = (textSize * 0.8f).sp
+                    fontSize = actionTextSize
                 )
             }
         }
@@ -673,6 +697,9 @@ fun ComposeEmailScreen(
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
+    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
+    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
+    val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
     
     val accountEmail by viewModel.accountEmail.collectAsState()
     val signature by viewModel.signature.collectAsState()
@@ -686,11 +713,27 @@ fun ComposeEmailScreen(
         if (initialTo.isNotEmpty()) initialTo else when(mode) {
             ComposeMode.New, ComposeMode.Forward -> ""
             ComposeMode.Reply -> originalEmail?.sender ?: ""
+            ComposeMode.ReplyAll -> {
+                val recipients = mutableListOf<String>()
+                originalEmail?.sender?.let { recipients.add(it) }
+                originalEmail?.toRecipients?.let { recipients.addAll(it.split(", ")) }
+                // Filter out current user email
+                recipients.distinct()
+                    .filter { it.lowercase() != accountEmail.lowercase() && !it.contains(accountEmail, ignoreCase = true) }
+                    .joinToString(", ")
+            }
         }
+    ) }
+    var cc by remember(mode, originalEmail) { mutableStateOf(
+        if (mode == ComposeMode.ReplyAll) {
+            originalEmail?.ccRecipients?.split(", ")
+                ?.filter { it.lowercase() != accountEmail.lowercase() && !it.contains(accountEmail, ignoreCase = true) }
+                ?.joinToString(", ") ?: ""
+        } else ""
     ) }
     var subject by remember(initialSubject, mode, originalEmail) { mutableStateOf(
         if (initialSubject.isNotEmpty()) initialSubject else when(mode) {
-            ComposeMode.Reply -> replyPrefix
+            ComposeMode.Reply, ComposeMode.ReplyAll -> replyPrefix
             ComposeMode.Forward -> forwardPrefix
             ComposeMode.New -> ""
         }
@@ -720,11 +763,13 @@ fun ComposeEmailScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            val headerTextSize = if (isStandardPhone) (textSize * 0.7f).sp else (textSize * 0.8f).sp
+            
             Text(
                 text = stringResource(R.string.cancel).uppercase(),
                 modifier = Modifier.clickable { onFinished() },
                 fontWeight = FontWeight.Bold,
-                fontSize = (textSize * 0.8f).sp,
+                fontSize = headerTextSize,
                 letterSpacing = 1.sp
             )
             
@@ -732,11 +777,12 @@ fun ComposeEmailScreen(
                 Text(
                     text = stringResource(when(mode) {
                         ComposeMode.Reply -> R.string.reply
+                        ComposeMode.ReplyAll -> R.string.reply_all
                         ComposeMode.Forward -> R.string.forward
                         ComposeMode.New -> R.string.new_email
                     }).uppercase(),
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = (if (isShortScreen) textSize * 0.9f else textSize).sp,
+                    fontSize = (if (isStandardPhone) textSize * 0.8f else if (isShortScreen) textSize * 0.9f else textSize).sp,
                     letterSpacing = if (isShortScreen) 1.sp else 2.sp
                 )
             }
@@ -782,7 +828,7 @@ fun ComposeEmailScreen(
                         }
                         
                         isSending = true
-                        viewModel.sendEmail(to, subject, fullBody, isHtml) { success ->
+                        viewModel.sendEmail(to, subject, fullBody, isHtml, cc) { success ->
                             if (success) {
                                 Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
                                 onFinished()
@@ -793,7 +839,7 @@ fun ComposeEmailScreen(
                         }
                     },
                 fontWeight = FontWeight.Bold,
-                fontSize = (textSize * 0.8f).sp,
+                fontSize = headerTextSize,
                 letterSpacing = 1.sp
             )
         }
@@ -821,6 +867,17 @@ fun ComposeEmailScreen(
                     }
                 }
             )
+            
+            if (cc.isNotEmpty() || mode == ComposeMode.ReplyAll) {
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+                LightTextField(
+                    value = cc,
+                    onValueChange = { cc = it },
+                    label = "CC",
+                    textSize = textSize,
+                    singleLine = true
+                )
+            }
             
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
             
@@ -857,7 +914,7 @@ fun ComposeEmailScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(max = 300.dp)
+                        .heightIn(max = if (isStandardPhone) 450.dp else 300.dp)
                         .border(1.dp, Color.Gray.copy(alpha = 0.3f))
                         .padding(12.dp),
                     contentAlignment = Alignment.TopStart
@@ -1066,6 +1123,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isVerySmallScreen = configuration.screenHeightDp < 480
     val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
+    val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
     val emailVal by viewModel.accountEmail.collectAsState()
     val passwordVal by viewModel.accountPassword.collectAsState()
@@ -1419,6 +1477,7 @@ fun LightRadioButton(
     val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isVerySmallScreen = configuration.screenHeightDp < 480
     val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
+    val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
     val outerSize = if (isLP3) 24.dp else 16.dp
     val innerSize = if (isLP3) 14.dp else 10.dp

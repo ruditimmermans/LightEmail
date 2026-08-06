@@ -301,7 +301,10 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (email.isEmpty()) return
 
         viewModelScope.launch {
-            if (showLoading) _isLoading.value = true
+            // Only show loading if we don't have any emails cached for this folder yet
+            val currentList = repository.getEmails(folder).first()
+            if (showLoading && currentList.isEmpty()) _isLoading.value = true
+            
             try {
                 repository.syncEmails(
                     email = email,
@@ -312,8 +315,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 
                 // Pre-fetch content for the latest emails in the background
                 viewModelScope.launch(Dispatchers.IO) {
-                    val currentEmails = repository.getEmails(folder).first()
-                    currentEmails.take(10).forEach { emailMsg ->
+                    val updatedEmails = repository.getEmails(folder).first()
+                    updatedEmails.take(10).forEach { emailMsg ->
                         if (emailMsg.content.isEmpty() || emailMsg.content == getApplication<Application>().getString(R.string.error_reading_content)) {
                             repository.fetchEmailContent(
                                 _accountEmail.value,
@@ -383,7 +386,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, onResult: (Boolean) -> Unit) {
+    fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, cc: String? = null, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
                 imapManager.sendEmail(
@@ -396,7 +399,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     subject,
                     content,
                     isHtml,
-                    _imapHost.value
+                    _imapHost.value,
+                    cc
                 )
             }
             if (success) refreshFolders()

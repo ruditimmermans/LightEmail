@@ -25,6 +25,7 @@
     <string name="from_label">From: %1$s</string>
     <string name="date_label">Date: %1$s</string>
     <string name="reply">Reply</string>
+    <string name="reply_all">Reply All</string>
     <string name="forward">Forward</string>
     <string name="delete">Delete</string>
     <string name="compose">Compose</string>

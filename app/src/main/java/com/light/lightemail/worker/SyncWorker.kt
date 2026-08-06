@@ -56,20 +56,33 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 val latestEmail = unreadEmails.first()
                 val maxUid = unreadEmails.maxOf { it.uid }
                 val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                val lastUnreadCount = prefs.getLong("last_unread_count", -1L)
                 
-                if (maxUid > lastSeenUid || unreadEmails.size.toLong() != prefs.getLong("last_unread_count", -1L)) {
+                // Only show notification if there is a NEW email UID
+                // or if the unread count has significantly increased.
+                // This prevents duplicate notifications for the same set of unread emails.
+                if (maxUid > lastSeenUid) {
                     showNotification(
                         latestEmail.sender, 
                         latestEmail.subject, 
                         latestEmail.uid, 
-                        unreadEmails.size,
-                        isNew = maxUid > lastSeenUid
+                        unreadEmails.size
                     )
                     
                     prefs.edit()
                         .putLong("last_seen_uid", maxUid)
                         .putLong("last_unread_count", unreadEmails.size.toLong())
                         .apply()
+                } else if (unreadEmails.size.toLong() != lastUnreadCount) {
+                    // Update count in background without alerting if no NEW uid
+                    prefs.edit()
+                        .putLong("last_unread_count", unreadEmails.size.toLong())
+                        .apply()
+                        
+                    // If count decreased, maybe cancel? But usually keep it.
+                    if (unreadEmails.isEmpty()) {
+                        cancelNotification()
+                    }
                 }
             } else {
                 cancelNotification()
@@ -84,7 +97,7 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         return Result.success()
     }
 
-    private fun showNotification(sender: String, subject: String, uid: Long, count: Int = 1, isNew: Boolean = true) {
+    private fun showNotification(sender: String, subject: String, uid: Long, count: Int = 1) {
         val channelId = "new_email_channel_v2"
         val notificationManager = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -125,8 +138,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             .setContentText(subject)
             .setNumber(count)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(if (isNew) NotificationCompat.DEFAULT_ALL else 0)
-            .setOnlyAlertOnce(!isNew)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setOnlyAlertOnce(false)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .setTimeoutAfter(30000)

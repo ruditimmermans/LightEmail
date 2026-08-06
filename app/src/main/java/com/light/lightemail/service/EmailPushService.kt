@@ -91,10 +91,10 @@ class EmailPushService : Service() {
                     try {
                         imapManager.startIdle(email, password, host) {
                             val now = System.currentTimeMillis()
-                            // Debounce sync requests to avoid double notifications from rapid folder events
-                            if (now - lastSyncTime > 2000) {
+                            // Refined debounce: 5 seconds and check if WorkManager already has pending sync
+                            if (now - lastSyncTime > 5000) {
                                 lastSyncTime = now
-                                // Trigger SyncWorker to fetch details and notify
+                                // Trigger SyncWorker
                                 val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
                                     .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                                     .setConstraints(
@@ -105,7 +105,7 @@ class EmailPushService : Service() {
                                     .build()
                                 WorkManager.getInstance(applicationContext).enqueueUniqueWork(
                                     "email_sync_push",
-                                    ExistingWorkPolicy.REPLACE,
+                                    ExistingWorkPolicy.KEEP, // Use KEEP to avoid restarting if one is already running/enqueued
                                     syncRequest
                                 )
                             }
