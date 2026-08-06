@@ -224,6 +224,44 @@ class ImapManager {
         }
     }
 
+    fun fetchFlagsByUids(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String,
+        uids: List<Long>
+    ): Map<Long, Boolean> {
+        if (uids.isEmpty()) return emptyMap()
+        
+        val properties = getImapProperties(host)
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = store.getFolder(folderName) as IMAPFolder
+            folder.open(Folder.READ_ONLY)
+
+            val messages = folder.getMessagesByUID(uids.toLongArray())
+            
+            val fp = FetchProfile()
+            fp.add(FetchProfile.Item.FLAGS)
+            fp.add(UIDFolder.FetchProfileItem.UID)
+            folder.fetch(messages, fp)
+
+            val result = messages.associate { msg ->
+                folder.getUID(msg) to msg.flags.contains(Flags.Flag.SEEN)
+            }
+
+            folder.close(false)
+            store.close()
+            result
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emptyMap()
+        }
+    }
+
     fun fetchEmailsByUids(
         email: String,
         password: String,
@@ -496,30 +534,24 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
             
-            // Limit to top-level folders or common folders to speed up if many folders exist
             val folders = store.defaultFolder.list().map { folder ->
                 if (folder is IMAPFolder) {
                     try {
-                        // Use STATUS command which is much faster than opening the folder
-                        // We use JavaMail's internal way of getting status if possible
-                        // or just open it briefly. Actually, folder.messageCount on IMAPFolder 
-                        // often triggers a STATUS if not open.
-                        val count = folder.messageCount
+                        // STATUS command is efficient for getting counts without opening the folder
+                        // Some servers might not support all attributes, but message count and unread are standard
+                        folder.messageCount
                         val unread = folder.unreadMessageCount
-                        FolderInfo(folder.fullName, count, unread)
+                        FolderInfo(folder.fullName, folder.messageCount, unread)
                     } catch (e: Exception) {
+                        // Fallback if STATUS fails
                         folder.open(Folder.READ_ONLY)
-                        val count = folder.messageCount
-                        val unread = folder.unreadMessageCount
-                        val info = FolderInfo(folder.fullName, count, unread)
+                        val info = FolderInfo(folder.fullName, folder.messageCount, folder.unreadMessageCount)
                         folder.close(false)
                         info
                     }
                 } else {
                     folder.open(Folder.READ_ONLY)
-                    val count = folder.messageCount
-                    val unread = folder.unreadMessageCount
-                    val info = FolderInfo(folder.fullName, count, unread)
+                    val info = FolderInfo(folder.fullName, folder.messageCount, folder.unreadMessageCount)
                     folder.close(false)
                     info
                 }

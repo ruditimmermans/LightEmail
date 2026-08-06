@@ -1,5 +1,6 @@
 package com.light.lightemail.data
 
+import androidx.paging.PagingSource
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
 
@@ -7,6 +8,9 @@ import kotlinx.coroutines.flow.Flow
 interface EmailDao {
     @Query("SELECT * FROM emails WHERE folder = :folder ORDER BY uid DESC")
     fun getEmailsByFolder(folder: String): Flow<List<EmailMessage>>
+
+    @Query("SELECT * FROM emails WHERE folder = :folder ORDER BY uid DESC")
+    fun getEmailsPaging(folder: String): PagingSource<Int, EmailMessage>
 
     @Query("SELECT * FROM emails WHERE uid = :uid AND folder = :folder")
     suspend fun getEmailByUid(uid: Long, folder: String): EmailMessage?

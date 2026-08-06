@@ -12,6 +12,8 @@ import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -60,6 +62,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.itemKey
 import com.light.lightemail.R
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
@@ -94,6 +100,7 @@ fun MainScreen(
     var initialSubject by remember { mutableStateOf("") }
     var initialBody by remember { mutableStateOf("") }
     
+    val pagingEmails = viewModel.pagingEmails.collectAsLazyPagingItems()
     val emails by viewModel.emails.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
@@ -194,15 +201,23 @@ fun MainScreen(
                         title = { Text(stringResource(R.string.app_title), style = titleStyle) },
                         navigationIcon = {
                             val isTopLevelScreen = currentScreen in listOf(Screen.Home, Screen.AddressBook, Screen.Settings, Screen.About)
-                            if (isTopLevelScreen) {
-                                if (currentScreen == Screen.Home) {
-                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                        Icon(Icons.Default.Menu, contentDescription = "Menu", modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                            AnimatedContent(
+                                targetState = isTopLevelScreen,
+                                transitionSpec = {
+                                    fadeIn(animationSpec = tween(220, delayMillis = 90)) togetherWith
+                                            fadeOut(animationSpec = tween(90))
+                                }, label = "NavIcon"
+                            ) { targetIsTopLevel ->
+                                if (targetIsTopLevel) {
+                                    if (currentScreen == Screen.Home) {
+                                        IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                            Icon(Icons.Default.Menu, contentDescription = "Menu", modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                        }
                                     }
-                                }
-                            } else {
-                                IconButton(onClick = { currentScreen = Screen.Home }) {
-                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                } else {
+                                    IconButton(onClick = { currentScreen = Screen.Home }) {
+                                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
+                                    }
                                 }
                             }
                         },
@@ -302,79 +317,95 @@ fun MainScreen(
             contentWindowInsets = WindowInsets.systemBars
         ) { padding ->
             Box(modifier = Modifier.fillMaxSize().padding(padding).consumeWindowInsets(padding)) {
-                when (currentScreen) {
-                    Screen.Home -> EmailListScreen(emails, isLoading, textSize) { emailMsg ->
-                        selectedEmail = emailMsg
-                        currentScreen = Screen.ViewEmail
-                        viewModel.markAsRead(emailMsg)
-                    }
-                    Screen.About -> AboutScreen(viewModel = viewModel)
-                    Screen.Settings -> SettingsScreen(viewModel = viewModel)
-                    Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
-                    Screen.ViewEmail -> {
-                        // Use derivedStateOf to avoid unnecessary recompositions while viewing
-                        val emailToDisplay by remember(selectedEmail, emails) {
-                            derivedStateOf {
+                AnimatedContent(
+                    targetState = currentScreen,
+                    transitionSpec = {
+                        if (targetState == Screen.ViewEmail || targetState == Screen.Compose) {
+                            (slideInHorizontally { it } + fadeIn()).togetherWith(
+                                slideOutHorizontally { -it / 3 } + fadeOut())
+                        } else if (initialState == Screen.ViewEmail || initialState == Screen.Compose) {
+                            (slideInHorizontally { -it / 3 } + fadeIn()).togetherWith(
+                                slideOutHorizontally { it } + fadeOut())
+                        } else {
+                            fadeIn().togetherWith(fadeOut())
+                        }
+                    },
+                    label = "ScreenTransition"
+                ) { targetScreen ->
+                    when (targetScreen) {
+                        Screen.Home -> EmailListScreen(pagingEmails, isLoading, textSize) { emailMsg ->
+                            selectedEmail = emailMsg
+                            currentScreen = Screen.ViewEmail
+                            viewModel.markAsRead(emailMsg)
+                        }
+                        Screen.About -> AboutScreen(viewModel = viewModel)
+                        Screen.Settings -> SettingsScreen(viewModel = viewModel)
+                        Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
+                        Screen.ViewEmail -> {
+                            // Use derivedStateOf to avoid unnecessary recompositions while viewing
+                            val emailToDisplay by remember(selectedEmail, emails) {
+                                derivedStateOf {
+                                    emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+                                }
+                            }
+
+                            emailToDisplay?.let { email ->
+                                key(email.uid) {
+                                    EmailDetailScreen(
+                                        email = email,
+                                        textSize = textSize,
+                                        onReply = {
+                                            selectedEmail = email
+                                            composeMode = ComposeMode.Reply
+                                            currentScreen = Screen.Compose
+                                        },
+                                        onForward = {
+                                            selectedEmail = email
+                                            composeMode = ComposeMode.Forward
+                                            currentScreen = Screen.Compose
+                                        },
+                                        onDelete = {
+                                            viewModel.deleteEmail(email)
+                                            currentScreen = Screen.Home
+                                        },
+                                        onReplyAll = {
+                                            selectedEmail = email
+                                            composeMode = ComposeMode.ReplyAll
+                                            currentScreen = Screen.Compose
+                                        },
+                                        onReplyToSender = {
+                                            selectedEmail = email
+                                            composeMode = ComposeMode.ReplyToSender
+                                            currentScreen = Screen.Compose
+                                        },
+                                        onAddContact = { name, emailAddr ->
+                                            viewModel.addContact(name, emailAddr)
+                                            Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                        Screen.Compose -> {
+                            val activeEmail = remember(selectedEmail, emails) {
                                 emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
                             }
+                            ComposeEmailScreen(
+                                viewModel = viewModel,
+                                mode = composeMode,
+                                originalEmail = activeEmail,
+                                textSize = textSize,
+                                onFinished = { 
+                                    initialTo = ""
+                                    initialSubject = ""
+                                    initialBody = ""
+                                    currentScreen = Screen.Home 
+                                },
+                                initialTo = initialTo,
+                                initialSubject = initialSubject,
+                                initialBody = initialBody
+                            )
                         }
-
-                        emailToDisplay?.let { email ->
-                            key(email.uid) {
-                                EmailDetailScreen(
-                                    email = email,
-                                    textSize = textSize,
-                                    onReply = {
-                                        selectedEmail = email
-                                        composeMode = ComposeMode.Reply
-                                        currentScreen = Screen.Compose
-                                    },
-                                    onForward = {
-                                        selectedEmail = email
-                                        composeMode = ComposeMode.Forward
-                                        currentScreen = Screen.Compose
-                                    },
-                                    onDelete = {
-                                        viewModel.deleteEmail(email)
-                                        currentScreen = Screen.Home
-                                    },
-                                    onReplyAll = {
-                                        selectedEmail = email
-                                        composeMode = ComposeMode.ReplyAll
-                                        currentScreen = Screen.Compose
-                                    },
-                                    onReplyToSender = {
-                                        selectedEmail = email
-                                        composeMode = ComposeMode.ReplyToSender
-                                        currentScreen = Screen.Compose
-                                    },
-                                    onAddContact = { name, emailAddr ->
-                                        viewModel.addContact(name, emailAddr)
-                                        Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
-                                    }
-                                )
-                            }
-                        }
-                    }
-                    Screen.Compose -> {
-                        val activeEmail = remember(selectedEmail, emails) {
-                            emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
-                        }
-                        ComposeEmailScreen(
-                            viewModel = viewModel,
-                            mode = composeMode,
-                            originalEmail = activeEmail,
-                            textSize = textSize,
-                            onFinished = { 
-                                initialTo = ""
-                                initialSubject = ""
-                                initialBody = ""
-                                currentScreen = Screen.Home 
-                            },
-                            initialTo = initialTo,
-                            initialSubject = initialSubject,
-                            initialBody = initialBody
-                        )
                     }
                 }
             }
@@ -383,62 +414,76 @@ fun MainScreen(
 }
 
 @Composable
-fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
+fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
     
+    val isPagingLoading = emails.loadState.refresh is LoadState.Loading
+
     Box(modifier = Modifier.fillMaxSize()) {
-        if (emails.isEmpty() && !isLoading) {
+        if (emails.itemCount == 0 && !isLoading && !isPagingLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(stringResource(R.string.no_emails), fontSize = textSize.sp)
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(emails, key = { it.uid }) { email ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onEmailClick(email) }
-                            .padding(if (isVerySmallScreen) 8.dp else 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = email.sender.uppercase(), 
-                                fontSize = (textSize * 0.7f).sp, 
-                                fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = email.subject, 
-                                fontSize = textSize.sp, 
-                                fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                maxLines = if (isVerySmallScreen) 1 else 2
-                            )
+                items(emails.itemCount, key = emails.itemKey { it.uid }) { index ->
+                    val email = emails[index]
+                    if (email != null) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onEmailClick(email) }
+                                .padding(if (isVerySmallScreen) 8.dp else 16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = email.sender.uppercase(), 
+                                    fontSize = (textSize * 0.7f).sp, 
+                                    fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                                Text(
+                                    text = email.subject, 
+                                    fontSize = textSize.sp, 
+                                    fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    maxLines = if (isVerySmallScreen) 1 else 2
+                                )
+                            }
+                            if (email.isRead) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onBackground,
+                                    modifier = Modifier.size(if (isVerySmallScreen) 12.dp else 16.dp)
+                                )
+                            }
                         }
-                        if (email.isRead) {
-                            Icon(
-                                imageVector = Icons.Default.Check,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.size(if (isVerySmallScreen) 12.dp else 16.dp)
-                            )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
+                    }
+                }
+                
+                // Show loading indicator at the bottom when loading more
+                if (emails.loadState.append is LoadState.Loading) {
+                    item {
+                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
                         }
                     }
-                    HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                 }
             }
         }
 
-        if (isLoading) {
+        if (isLoading || isPagingLoading) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(if (emails.isEmpty()) MaterialTheme.colorScheme.background else Color.Transparent),
-                contentAlignment = if (emails.isEmpty()) Alignment.Center else Alignment.TopCenter
+                    .background(if (emails.itemCount == 0) MaterialTheme.colorScheme.background else Color.Transparent),
+                contentAlignment = if (emails.itemCount == 0) Alignment.Center else Alignment.TopCenter
             ) {
-                if (emails.isEmpty()) {
+                if (emails.itemCount == 0) {
                     CircularProgressIndicator()
                 } else {
                     LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
@@ -484,34 +529,44 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
             HorizontalDivider()
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
             
-            if (email.htmlContent != null) {
-                HtmlView(html = email.htmlContent, isDark = isDark, textSize = textSize)
-            } else if (email.content.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black)
-                        .padding(if (isVerySmallScreen) 4.dp else 8.dp)
-                ) {
-                    if (!isVerySmallScreen) {
-                        Text(
-                            text = stringResource(R.string.secure_text_email),
-                            color = Color.Green,
-                            fontSize = (textSize * 0.7f).sp,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
+            Box(modifier = Modifier.weight(1f)) {
+                AnimatedContent(
+                    targetState = Triple(email.htmlContent, email.content, email.uid),
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                    },
+                    label = "EmailContentTransition"
+                ) { (htmlContent, content, _) ->
+                    if (htmlContent != null) {
+                        HtmlView(html = htmlContent, isDark = isDark, textSize = textSize)
+                    } else if (content.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black)
+                                .padding(if (isVerySmallScreen) 4.dp else 8.dp)
+                        ) {
+                            if (!isVerySmallScreen) {
+                                Text(
+                                    text = stringResource(R.string.secure_text_email),
+                                    color = Color.Green,
+                                    fontSize = (textSize * 0.7f).sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+                            Text(
+                                text = content,
+                                fontSize = textSize.sp,
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.verticalScroll(rememberScrollState())
+                            )
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
                     }
-                    Text(
-                        text = email.content,
-                        fontSize = textSize.sp,
-                        color = MaterialTheme.colorScheme.onBackground,
-                        modifier = Modifier.verticalScroll(rememberScrollState())
-                    )
-                }
-            } else {
-                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator()
                 }
             }
         }

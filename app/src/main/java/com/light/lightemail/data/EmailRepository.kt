@@ -15,6 +15,8 @@ class EmailRepository(private val context: Context) {
         return emailDao.getEmailsByFolder(folder)
     }
 
+    fun getEmailsPaging(folder: String) = emailDao.getEmailsPaging(folder)
+
     suspend fun syncEmails(
         email: String,
         password: String,
@@ -27,14 +29,19 @@ class EmailRepository(private val context: Context) {
             val latestUids = imapManager.fetchLatestUids(email, password, host, folder, limit)
             if (latestUids.isEmpty()) return@withContext
 
-            // 2. Identify which UIDs we don't have in DB
-            val existingEmails = latestUids.mapNotNull { uid ->
-                emailDao.getEmailByUid(uid, folder)
-            }
-            val existingUids = existingEmails.map { it.uid }.toSet()
-            val newUids = latestUids.filter { it !in existingUids }
+            // 2. Identify which UIDs we don't have in DB and which we do
+            val existingUids = mutableListOf<Long>()
+            val newUids = mutableListOf<Long>()
 
-            // 3. Fetch headers for new UIDs
+            latestUids.forEach { uid ->
+                if (emailDao.getEmailByUid(uid, folder) != null) {
+                    existingUids.add(uid)
+                } else {
+                    newUids.add(uid)
+                }
+            }
+
+            // 3. Fetch headers only for new UIDs
             if (newUids.isNotEmpty()) {
                 val newEmails = imapManager.fetchEmailsByUids(
                     email, password, host, folder, newUids,
@@ -44,17 +51,13 @@ class EmailRepository(private val context: Context) {
                 emailDao.insertEmails(newEmails)
             }
 
-            // 4. Update read status for existing emails if it changed
-            // We can optimize this by fetching flags for all latestUids at once
-            // But for now, let's keep it simple or do a full fetch for latest 20 to ensure accuracy
-            val recentEmails = imapManager.fetchEmails(
-                email, password, host, folder, 20,
-                context.getString(R.string.no_subject),
-                context.getString(R.string.unknown_sender),
-                context.getString(R.string.error_reading_content),
-                fetchContent = false
-            )
-            emailDao.insertEmails(recentEmails)
+            // 4. Update read status for existing emails efficiently
+            if (existingUids.isNotEmpty()) {
+                val flags = imapManager.fetchFlagsByUids(email, password, host, folder, existingUids)
+                flags.forEach { (uid, isRead) ->
+                    emailDao.updateReadStatus(uid, folder, isRead)
+                }
+            }
 
             // 5. Cleanup: delete emails that are no longer on the server (within our limit)
             emailDao.deleteOldEmails(folder, latestUids)

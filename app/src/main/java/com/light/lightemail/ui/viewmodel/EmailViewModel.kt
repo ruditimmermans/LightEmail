@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.*
 import androidx.work.*
 import com.light.lightemail.R
 import com.light.lightemail.data.AppDatabase
@@ -19,6 +20,7 @@ import com.light.lightemail.data.SyncEvent
 import com.light.lightemail.worker.SyncWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -79,6 +81,20 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _currentFolder = MutableStateFlow("Inbox")
     val currentFolder: StateFlow<String> = _currentFolder
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val pagingEmails: Flow<PagingData<EmailMessage>> = _currentFolder
+        .flatMapLatest { folder ->
+            Pager(
+                config = PagingConfig(
+                    pageSize = 20,
+                    enablePlaceholders = false,
+                    prefetchDistance = 5
+                ),
+                pagingSourceFactory = { repository.getEmailsPaging(folder) }
+            ).flow
+        }
+        .cachedIn(viewModelScope)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val emails: StateFlow<List<EmailMessage>> = _currentFolder
