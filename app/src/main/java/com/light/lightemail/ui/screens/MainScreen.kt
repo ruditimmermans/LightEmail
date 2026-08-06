@@ -72,7 +72,7 @@ enum class Screen {
 }
 
 enum class ComposeMode {
-    New, Reply, ReplyAll, Forward
+    New, Reply, ReplyAll, ReplyToSender, Forward
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -342,6 +342,11 @@ fun MainScreen(
                                         composeMode = ComposeMode.ReplyAll
                                         currentScreen = Screen.Compose
                                     },
+                                    onReplyToSender = {
+                                        selectedEmail = email
+                                        composeMode = ComposeMode.ReplyToSender
+                                        currentScreen = Screen.Compose
+                                    },
                                     onAddContact = { name, emailAddr ->
                                         viewModel.addContact(name, emailAddr)
                                         Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
@@ -443,7 +448,7 @@ fun EmailListScreen(emails: List<EmailMessage>, isLoading: Boolean, textSize: Fl
 }
 
 @Composable
-fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onReplyAll: () -> Unit, onAddContact: (String, String) -> Unit) {
+fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onReplyAll: () -> Unit, onReplyToSender: () -> Unit, onAddContact: (String, String) -> Unit) {
     val isDark = isSystemInDarkTheme()
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
@@ -530,6 +535,9 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                 IconButton(onClick = onReplyAll) {
                     Icon(Icons.Default.ReplyAll, contentDescription = stringResource(R.string.reply_all))
                 }
+                IconButton(onClick = onReplyToSender) {
+                    Icon(Icons.Default.Person, contentDescription = stringResource(R.string.reply_to_sender))
+                }
             } else {
                 val actionTextSize = if (isStandardPhone) (textSize * 0.7f).sp else (textSize * 0.8f).sp
                 
@@ -551,6 +559,13 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
                 Text(
                     text = stringResource(R.string.reply_all).uppercase(),
                     modifier = Modifier.padding(8.dp).clickable { onReplyAll() },
+                    fontWeight = FontWeight.Bold,
+                    fontSize = actionTextSize
+                )
+
+                Text(
+                    text = stringResource(R.string.reply_to_sender).uppercase(),
+                    modifier = Modifier.padding(8.dp).clickable { onReplyToSender() },
                     fontWeight = FontWeight.Bold,
                     fontSize = actionTextSize
                 )
@@ -712,10 +727,11 @@ fun ComposeEmailScreen(
     var to by remember(initialTo, mode, originalEmail) { mutableStateOf(
         if (initialTo.isNotEmpty()) initialTo else when(mode) {
             ComposeMode.New, ComposeMode.Forward -> ""
-            ComposeMode.Reply -> originalEmail?.sender ?: ""
+            ComposeMode.Reply -> originalEmail?.replyTo ?: originalEmail?.sender ?: ""
+            ComposeMode.ReplyToSender -> originalEmail?.sender ?: ""
             ComposeMode.ReplyAll -> {
                 val recipients = mutableListOf<String>()
-                originalEmail?.sender?.let { recipients.add(it) }
+                recipients.add(originalEmail?.replyTo ?: originalEmail?.sender ?: "")
                 originalEmail?.toRecipients?.let { recipients.addAll(it.split(", ")) }
                 // Filter out current user email
                 recipients.distinct()
@@ -733,7 +749,7 @@ fun ComposeEmailScreen(
     ) }
     var subject by remember(initialSubject, mode, originalEmail) { mutableStateOf(
         if (initialSubject.isNotEmpty()) initialSubject else when(mode) {
-            ComposeMode.Reply, ComposeMode.ReplyAll -> replyPrefix
+            ComposeMode.Reply, ComposeMode.ReplyAll, ComposeMode.ReplyToSender -> replyPrefix
             ComposeMode.Forward -> forwardPrefix
             ComposeMode.New -> ""
         }
@@ -778,11 +794,12 @@ fun ComposeEmailScreen(
                     text = stringResource(when(mode) {
                         ComposeMode.Reply -> R.string.reply
                         ComposeMode.ReplyAll -> R.string.reply_all
+                        ComposeMode.ReplyToSender -> R.string.reply_to_sender
                         ComposeMode.Forward -> R.string.forward
                         ComposeMode.New -> R.string.new_email
                     }).uppercase(),
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = (if (isStandardPhone) textSize * 0.8f else if (isShortScreen) textSize * 0.9f else textSize).sp,
+                    fontSize = (if (isStandardPhone) textSize * 0.7f else if (isShortScreen) textSize * 0.9f else textSize).sp,
                     letterSpacing = if (isShortScreen) 1.sp else 2.sp
                 )
             }
