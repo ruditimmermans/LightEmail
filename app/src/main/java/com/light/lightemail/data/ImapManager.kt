@@ -22,8 +22,8 @@ class ImapManager {
         properties["mail.imaps.connectiontimeout"] = "10000" // 10s
         properties["mail.imaps.timeout"] = "10000" // 10s
         properties["mail.imaps.compress.enable"] = "true" // Enable compression
-        properties["mail.imaps.partialfetch"] = "true"
-        properties["mail.imaps.fetchsize"] = "1048576" // Increase fetch size to 1MB for faster transfers
+        properties["mail.imaps.partialfetch"] = "false"
+        properties["mail.imaps.fetchsize"] = "2097152" // Increase fetch size to 2MB for faster and more complete transfers
         properties["mail.imaps.connectionpoolsize"] = "5"
         properties["mail.imaps.connectionpooltimeout"] = "300000"
         // IDLE optimization
