@@ -152,10 +152,11 @@ class ImapManager {
             folder.fetch(lastMessages, fp)
 
             val result = lastMessages.reversedArray().map { msg ->
-                val (text, html) = if (fetchContent) {
-                    getContent(msg, errorReadingContentString)
+                val (text, html, _) = if (fetchContent) {
+                    val uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L
+                    getContent(msg, uid, folderName, errorReadingContentString)
                 } else {
-                    Pair("", null)
+                    Triple("", null, emptyList())
                 }
                 EmailMessage(
                     id = msg.messageNumber.toString(),
@@ -387,7 +388,7 @@ class ImapManager {
         folderName: String,
         uid: Long,
         errorReadingContentString: String = "Error reading content"
-    ): Pair<String, String?> {
+    ): Triple<String, String?, List<Attachment>> {
         val properties = getImapProperties(host)
         return try {
             val session = Session.getInstance(properties, null)
@@ -398,23 +399,25 @@ class ImapManager {
             folder.open(Folder.READ_ONLY)
 
             val msg = folder.getMessageByUID(uid)
-            val content = if (msg != null) getContent(msg, errorReadingContentString) else Pair(errorReadingContentString, null)
+            val result = if (msg != null) getContent(msg, uid, folderName, errorReadingContentString) 
+                         else Triple(errorReadingContentString, null, emptyList())
 
             folder.close(false)
             store.close()
-            content
+            result
         } catch (e: Exception) {
             e.printStackTrace()
-            Pair(errorReadingContentString, null)
+            Triple(errorReadingContentString, null, emptyList())
         }
     }
 
-    private fun getContent(message: Message, errorReadingContentString: String): Pair<String, String?> {
+    private fun getContent(message: Message, uid: Long, folderName: String, errorReadingContentString: String): Triple<String, String?, List<Attachment>> {
         return try {
             val textBuilder = StringBuilder()
             val htmlBuilder = StringBuilder()
             val images = mutableMapOf<String, String>()
-            extractContent(message, textBuilder, htmlBuilder, images)
+            val attachments = mutableListOf<Attachment>()
+            extractContent(message, uid, folderName, "", textBuilder, htmlBuilder, images, attachments)
             
             var text = textBuilder.toString().trim()
             var html = htmlBuilder.toString().trim().ifEmpty { null }
@@ -447,9 +450,9 @@ class ImapManager {
                 }
             }
             
-            Pair(text, html)
+            Triple(text, html, attachments)
         } catch (e: Exception) {
-            Pair(errorReadingContentString, null)
+            Triple(errorReadingContentString, null, emptyList())
         }
     }
 
@@ -470,14 +473,42 @@ class ImapManager {
             .joinToString("\n")
     }
 
-    private fun extractContent(part: Part, text: StringBuilder, html: StringBuilder, images: MutableMap<String, String>) {
+    private fun extractContent(
+        part: Part, 
+        uid: Long, 
+        folderName: String, 
+        partPath: String,
+        text: StringBuilder, 
+        html: StringBuilder, 
+        images: MutableMap<String, String>,
+        attachments: MutableList<Attachment>
+    ) {
         try {
+            val disposition = part.disposition
+            val isAttachment = disposition?.equals(Part.ATTACHMENT, ignoreCase = true) == true || 
+                              disposition?.equals(Part.INLINE, ignoreCase = true) == true
+            
+            val fileName = part.fileName
+
+            if (isAttachment && fileName != null) {
+                attachments.add(
+                    Attachment(
+                        emailUid = uid,
+                        folder = folderName,
+                        fileName = fileName,
+                        mimeType = part.contentType.substringBefore(";"),
+                        size = part.size.toLong(),
+                        partIndex = partPath
+                    )
+                )
+                return // Don't process content of attachments as body text
+            }
+
             if (part.isMimeType("text/plain")) {
                 val content = try { part.content } catch (e: Exception) { null }
                 if (content is String) {
                     text.append(content)
                 } else {
-                    // Fallback to input stream if content is not a string or failed to parse
                     try {
                         val bytes = part.inputStream.readBytes()
                         text.append(bytes.toString(Charsets.UTF_8))
@@ -490,7 +521,6 @@ class ImapManager {
                 if (content is String) {
                     html.append(content)
                 } else {
-                    // Fallback to input stream if content is not a string
                     try {
                         val bytes = part.inputStream.readBytes()
                         html.append(bytes.toString(Charsets.UTF_8))
@@ -501,12 +531,13 @@ class ImapManager {
             } else if (part.isMimeType("multipart/*")) {
                 val multiPart = part.content as MimeMultipart
                 for (i in 0 until multiPart.count) {
-                    extractContent(multiPart.getBodyPart(i), text, html, images)
+                    val nextPath = if (partPath.isEmpty()) "$i" else "$partPath.$i"
+                    extractContent(multiPart.getBodyPart(i), uid, folderName, nextPath, text, html, images, attachments)
                 }
             } else if (part.isMimeType("message/rfc822")) {
                 val content = part.content
                 if (content is Part) {
-                    extractContent(content, text, html, images)
+                    extractContent(content, uid, folderName, partPath, text, html, images, attachments)
                 }
             } else if (part.isMimeType("image/*")) {
                 val cid = part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
@@ -519,6 +550,18 @@ class ImapManager {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
+                } else if (fileName != null) {
+                    // Inline image without CID, treat as attachment
+                    attachments.add(
+                        Attachment(
+                            emailUid = uid,
+                            folder = folderName,
+                            fileName = fileName,
+                            mimeType = part.contentType.substringBefore(";"),
+                            size = part.size.toLong(),
+                            partIndex = partPath
+                        )
+                    )
                 }
             }
         } catch (e: Exception) {
@@ -682,6 +725,7 @@ class ImapManager {
     }
 
     fun sendEmail(
+        context: android.content.Context,
         email: String,
         password: String,
         smtpHost: String,
@@ -692,7 +736,8 @@ class ImapManager {
         content: String,
         isHtml: Boolean = false,
         imapHost: String? = null,
-        cc: String? = null
+        cc: String? = null,
+        attachments: List<android.net.Uri> = emptyList()
     ): Boolean {
         val properties = getSmtpProperties(smtpHost, smtpPort)
 
@@ -712,11 +757,48 @@ class ImapManager {
                 }
             }
             message.subject = subject
-            if (isHtml) {
-                message.setContent(content, "text/html; charset=utf-8")
+
+            if (attachments.isEmpty()) {
+                if (isHtml) {
+                    message.setContent(content, "text/html; charset=utf-8")
+                } else {
+                    message.setText(content)
+                }
             } else {
-                message.setText(content)
+                val multipart = MimeMultipart()
+
+                // Body part
+                val messageBodyPart = javax.mail.internet.MimeBodyPart()
+                if (isHtml) {
+                    messageBodyPart.setContent(content, "text/html; charset=utf-8")
+                } else {
+                    messageBodyPart.setText(content)
+                }
+                multipart.addBodyPart(messageBodyPart)
+
+                // Attachment parts
+                for (uri in attachments) {
+                    val attachmentBodyPart = javax.mail.internet.MimeBodyPart()
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val bytes = inputStream?.readBytes() ?: continue
+                    val dataSource = javax.mail.util.ByteArrayDataSource(bytes, context.contentResolver.getType(uri) ?: "application/octet-stream")
+                    attachmentBodyPart.dataHandler = javax.activation.DataHandler(dataSource)
+                    
+                    // Get filename from URI
+                    var fileName = "attachment"
+                    val cursor = context.contentResolver.query(uri, null, null, null, null)
+                    cursor?.use {
+                        if (it.moveToFirst()) {
+                            val nameIndex = it.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                            if (nameIndex != -1) fileName = it.getString(nameIndex)
+                        }
+                    }
+                    attachmentBodyPart.fileName = fileName
+                    multipart.addBodyPart(attachmentBodyPart)
+                }
+                message.setContent(multipart)
             }
+
             Transport.send(message)
             
             if (imapHost != null) {
@@ -728,5 +810,71 @@ class ImapManager {
             e.printStackTrace()
             false
         }
+    }
+
+    fun fetchAttachment(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String,
+        uid: Long,
+        partIndex: String,
+        outputStream: java.io.OutputStream
+    ): Boolean {
+        val properties = getImapProperties(host)
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = store.getFolder(folderName) as IMAPFolder
+            folder.open(Folder.READ_ONLY)
+
+            val msg = folder.getMessageByUID(uid)
+            if (msg == null) {
+                folder.close(false)
+                store.close()
+                return false
+            }
+
+            val part = findPartByIndex(msg, partIndex)
+            if (part != null) {
+                part.inputStream.use { input ->
+                    input.copyTo(outputStream)
+                }
+                folder.close(false)
+                store.close()
+                true
+            } else {
+                folder.close(false)
+                store.close()
+                false
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    private fun findPartByIndex(part: Part, index: String): Part? {
+        if (index.isEmpty()) return part
+        
+        val parts = index.split(".")
+        var currentPart = part
+        
+        for (p in parts) {
+            val idx = p.toIntOrNull() ?: return null
+            val content = currentPart.content
+            if (content is MimeMultipart) {
+                if (idx < content.count) {
+                    currentPart = content.getBodyPart(idx)
+                } else {
+                    return null
+                }
+            } else {
+                return null
+            }
+        }
+        return currentPart
     }
 }

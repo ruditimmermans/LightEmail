@@ -73,11 +73,38 @@ class EmailRepository(private val context: Context) {
         host: String,
         emailMessage: EmailMessage
     ) = withContext(Dispatchers.IO) {
-        val (text, html) = imapManager.fetchEmailContent(
+        val (text, html, attachments) = imapManager.fetchEmailContent(
             email, password, host, emailMessage.folder, emailMessage.uid,
             context.getString(R.string.error_reading_content)
         )
         emailDao.updateContent(emailMessage.uid, emailMessage.folder, text, html)
+        if (attachments.isNotEmpty()) {
+            emailDao.insertAttachments(attachments)
+        }
+    }
+
+    fun getAttachmentsForEmail(uid: Long, folder: String) = emailDao.getAttachmentsForEmail(uid, folder)
+
+    suspend fun downloadAttachment(
+        email: String,
+        password: String,
+        host: String,
+        attachment: Attachment
+    ): Boolean = withContext(Dispatchers.IO) {
+        val fileName = attachment.fileName
+        val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_$fileName")
+        file.parentFile?.mkdirs()
+        
+        val success = file.outputStream().use { output ->
+            imapManager.fetchAttachment(
+                email, password, host, attachment.folder, attachment.emailUid, attachment.partIndex, output
+            )
+        }
+        
+        if (success) {
+            emailDao.updateAttachmentLocalPath(attachment.id, file.absolutePath)
+        }
+        success
     }
 
     suspend fun markAsRead(

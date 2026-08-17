@@ -113,6 +113,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _hasCheckedForUpdates = MutableStateFlow(false)
     val hasCheckedForUpdates: StateFlow<Boolean> = _hasCheckedForUpdates
 
+    private val _pendingAttachments = MutableStateFlow<List<android.net.Uri>>(emptyList())
+    val pendingAttachments: StateFlow<List<android.net.Uri>> = _pendingAttachments
+
     private val db = AppDatabase.getDatabase(application)
     val contacts = db.contactDao().getAllContacts()
 
@@ -386,6 +389,32 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun getAttachments(emailMessage: EmailMessage) = repository.getAttachmentsForEmail(emailMessage.uid, emailMessage.folder)
+
+    fun downloadAttachment(attachment: com.light.lightemail.data.Attachment, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = repository.downloadAttachment(
+                _accountEmail.value,
+                _accountPassword.value,
+                _imapHost.value,
+                attachment
+            )
+            onResult(success)
+        }
+    }
+
+    fun addPendingAttachment(uri: android.net.Uri) {
+        _pendingAttachments.value = _pendingAttachments.value + uri
+    }
+
+    fun removePendingAttachment(uri: android.net.Uri) {
+        _pendingAttachments.value = _pendingAttachments.value - uri
+    }
+
+    fun clearPendingAttachments() {
+        _pendingAttachments.value = emptyList()
+    }
+
     fun emptyTrash() {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
@@ -402,10 +431,11 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, cc: String? = null, onResult: (Boolean) -> Unit) {
+    fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, cc: String? = null, attachments: List<android.net.Uri> = emptyList(), onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
                 imapManager.sendEmail(
+                    getApplication(),
                     _accountEmail.value,
                     _accountPassword.value,
                     _smtpHost.value,
@@ -416,7 +446,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     content,
                     isHtml,
                     _imapHost.value,
-                    cc
+                    cc,
+                    attachments
                 )
             }
             if (success) refreshFolders()

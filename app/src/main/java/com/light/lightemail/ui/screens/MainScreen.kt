@@ -31,6 +31,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -70,6 +71,7 @@ import com.light.lightemail.R
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.data.ComposeData
+import com.light.lightemail.data.Attachment
 import com.light.lightemail.ui.viewmodel.EmailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -352,6 +354,7 @@ fun MainScreen(
                             emailToDisplay?.let { email ->
                                 key(email.uid) {
                                     EmailDetailScreen(
+                                        viewModel = viewModel,
                                         email = email,
                                         textSize = textSize,
                                         onReply = {
@@ -494,14 +497,27 @@ fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, t
 }
 
 @Composable
-fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit, onForward: () -> Unit, onDelete: () -> Unit, onReplyAll: () -> Unit, onReplyToSender: () -> Unit, onAddContact: (String, String) -> Unit) {
+fun EmailDetailScreen(
+    viewModel: EmailViewModel,
+    email: EmailMessage, 
+    textSize: Float, 
+    onReply: () -> Unit, 
+    onForward: () -> Unit, 
+    onDelete: () -> Unit, 
+    onReplyAll: () -> Unit, 
+    onReplyToSender: () -> Unit, 
+    onAddContact: (String, String) -> Unit
+) {
     val isDark = isSystemInDarkTheme()
+    val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
     val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
     val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
+
+    val attachments by viewModel.getAttachments(email).collectAsState(initial = emptyList())
 
     Column(modifier = Modifier.fillMaxSize().padding(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)) {
         Column(modifier = Modifier.weight(1f)) {
@@ -530,41 +546,61 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
             
             Box(modifier = Modifier.weight(1f)) {
-                AnimatedContent(
-                    targetState = Triple(email.htmlContent, email.content, email.uid),
-                    transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                    },
-                    label = "EmailContentTransition"
-                ) { (htmlContent, content, _) ->
-                    if (htmlContent != null) {
-                        HtmlView(html = htmlContent, isDark = isDark, textSize = textSize)
-                    } else if (content.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black)
-                                .padding(if (isVerySmallScreen) 4.dp else 8.dp)
-                        ) {
-                            if (!isVerySmallScreen) {
-                                Text(
-                                    text = stringResource(R.string.secure_text_email),
-                                    color = Color.Green,
-                                    fontSize = (textSize * 0.7f).sp,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(bottom = 8.dp)
-                                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        AnimatedContent(
+                            targetState = Triple(email.htmlContent, email.content, email.uid),
+                            transitionSpec = {
+                                fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
+                            },
+                            label = "EmailContentTransition"
+                        ) { (htmlContent, content, _) ->
+                            if (htmlContent != null) {
+                                HtmlView(html = htmlContent, isDark = isDark, textSize = textSize)
+                            } else if (content.isNotEmpty()) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black)
+                                        .padding(if (isVerySmallScreen) 4.dp else 8.dp)
+                                ) {
+                                    if (!isVerySmallScreen) {
+                                        Text(
+                                            text = stringResource(R.string.secure_text_email),
+                                            color = Color.Green,
+                                            fontSize = (textSize * 0.7f).sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(bottom = 8.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = content,
+                                        fontSize = textSize.sp,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        modifier = Modifier.verticalScroll(rememberScrollState())
+                                    )
+                                }
+                            } else {
+                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator()
+                                }
                             }
-                            Text(
-                                text = content,
-                                fontSize = textSize.sp,
-                                color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.verticalScroll(rememberScrollState())
-                            )
                         }
-                    } else {
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+                    }
+
+                    if (attachments.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "ATTACHMENTS (${attachments.size})",
+                            fontSize = (textSize * 0.7f).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            attachments.forEach { attachment ->
+                                AttachmentItem(attachment, textSize, viewModel)
+                            }
                         }
                     }
                 }
@@ -596,6 +632,66 @@ fun EmailDetailScreen(email: EmailMessage, textSize: Float, onReply: () -> Unit,
             }
             IconButton(onClick = onReply) {
                 Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply), tint = iconTint, modifier = iconModifier)
+            }
+        }
+    }
+}
+
+@Composable
+fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailViewModel) {
+    val context = LocalContext.current
+    var isDownloading by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .border(1.dp, Color.Gray.copy(alpha = 0.3f))
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Gray)
+        Spacer(modifier = Modifier.width(8.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(attachment.fileName, fontSize = (textSize * 0.8f).sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text("${attachment.size / 1024} KB", fontSize = (textSize * 0.6f).sp, color = Color.Gray)
+        }
+        
+        if (attachment.localPath != null) {
+            IconButton(onClick = {
+                val file = java.io.File(attachment.localPath)
+                val uri = androidx.core.content.FileProvider.getUriForFile(
+                    context,
+                    "${context.packageName}.fileprovider",
+                    file
+                )
+                val intent = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, attachment.mimeType)
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                }
+                try {
+                    context.startActivity(intent)
+                } catch (e: Exception) {
+                    Toast.makeText(context, "No app to open this file", Toast.LENGTH_SHORT).show()
+                }
+            }) {
+                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open", tint = MaterialTheme.colorScheme.primary)
+            }
+        } else {
+            if (isDownloading) {
+                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+            } else {
+                IconButton(onClick = {
+                    isDownloading = true
+                    viewModel.downloadAttachment(attachment) { success ->
+                        isDownloading = false
+                        if (!success) {
+                            Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }) {
+                    Icon(Icons.Default.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.onSurface)
+                }
             }
         }
     }
@@ -739,6 +835,7 @@ fun ComposeEmailScreen(
     val accountEmail by viewModel.accountEmail.collectAsState()
     val signature by viewModel.signature.collectAsState()
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
+    val pendingAttachments by viewModel.pendingAttachments.collectAsState()
 
     val replyPrefix = stringResource(R.string.reply_subject_prefix, originalEmail?.subject ?: "")
     val forwardPrefix = stringResource(R.string.forward_subject_prefix, originalEmail?.subject ?: "")
@@ -802,7 +899,10 @@ fun ComposeEmailScreen(
             val headerIconSize = if (isVerySmallScreen) 24.dp else 28.dp
             val headerIconTint = MaterialTheme.colorScheme.onSurface
             
-            IconButton(onClick = { onFinished() }) {
+            IconButton(onClick = { 
+                viewModel.clearPendingAttachments()
+                onFinished() 
+            }) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel), tint = headerIconTint, modifier = Modifier.size(headerIconSize))
             }
             
@@ -859,9 +959,10 @@ fun ComposeEmailScreen(
                     }
                     
                     isSending = true
-                    viewModel.sendEmail(to, subject, fullBody, isHtml, cc) { success ->
+                    viewModel.sendEmail(to, subject, fullBody, isHtml, cc, pendingAttachments) { success ->
                         if (success) {
                             Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
+                            viewModel.clearPendingAttachments()
                             onFinished()
                         } else {
                             isSending = false
@@ -881,6 +982,13 @@ fun ComposeEmailScreen(
 
         HorizontalDivider(thickness = if (isShortScreen) 1.dp else 2.dp, color = MaterialTheme.colorScheme.onBackground)
 
+        val filePickerLauncher = rememberLauncherForActivityResult(
+            contract = ActivityResultContracts.OpenDocument(),
+            onResult = { uri ->
+                uri?.let { viewModel.addPendingAttachment(it) }
+            }
+        )
+
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -889,19 +997,53 @@ fun ComposeEmailScreen(
         ) {
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
             
-            LightTextField(
-                value = to,
-                onValueChange = { to = it },
-                label = stringResource(R.string.to_label),
-                textSize = textSize,
-                singleLine = true,
-                focusRequester = toFocusRequester,
-                trailingIcon = {
-                    IconButton(onClick = { showContactPicker = true }, modifier = Modifier.size(if (isShortScreen) 32.dp else 48.dp)) {
-                        Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(if (isShortScreen) 20.dp else 24.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LightTextField(
+                    value = to,
+                    onValueChange = { to = it },
+                    label = stringResource(R.string.to_label),
+                    textSize = textSize,
+                    singleLine = true,
+                    focusRequester = toFocusRequester,
+                    modifier = Modifier.weight(1f),
+                    trailingIcon = {
+                        IconButton(onClick = { showContactPicker = true }, modifier = Modifier.size(if (isShortScreen) 32.dp else 48.dp)) {
+                            Icon(Icons.Default.Person, contentDescription = null, modifier = Modifier.size(if (isShortScreen) 20.dp else 24.dp))
+                        }
+                    }
+                )
+                
+                IconButton(onClick = { filePickerLauncher.launch(arrayOf("*/*")) }) {
+                    Icon(Icons.Default.AttachFile, contentDescription = "Attach File")
+                }
+            }
+            
+            if (pendingAttachments.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Column {
+                    pendingAttachments.forEach { uri ->
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp)
+                                .background(Color.Gray.copy(alpha = 0.1f))
+                                .padding(4.dp)
+                        ) {
+                            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Text(
+                                text = getFileName(context, uri),
+                                fontSize = (textSize * 0.7f).sp,
+                                modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                                maxLines = 1
+                            )
+                            IconButton(onClick = { viewModel.removePendingAttachment(uri) }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(16.dp))
+                            }
+                        }
                     }
                 }
-            )
+            }
             
             if (cc.isNotEmpty() || mode == ComposeMode.ReplyAll) {
                 Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
@@ -1645,4 +1787,29 @@ fun LightTextField(
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.2f)
         )
     }
+}
+
+fun getFileName(context: Context, uri: Uri): String {
+    var result: String? = null
+    if (uri.scheme == "content") {
+        val cursor = context.contentResolver.query(uri, null, null, null, null)
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                val index = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                if (index != -1) {
+                    result = cursor.getString(index)
+                }
+            }
+        } finally {
+            cursor?.close()
+        }
+    }
+    if (result == null) {
+        result = uri.path
+        val cut = result?.lastIndexOf('/') ?: -1
+        if (cut != -1) {
+            result = result?.substring(cut + 1)
+        }
+    }
+    return result ?: "file"
 }

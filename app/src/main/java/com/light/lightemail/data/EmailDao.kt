@@ -35,4 +35,13 @@ interface EmailDao {
 
     @Query("DELETE FROM emails WHERE folder = :folder")
     suspend fun clearFolder(folder: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertAttachments(attachments: List<Attachment>)
+
+    @Query("SELECT * FROM attachments WHERE emailUid = :uid AND folder = :folder")
+    fun getAttachmentsForEmail(uid: Long, folder: String): Flow<List<Attachment>>
+
+    @Query("UPDATE attachments SET localPath = :localPath WHERE id = :id")
+    suspend fun updateAttachmentLocalPath(id: Int, localPath: String)
 }
