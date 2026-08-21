@@ -139,10 +139,9 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
             .setNumber(count)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setDefaults(NotificationCompat.DEFAULT_ALL)
-            .setOnlyAlertOnce(false)
+            .setOnlyAlertOnce(true)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .setTimeoutAfter(30000)
             .setCategory(NotificationCompat.CATEGORY_EMAIL)
             .build()
 
