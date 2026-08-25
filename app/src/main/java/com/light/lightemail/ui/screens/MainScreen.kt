@@ -518,89 +518,96 @@ fun EmailDetailScreen(
     val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
     val attachments by viewModel.getAttachments(email).collectAsState(initial = emptyList())
+    var attachmentsExpanded by remember { mutableStateOf(false) }
 
-    Column(modifier = Modifier.fillMaxSize().padding(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(text = email.subject, fontSize = (textSize * (if (isVerySmallScreen) 1.0f else if (isShortScreen) 1.1f else 1.2f)).sp, fontWeight = FontWeight.Bold)
-            
-            // Clickable sender to add to contact
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable {
-                val name: String
-                val emailAddr: String
-                if (email.sender.contains("<")) {
-                    name = email.sender.substringBefore("<").trim().removeSurrounding("\"")
-                    emailAddr = email.sender.substringAfter("<").substringBefore(">").trim()
-                } else {
-                    name = email.sender.substringBefore("@").trim()
-                    emailAddr = email.sender.trim()
-                }
-                onAddContact(if (name.isNotEmpty()) name else emailAddr, emailAddr)
-            }.padding(vertical = if (isVerySmallScreen) 1.dp else if (isShortScreen) 2.dp else 4.dp)) {
-                Text(text = stringResource(R.string.from_label, email.sender), fontSize = (textSize * 0.9f).sp, modifier = Modifier.weight(1f), maxLines = 1)
-                Icon(Icons.Default.PersonAdd, contentDescription = "Add Contact", modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 18.dp))
-            }
-            
-            Text(text = stringResource(R.string.date_label, email.date), fontSize = (textSize * 0.8f).sp)
-            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
-            HorizontalDivider()
-            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
-            
-            Box(modifier = Modifier.weight(1f)) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            if (email.htmlContent != null) {
+                // HTML Layout: Compact header + WebView + Collapsible Attachments
                 Column(modifier = Modifier.fillMaxSize()) {
+                    EmailHeader(
+                        email = email,
+                        textSize = textSize,
+                        isVerySmallScreen = isVerySmallScreen,
+                        isShortScreen = isShortScreen,
+                        onAddContact = onAddContact
+                    )
+                    
+                    HorizontalDivider()
+                    
                     Box(modifier = Modifier.weight(1f)) {
-                        AnimatedContent(
-                            targetState = Triple(email.htmlContent, email.content, email.uid),
-                            transitionSpec = {
-                                fadeIn(animationSpec = tween(300)) togetherWith fadeOut(animationSpec = tween(300))
-                            },
-                            label = "EmailContentTransition"
-                        ) { (htmlContent, content, _) ->
-                            if (htmlContent != null) {
-                                HtmlView(html = htmlContent, isDark = isDark, textSize = textSize)
-                            } else if (content.isNotEmpty()) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(Color.Black)
-                                        .padding(if (isVerySmallScreen) 4.dp else 8.dp)
-                                ) {
-                                    if (!isVerySmallScreen) {
-                                        Text(
-                                            text = stringResource(R.string.secure_text_email),
-                                            color = Color.Green,
-                                            fontSize = (textSize * 0.7f).sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                        )
-                                    }
+                        HtmlView(html = email.htmlContent, isDark = isDark, textSize = textSize)
+                    }
+                    
+                    if (attachments.isNotEmpty()) {
+                        AttachmentSection(
+                            attachments = attachments,
+                            expanded = attachmentsExpanded,
+                            onToggle = { attachmentsExpanded = !attachmentsExpanded },
+                            textSize = textSize,
+                            viewModel = viewModel
+                        )
+                    }
+                }
+            } else {
+                // Plain Text Layout: Unified scrolling for everything
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(if (isVerySmallScreen) 8.dp else 16.dp)
+                ) {
+                    item {
+                        EmailHeader(
+                            email = email,
+                            textSize = textSize,
+                            isVerySmallScreen = isVerySmallScreen,
+                            isShortScreen = isShortScreen,
+                            onAddContact = onAddContact
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider()
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    item {
+                        if (email.content.isNotEmpty()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color.Black)
+                                    .padding(if (isVerySmallScreen) 4.dp else 8.dp)
+                            ) {
+                                if (!isVerySmallScreen) {
                                     Text(
-                                        text = content,
-                                        fontSize = textSize.sp,
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        modifier = Modifier.verticalScroll(rememberScrollState())
+                                        text = stringResource(R.string.secure_text_email),
+                                        color = Color.Green,
+                                        fontSize = (textSize * 0.7f).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(bottom = 8.dp)
                                     )
                                 }
-                            } else {
-                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                    CircularProgressIndicator()
-                                }
+                                Text(
+                                    text = email.content,
+                                    fontSize = textSize.sp,
+                                    color = MaterialTheme.colorScheme.onBackground
+                                )
+                            }
+                        } else {
+                            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
                         }
                     }
-
+                    
                     if (attachments.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "ATTACHMENTS (${attachments.size})",
-                            fontSize = (textSize * 0.7f).sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.Gray
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            attachments.forEach { attachment ->
-                                AttachmentItem(attachment, textSize, viewModel)
-                            }
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            AttachmentSection(
+                                attachments = attachments,
+                                expanded = attachmentsExpanded,
+                                onToggle = { attachmentsExpanded = !attachmentsExpanded },
+                                textSize = textSize,
+                                viewModel = viewModel
+                            )
                         }
                     }
                 }
@@ -638,6 +645,102 @@ fun EmailDetailScreen(
 }
 
 @Composable
+fun EmailHeader(
+    email: EmailMessage,
+    textSize: Float,
+    isVerySmallScreen: Boolean,
+    isShortScreen: Boolean,
+    onAddContact: (String, String) -> Unit
+) {
+    Column(modifier = Modifier.padding(horizontal = if (isVerySmallScreen) 8.dp else 16.dp, vertical = 8.dp)) {
+        Text(
+            text = email.subject, 
+            fontSize = (textSize * (if (isVerySmallScreen) 1.0f else if (isShortScreen) 1.1f else 1.2f)).sp, 
+            fontWeight = FontWeight.Bold
+        )
+        
+        Row(
+            verticalAlignment = Alignment.CenterVertically, 
+            modifier = Modifier
+                .clickable {
+                    val name: String
+                    val emailAddr: String
+                    if (email.sender.contains("<")) {
+                        name = email.sender.substringBefore("<").trim().removeSurrounding("\"")
+                        emailAddr = email.sender.substringAfter("<").substringBefore(">").trim()
+                    } else {
+                        name = email.sender.substringBefore("@").trim()
+                        emailAddr = email.sender.trim()
+                    }
+                    onAddContact(if (name.isNotEmpty()) name else emailAddr, emailAddr)
+                }
+                .padding(vertical = if (isVerySmallScreen) 2.dp else 4.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.from_label, email.sender), 
+                fontSize = (textSize * 0.85f).sp, 
+                modifier = Modifier.weight(1f), 
+                maxLines = 1
+            )
+            Icon(Icons.Default.PersonAdd, contentDescription = "Add Contact", modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 18.dp))
+        }
+        
+        Text(
+            text = stringResource(R.string.date_label, email.date), 
+            fontSize = (textSize * 0.75f).sp,
+            color = Color.Gray
+        )
+    }
+}
+
+@Composable
+fun AttachmentSection(
+    attachments: List<Attachment>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    textSize: Float,
+    viewModel: EmailViewModel
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .border(1.dp, Color.Gray.copy(alpha = 0.2f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onToggle() }
+                .padding(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = "ATTACHMENTS (${attachments.size})",
+                fontSize = (textSize * 0.7f).sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                contentDescription = null,
+                tint = Color.Gray
+            )
+        }
+        
+        if (expanded) {
+            Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)) {
+                attachments.forEach { attachment ->
+                    AttachmentItem(attachment, textSize, viewModel)
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailViewModel) {
     val context = LocalContext.current
     var isDownloading by remember { mutableStateOf(false) }
@@ -645,15 +748,13 @@ fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailView
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
-            .border(1.dp, Color.Gray.copy(alpha = 0.3f))
-            .padding(8.dp),
+            .padding(vertical = 2.dp)
+            .background(Color.Gray.copy(alpha = 0.05f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(20.dp), tint = Color.Gray)
-        Spacer(modifier = Modifier.width(8.dp))
         Column(modifier = Modifier.weight(1f)) {
-            Text(attachment.fileName, fontSize = (textSize * 0.8f).sp, fontWeight = FontWeight.Bold, maxLines = 1)
+            Text(attachment.fileName, fontSize = (textSize * 0.75f).sp, fontWeight = FontWeight.Medium, maxLines = 1)
             Text("${attachment.size / 1024} KB", fontSize = (textSize * 0.6f).sp, color = Color.Gray)
         }
         
@@ -704,45 +805,81 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
     val isVerySmallScreen = configuration.screenHeightDp < 480
     
     // Use theme colors for HTML emails
-    val backgroundColor = String.format("#%06X", (MaterialTheme.colorScheme.background.toArgb() and 0xFFFFFF))
-    val textColor = String.format("#%06X", (MaterialTheme.colorScheme.onBackground.toArgb() and 0xFFFFFF))
-    val linkColor = if (isSystemInDarkTheme()) "#58a6ff" else "#0000EE"
+    val backgroundColor = if (isDark) "#121212" else "#FFFFFF"
+    val textColor = if (isDark) "#FFFFFF" else "#000000"
+    val linkColor = if (isDark) "#8ab4f8" else "#1a73e8"
     
+    // Inject dark mode styles more aggressively if dark mode is active
+    val darkModeCss = if (isDark) {
+        """
+        html, body {
+            background-color: $backgroundColor !important;
+            color: $textColor !important;
+        }
+        /* Force text color on common elements while allowing background images to show if they are not colors */
+        h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+            color: $textColor !important;
+        }
+        /* Handle containers that might have white backgrounds */
+        div, table, td, section, article {
+            background-color: transparent !important;
+        }
+        """.trimIndent()
+    } else ""
+
+    // Clean the input HTML to avoid double wrapping if possible
+    val bodyContent = if (html.contains("<body", ignoreCase = true)) {
+        // Extract content within body if possible, or just use as is
+        // For robustness, we'll use a wrapper that should override nested body styles
+        html
+    } else {
+        "<body>$html</body>"
+    }
+
     val styledHtml = """
+        <!DOCTYPE html>
         <html>
         <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
         * { 
-            background-color: transparent !important; 
-            background: transparent !important;
-            color: inherit !important;
-            font-size: inherit !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
         html, body { 
-            background-color: $backgroundColor !important; 
-            color: $textColor !important; 
-            font-family: sans-serif !important;
-            font-size: ${textSize}px !important;
-            line-height: 1.5 !important;
             margin: 0;
             padding: ${if (isVerySmallScreen) "4px" else "12px"};
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            font-size: ${textSize}px !important;
+            line-height: 1.6 !important;
+            word-wrap: break-word;
         }
+        
+        $darkModeCss
+        
         /* Ensure images are visible and responsive */
         img { 
-            max-width: 100% !important; 
             height: auto !important; 
             display: block !important;
             margin: 10px 0 !important;
+            max-width: 100% !important;
         }
+        
         /* Keep links visible */
         a {
             color: $linkColor !important;
             text-decoration: underline !important;
         }
+
+        /* Responsive tables */
+        table {
+            display: block !important;
+            width: 100% !important;
+            overflow-x: auto !important;
+        }
         </style>
         </head>
-        <body>$html</body>
+        $bodyContent
         </html>
     """.trimIndent()
 
@@ -791,9 +928,14 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
                         settings.textZoom = 100
                         settings.domStorageEnabled = true
                         settings.loadsImagesAutomatically = true
+                        settings.blockNetworkImage = false
                         settings.mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         settings.builtInZoomControls = true
                         settings.displayZoomControls = false
+                        
+                        // Enable algorithmic darkening for better dark mode support (API 33+)
+                        settings.isAlgorithmicDarkeningAllowed = isDark
+                        
                         setBackgroundColor(android.graphics.Color.TRANSPARENT)
                     }
                 } catch (e: Exception) {
@@ -802,12 +944,15 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
                 }
             },
             update = { webView ->
-                if (webView is WebView && lastLoadedHtml.value != styledHtml) {
-                    webView.loadDataWithBaseURL(null, styledHtml, "text/html", "utf-8", null)
-                    lastLoadedHtml.value = styledHtml
+                if (webView is WebView) {
+                    webView.settings.isAlgorithmicDarkeningAllowed = isDark
+                    if (lastLoadedHtml.value != styledHtml) {
+                        webView.loadDataWithBaseURL("https://light-email.local/", styledHtml, "text/html", "utf-8", null)
+                        lastLoadedHtml.value = styledHtml
+                    }
                 }
             },
-            modifier = Modifier.fillMaxSize().background(Color.Black)
+            modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)
         )
     }
 }

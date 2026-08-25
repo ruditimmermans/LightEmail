@@ -444,7 +444,10 @@ class ImapManager {
                 if (images.isNotEmpty()) {
                     var updatedHtml = h
                     for ((cid, base64) in images) {
-                        updatedHtml = updatedHtml.replace("cid:$cid", base64)
+                        // More robust regex to handle various CID formats in src attributes
+                        val encodedCid = cid.replace("@", "%40")
+                        val pattern = "cid:<?(${Regex.escape(cid)}|${Regex.escape(encodedCid)})>?".toRegex(RegexOption.IGNORE_CASE)
+                        updatedHtml = updatedHtml.replace(pattern, base64)
                     }
                     html = updatedHtml
                 }
@@ -484,12 +487,15 @@ class ImapManager {
         attachments: MutableList<Attachment>
     ) {
         try {
-            val disposition = part.disposition
-            val isAttachment = disposition?.equals(Part.ATTACHMENT, ignoreCase = true) == true || 
-                              disposition?.equals(Part.INLINE, ignoreCase = true) == true
+            val disposition = try { part.disposition } catch (e: Exception) { null }
+            val fileName = try { part.fileName } catch (e: Exception) { null }
             
-            val fileName = part.fileName
+            // Check if this part has a Content-ID (inline image)
+            val cid = part.getHeader("Content-ID")?.firstOrNull()?.trim()?.removeSurrounding("<", ">")
 
+            val isAttachment = disposition?.equals(Part.ATTACHMENT, ignoreCase = true) == true || 
+                              (disposition?.equals(Part.INLINE, ignoreCase = true) == true && cid == null && fileName != null)
+            
             if (isAttachment && fileName != null) {
                 attachments.add(
                     Attachment(
@@ -540,13 +546,13 @@ class ImapManager {
                     extractContent(content, uid, folderName, partPath, text, html, images, attachments)
                 }
             } else if (part.isMimeType("image/*")) {
-                val cid = part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
-                if (cid != null) {
+                val imageCid = cid ?: part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
+                if (imageCid != null) {
                     try {
                         val inputStream = part.inputStream
                         val bytes = inputStream.readBytes()
                         val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                        images[cid] = "data:${part.contentType.substringBefore(";")};base64,$base64"
+                        images[imageCid] = "data:${part.contentType.substringBefore(";")};base64,$base64"
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
