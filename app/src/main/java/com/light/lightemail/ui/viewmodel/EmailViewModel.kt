@@ -64,6 +64,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _textSize = MutableStateFlow(prefs.getFloat("text_size", 16f))
     val textSize: StateFlow<Float> = _textSize
 
+    private val _headerTextSize = MutableStateFlow(prefs.getFloat("header_text_size", 16f))
+    val headerTextSize: StateFlow<Float> = _headerTextSize
+
     private val _useColorMode = MutableStateFlow(prefs.getBoolean("use_color_mode", false))
     val useColorMode: StateFlow<Boolean> = _useColorMode
 
@@ -160,6 +163,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _smtpPort.value = prefs.getString("smtp_port", "465") ?: "465"
                 _senderName.value = prefs.getString("sender_name", "") ?: ""
                 _textSize.value = prefs.getFloat("text_size", 16f)
+                _headerTextSize.value = prefs.getFloat("header_text_size", 16f)
                 _useColorMode.value = prefs.getBoolean("use_color_mode", false)
                 _useBlueIcon.value = prefs.getBoolean("use_blue_icon", false)
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
@@ -182,6 +186,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         smtpPort: String,
         senderName: String,
         textSize: Float,
+        headerTextSize: Float,
         signature: String,
         useColorMode: Boolean,
         autoCheckUpdates: Boolean,
@@ -194,6 +199,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _smtpPort.value = smtpPort
         _senderName.value = senderName
         _textSize.value = textSize
+        _headerTextSize.value = headerTextSize
         _signature.value = signature
         _useColorMode.value = useColorMode
         _useBlueIcon.value = useBlueIcon
@@ -208,6 +214,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putString("sender_name", senderName)
             putBoolean("enable_push", true)
             putFloat("text_size", textSize)
+            putFloat("header_text_size", headerTextSize)
             putString("signature", signature)
             putBoolean("use_color_mode", useColorMode)
             putBoolean("use_blue_icon", useBlueIcon)

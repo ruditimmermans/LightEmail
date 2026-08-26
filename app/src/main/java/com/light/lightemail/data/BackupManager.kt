@@ -63,7 +63,7 @@ class BackupManager(private val context: Context) {
                         "enable_push", "use_color_mode", "auto_check_updates" -> {
                             editor.putBoolean(key, prefsJson.getBoolean(key))
                         }
-                        "text_size" -> {
+                        "text_size", "header_text_size" -> {
                             editor.putFloat(key, prefsJson.getDouble(key).toFloat())
                         }
                         "last_seen_uid", "last_unread_count" -> {

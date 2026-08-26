@@ -110,6 +110,7 @@ fun MainScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
     val textSize by viewModel.textSize.collectAsState()
+    val headerTextSize by viewModel.headerTextSize.collectAsState()
     val signature by viewModel.signature.collectAsState()
     val folders by viewModel.folders.collectAsState()
     val currentFolder by viewModel.currentFolder.collectAsState()
@@ -342,7 +343,7 @@ fun MainScreen(
                     label = "ScreenTransition"
                 ) { targetScreen ->
                     when (targetScreen) {
-                        Screen.Home -> EmailListScreen(pagingEmails, isLoading, textSize) { emailMsg ->
+                        Screen.Home -> EmailListScreen(pagingEmails, isLoading, textSize, headerTextSize) { emailMsg ->
                             selectedEmail = emailMsg
                             currentScreen = Screen.ViewEmail
                             viewModel.markAsRead(emailMsg)
@@ -430,7 +431,7 @@ fun MainScreen(
 }
 
 @Composable
-fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, textSize: Float, onEmailClick: (EmailMessage) -> Unit) {
+fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, textSize: Float, headerTextSize: Float, onEmailClick: (EmailMessage) -> Unit) {
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
     
@@ -456,13 +457,13 @@ fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, t
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = email.sender.uppercase(), 
-                                    fontSize = textSize.sp, 
+                                    fontSize = headerTextSize.sp, 
                                     fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
                                 Text(
                                     text = email.subject, 
-                                    fontSize = textSize.sp, 
+                                    fontSize = headerTextSize.sp, 
                                     fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
                                     color = MaterialTheme.colorScheme.onBackground,
                                     maxLines = if (isVerySmallScreen) 1 else 2
@@ -1495,6 +1496,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val smtpPortVal by viewModel.smtpPort.collectAsState()
     val senderNameVal by viewModel.senderName.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
+    val headerTextSizeVal by viewModel.headerTextSize.collectAsState()
     val useColorModeVal by viewModel.useColorMode.collectAsState()
     val useBlueIconVal by viewModel.useBlueIcon.collectAsState()
     val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
@@ -1511,6 +1513,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var smtpPort by remember { mutableStateOf(smtpPortVal) }
     var senderName by remember { mutableStateOf(senderNameVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
+    var headerTextSize by remember { mutableFloatStateOf(headerTextSizeVal) }
     var useColorMode by remember { mutableStateOf(useColorModeVal) }
     var useBlueIcon by remember { mutableStateOf(useBlueIconVal) }
     var autoCheckUpdates by remember { mutableStateOf(autoCheckUpdatesVal) }
@@ -1544,13 +1547,13 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, useBlueIcon, autoCheckUpdates) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, useBlueIcon, autoCheckUpdates) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
-            textSize != textSizeVal || signature != signatureVal || useColorMode != useColorModeVal ||
+            textSize != textSizeVal || headerTextSize != headerTextSizeVal || signature != signatureVal || useColorMode != useColorModeVal ||
             useBlueIcon != useBlueIconVal || autoCheckUpdates != autoCheckUpdatesVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, signature, useColorMode, autoCheckUpdates, useBlueIcon)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, autoCheckUpdates, useBlueIcon)
         }
     }
 
@@ -1649,6 +1652,22 @@ fun SettingsScreen(viewModel: EmailViewModel) {
                     Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
                     Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
                     LightRadioButton(selected = textSize == size, onClick = { textSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
+
+        Text(stringResource(R.string.header_text_size_label, headerTextSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (headerTextSize == size) FontWeight.Bold else FontWeight.Normal)
+                    Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
+                    LightRadioButton(selected = headerTextSize == size, onClick = { headerTextSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
                 }
             }
         }
