@@ -456,7 +456,7 @@ fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, t
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = email.sender.uppercase(), 
-                                    fontSize = (textSize * 0.7f).sp, 
+                                    fontSize = textSize.sp, 
                                     fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
@@ -593,7 +593,7 @@ fun EmailDetailScreen(
                                     Text(
                                         text = stringResource(R.string.secure_text_email),
                                         color = Color.Green,
-                                        fontSize = (textSize * 0.7f).sp,
+                                        fontSize = textSize.sp,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(bottom = 8.dp)
                                     )
@@ -668,7 +668,7 @@ fun EmailHeader(
     Column(modifier = Modifier.padding(horizontal = if (isVerySmallScreen) 8.dp else 16.dp, vertical = 8.dp)) {
         Text(
             text = email.subject, 
-            fontSize = (textSize * (if (isVerySmallScreen) 1.0f else if (isShortScreen) 1.1f else 1.2f)).sp, 
+            fontSize = textSize.sp, 
             fontWeight = FontWeight.Bold
         )
         
@@ -691,7 +691,7 @@ fun EmailHeader(
         ) {
             Text(
                 text = stringResource(R.string.from_label, email.sender), 
-                fontSize = (textSize * 0.85f).sp, 
+                fontSize = textSize.sp, 
                 modifier = Modifier.weight(1f), 
                 maxLines = 1
             )
@@ -700,7 +700,7 @@ fun EmailHeader(
         
         Text(
             text = stringResource(R.string.date_label, email.date), 
-            fontSize = (textSize * 0.75f).sp,
+            fontSize = textSize.sp,
             color = Color.Gray
         )
     }
@@ -731,7 +731,7 @@ fun AttachmentSection(
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "ATTACHMENTS (${attachments.size})",
-                fontSize = (textSize * 0.7f).sp,
+                fontSize = textSize.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f)
@@ -767,8 +767,8 @@ fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailView
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(attachment.fileName, fontSize = (textSize * 0.75f).sp, fontWeight = FontWeight.Medium, maxLines = 1)
-            Text("${attachment.size / 1024} KB", fontSize = (textSize * 0.6f).sp, color = Color.Gray)
+            Text(attachment.fileName, fontSize = textSize.sp, fontWeight = FontWeight.Medium, maxLines = 1)
+            Text("${attachment.size / 1024} KB", fontSize = textSize.sp, color = Color.Gray)
         }
         
         if (attachment.localPath != null) {
@@ -868,6 +868,10 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             word-wrap: break-word;
         }
         
+        h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+            font-size: ${textSize}px !important;
+        }
+        
         $darkModeCss
         
         /* Ensure images are visible and responsive */
@@ -909,7 +913,7 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             Text(
                 text = stringResource(R.string.secure_text_email),
                 color = Color.Green,
-                fontSize = (textSize * 0.7f).sp,
+                fontSize = textSize.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -1087,7 +1091,7 @@ fun ComposeEmailScreen(
                         ComposeMode.New -> R.string.new_email
                     }).uppercase(),
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = (if (isStandardPhone) textSize * 0.7f else if (isShortScreen) textSize * 0.9f else textSize).sp,
+                    fontSize = textSize.sp,
                     letterSpacing = if (isShortScreen) 1.sp else 2.sp
                 )
             }
@@ -1204,7 +1208,7 @@ fun ComposeEmailScreen(
                             Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
                             Text(
                                 text = getFileName(context, uri),
-                                fontSize = (textSize * 0.7f).sp,
+                                fontSize = textSize.sp,
                                 modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
                                 maxLines = 1
                             )
@@ -1265,7 +1269,7 @@ fun ComposeEmailScreen(
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
                     text = stringResource(R.string.reply_attribution, originalEmail.date, originalEmail.sender).trim(),
-                    fontSize = (textSize * 0.8f).sp,
+                    fontSize = textSize.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Gray
                 )
@@ -1279,11 +1283,11 @@ fun ComposeEmailScreen(
                     contentAlignment = Alignment.TopStart
                 ) {
                     if (originalEmail.htmlContent != null) {
-                        HtmlView(html = originalEmail.htmlContent, isDark = isSystemInDarkTheme(), textSize = textSize * 0.8f)
+                        HtmlView(html = originalEmail.htmlContent, isDark = isSystemInDarkTheme(), textSize = textSize)
                     } else if (originalEmail.content.isNotEmpty()) {
                         Text(
                             text = originalEmail.content,
-                            fontSize = (textSize * 0.8f).sp,
+                            fontSize = textSize.sp,
                             color = Color.Gray,
                             modifier = Modifier.verticalScroll(rememberScrollState())
                         )
@@ -1301,7 +1305,7 @@ fun ComposeEmailScreen(
             
             Text(
                 text = stringResource(R.string.signature_preview, signature),
-                fontSize = (textSize * 0.7f).sp,
+                fontSize = textSize.sp,
                 color = Color.Gray,
                 modifier = Modifier.padding(bottom = 32.dp)
             )
@@ -1346,7 +1350,7 @@ fun ComposeEmailScreen(
                             Text(
                                 text = "NO CONTACTS",
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
-                                fontSize = (textSize * 0.8f).sp
+                                fontSize = textSize.sp
                             )
                         }
                     }
@@ -1365,12 +1369,12 @@ fun ComposeEmailScreen(
                                 text = contact.name.uppercase(),
                                 color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Bold,
-                                fontSize = (textSize * 0.9f).sp
+                                fontSize = textSize.sp
                             )
                             Text(
                                 text = contact.email,
                                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                                fontSize = (textSize * 0.7f).sp
+                                fontSize = textSize.sp
                             )
                         }
                         HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
@@ -1397,7 +1401,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
             Text(
                 text = (if (editingContact == null) stringResource(R.string.add_contact) else stringResource(R.string.edit_contact)).uppercase(),
                 fontWeight = FontWeight.Bold,
-                fontSize = (textSize * 0.9f).sp,
+                fontSize = textSize.sp,
                 letterSpacing = 1.sp
             )
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
@@ -1426,7 +1430,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                             email = ""
                         }.padding(8.dp),
                         fontWeight = FontWeight.Bold,
-                        fontSize = (textSize * 0.8f).sp
+                        fontSize = textSize.sp
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                 }
@@ -1445,7 +1449,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                         }
                     }.padding(8.dp),
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = (textSize * 0.8f).sp
+                    fontSize = textSize.sp
                 )
             }
 
@@ -1457,8 +1461,8 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
         items(contacts) { contact ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(contact.name.uppercase(), fontWeight = FontWeight.Bold, fontSize = (textSize * 0.9f).sp)
-                    Text(contact.email, fontSize = (textSize * 0.7f).sp, color = Color.Gray)
+                    Text(contact.name.uppercase(), fontWeight = FontWeight.Bold, fontSize = textSize.sp)
+                    Text(contact.email, fontSize = textSize.sp, color = Color.Gray)
                 }
                 Row {
                     IconButton(onClick = {
@@ -1934,7 +1938,7 @@ fun LightTextField(
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label.uppercase(),
-            fontSize = (textSize * 0.7f).sp,
+            fontSize = textSize.sp,
             fontWeight = FontWeight.Bold,
             color = Color.Gray,
             modifier = Modifier.padding(bottom = 4.dp)
