@@ -101,6 +101,9 @@ fun MainScreen(
     var initialTo by remember { mutableStateOf("") }
     var initialSubject by remember { mutableStateOf("") }
     var initialBody by remember { mutableStateOf("") }
+    var initialCc by remember { mutableStateOf("") }
+    var initialBcc by remember { mutableStateOf("") }
+    var initialAttachments by remember { mutableStateOf<List<Uri>>(emptyList()) }
     
     val pagingEmails = viewModel.pagingEmails.collectAsLazyPagingItems()
     val emails by viewModel.emails.collectAsState()
@@ -141,6 +144,10 @@ fun MainScreen(
             initialTo = initialComposeData.to
             initialSubject = initialComposeData.subject
             initialBody = initialComposeData.body
+            initialCc = initialComposeData.cc
+            initialBcc = initialComposeData.bcc
+            initialAttachments = initialComposeData.attachments
+            
             selectedEmail = null
             composeMode = ComposeMode.New
             currentScreen = Screen.Compose
@@ -402,11 +409,17 @@ fun MainScreen(
                                     initialTo = ""
                                     initialSubject = ""
                                     initialBody = ""
+                                    initialCc = ""
+                                    initialBcc = ""
+                                    initialAttachments = emptyList()
                                     currentScreen = Screen.Home 
                                 },
                                 initialTo = initialTo,
                                 initialSubject = initialSubject,
-                                initialBody = initialBody
+                                initialBody = initialBody,
+                                initialCc = initialCc,
+                                initialBcc = initialBcc,
+                                initialAttachments = initialAttachments
                             )
                         }
                     }
@@ -967,7 +980,10 @@ fun ComposeEmailScreen(
     onFinished: () -> Unit,
     initialTo: String = "",
     initialSubject: String = "",
-    initialBody: String = ""
+    initialBody: String = "",
+    initialCc: String = "",
+    initialBcc: String = "",
+    initialAttachments: List<Uri> = emptyList()
 ) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -981,6 +997,15 @@ fun ComposeEmailScreen(
     val signature by viewModel.signature.collectAsState()
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
     val pendingAttachments by viewModel.pendingAttachments.collectAsState()
+
+    // Add initial attachments to viewModel if present
+    LaunchedEffect(initialAttachments) {
+        if (initialAttachments.isNotEmpty()) {
+            initialAttachments.forEach { uri ->
+                viewModel.addPendingAttachment(uri)
+            }
+        }
+    }
 
     val replyPrefix = stringResource(R.string.reply_subject_prefix, originalEmail?.subject ?: "")
     val forwardPrefix = stringResource(R.string.forward_subject_prefix, originalEmail?.subject ?: "")
@@ -1002,13 +1027,14 @@ fun ComposeEmailScreen(
             }
         }
     ) }
-    var cc by remember(mode, originalEmail) { mutableStateOf(
-        if (mode == ComposeMode.ReplyAll) {
+    var cc by remember(initialCc, mode, originalEmail) { mutableStateOf(
+        if (initialCc.isNotEmpty()) initialCc else if (mode == ComposeMode.ReplyAll) {
             originalEmail?.ccRecipients?.split(", ")
                 ?.filter { it.lowercase() != accountEmail.lowercase() && !it.contains(accountEmail, ignoreCase = true) }
                 ?.joinToString(", ") ?: ""
         } else ""
     ) }
+    var bcc by remember(initialBcc) { mutableStateOf(initialBcc) }
     var subject by remember(initialSubject, mode, originalEmail) { mutableStateOf(
         if (initialSubject.isNotEmpty()) initialSubject else when(mode) {
             ComposeMode.Reply, ComposeMode.ReplyAll, ComposeMode.ReplyToSender -> replyPrefix
@@ -1104,7 +1130,7 @@ fun ComposeEmailScreen(
                     }
                     
                     isSending = true
-                    viewModel.sendEmail(to, subject, fullBody, isHtml, cc, pendingAttachments) { success ->
+                    viewModel.sendEmail(to, subject, fullBody, isHtml, cc, pendingAttachments, bcc) { success ->
                         if (success) {
                             Toast.makeText(context, context.getString(R.string.email_sent), Toast.LENGTH_SHORT).show()
                             viewModel.clearPendingAttachments()
@@ -1196,6 +1222,17 @@ fun ComposeEmailScreen(
                     value = cc,
                     onValueChange = { cc = it },
                     label = "CC",
+                    textSize = textSize,
+                    singleLine = true
+                )
+            }
+
+            if (bcc.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+                LightTextField(
+                    value = bcc,
+                    onValueChange = { bcc = it },
+                    label = "BCC",
                     textSize = textSize,
                     singleLine = true
                 )

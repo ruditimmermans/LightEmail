@@ -431,7 +431,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, cc: String? = null, attachments: List<android.net.Uri> = emptyList(), onResult: (Boolean) -> Unit) {
+    fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, cc: String? = null, attachments: List<android.net.Uri> = emptyList(), bcc: String? = null, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
                 imapManager.sendEmail(
@@ -447,7 +447,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     isHtml,
                     _imapHost.value,
                     cc,
-                    attachments
+                    attachments,
+                    bcc
                 )
             }
             if (success) refreshFolders()

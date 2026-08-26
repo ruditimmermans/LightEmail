@@ -743,7 +743,8 @@ class ImapManager {
         isHtml: Boolean = false,
         imapHost: String? = null,
         cc: String? = null,
-        attachments: List<android.net.Uri> = emptyList()
+        attachments: List<android.net.Uri> = emptyList(),
+        bcc: String? = null
     ): Boolean {
         val properties = getSmtpProperties(smtpHost, smtpPort)
 
@@ -760,6 +761,11 @@ class ImapManager {
             cc?.let {
                 if (it.isNotEmpty()) {
                     message.setRecipients(Message.RecipientType.CC, InternetAddress.parse(it))
+                }
+            }
+            bcc?.let {
+                if (it.isNotEmpty()) {
+                    message.setRecipients(Message.RecipientType.BCC, InternetAddress.parse(it))
                 }
             }
             message.subject = subject

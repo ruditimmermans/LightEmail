@@ -79,39 +79,73 @@ class MainActivity : ComponentActivity() {
                     var to = ""
                     var subject = ""
                     var body = ""
+                    var cc = ""
+                    var bcc = ""
 
                     try {
                         val mt = android.net.MailTo.parse(mailto)
                         to = mt.to ?: ""
                         subject = mt.subject ?: ""
                         body = mt.body ?: ""
+                        cc = mt.cc ?: ""
+                        // MailTo doesn't support bcc, parse manually
+                        val uri = Uri.parse(mailto)
+                        bcc = uri.getQueryParameter("bcc") ?: ""
                     } catch (e: Exception) {
                         val uri = Uri.parse(mailto)
                         to = uri.schemeSpecificPart?.split("?")?.firstOrNull() ?: ""
                         subject = uri.getQueryParameter("subject") ?: ""
                         body = uri.getQueryParameter("body") ?: ""
+                        cc = uri.getQueryParameter("cc") ?: ""
+                        bcc = uri.getQueryParameter("bcc") ?: ""
                     }
 
                     if (subject.isEmpty()) subject = intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: ""
                     if (body.isEmpty()) body = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: ""
-                    if (to.isEmpty()) {
-                        val toArray = intent.getStringArrayExtra(Intent.EXTRA_EMAIL)
-                        to = toArray?.joinToString(", ") ?: intent.getStringExtra(Intent.EXTRA_EMAIL) ?: ""
-                    }
+                    if (to.isEmpty()) to = getRecipients(intent, Intent.EXTRA_EMAIL)
+                    if (cc.isEmpty()) cc = getRecipients(intent, Intent.EXTRA_CC)
+                    if (bcc.isEmpty()) bcc = getRecipients(intent, Intent.EXTRA_BCC)
 
-                    initialComposeData = ComposeData(to, subject, body)
+                    initialComposeData = ComposeData(to, subject, body, cc, bcc)
                 }
             }
-            Intent.ACTION_SEND -> {
-                val type = intent.type
-                if (type == null || type.startsWith("text/") || type == "*/*") {
-                    val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: ""
-                    val body = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: ""
-                    val toArray = intent.getStringArrayExtra(Intent.EXTRA_EMAIL)
-                    val to = toArray?.joinToString(", ") ?: intent.getStringExtra(Intent.EXTRA_EMAIL) ?: ""
-                    initialComposeData = ComposeData(to, subject, body)
+            Intent.ACTION_SEND, Intent.ACTION_SEND_MULTIPLE -> {
+                val subject = intent.getStringExtra(Intent.EXTRA_SUBJECT) ?: ""
+                val body = intent.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString() ?: ""
+                val to = getRecipients(intent, Intent.EXTRA_EMAIL)
+                val cc = getRecipients(intent, Intent.EXTRA_CC)
+                val bcc = getRecipients(intent, Intent.EXTRA_BCC)
+
+                val attachments = mutableListOf<Uri>()
+                if (intent.action == Intent.ACTION_SEND) {
+                    val uri = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                    }
+                    uri?.let { attachments.add(it) }
+                } else {
+                    val uris = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+                    }
+                    uris?.let { attachments.addAll(it) }
                 }
+
+                initialComposeData = ComposeData(to, subject, body, cc, bcc, attachments)
             }
+        }
+    }
+
+    private fun getRecipients(intent: Intent, extra: String): String {
+        val recipients = intent.getStringArrayExtra(extra)
+        return if (recipients != null && recipients.isNotEmpty()) {
+            recipients.joinToString(", ")
+        } else {
+            intent.getStringExtra(extra) ?: ""
         }
     }
 

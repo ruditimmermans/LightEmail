@@ -3,15 +3,27 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Envelope Body -->
-    <path
-        android:fillColor="@color/thunderbird_blue"
-        android:pathData="M22,34h64c3.3,0 6,2.7 6,6v28c0,3.3 -2.7,6 -6,6h-64c-3.3,0 -6,-2.7 -6,-6v-28c0,-3.3 2.7,-6 6,-6z" />
-    <!-- Flap detail (White line) -->
+
+    <!-- Circular Ring -->
     <path
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="2.5"
+        android:strokeWidth="3"
+        android:pathData="M54,54m-38,0a38,38 0,1 1,76 0a38,38 0,1 1,-76 0" />
+
+    <!-- Envelope Outline -->
+    <path
+        android:strokeColor="@color/thunderbird_blue"
+        android:strokeWidth="3"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M24,36l30,22l30,-22" />
+        android:pathData="M34,42h40c2.2,0 4,1.8 4,4v20c0,2.2 -1.8,4 -4,4h-40c-2.2,0 -4,-1.8 -4,-4v-20c0,-2.2 1.8,-4 4,-4z" />
+
+    <!-- Envelope Flap -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34,44l20,14l20,-14" />
+
 </vector>
