@@ -160,25 +160,55 @@ fun MainScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet {
-                Text(stringResource(R.string.folders), modifier = Modifier.padding(if (isVerySmallScreen) 8.dp else 16.dp), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else 16.sp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(if (isVerySmallScreen) 4.dp else 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        stringResource(R.string.folders),
+                        modifier = Modifier.padding(if (isVerySmallScreen) 8.dp else 12.dp),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = if (isVerySmallScreen) 18.sp else 20.sp
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = { scope.launch { drawerState.close() } }) {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Close Drawer",
+                            modifier = Modifier.size(if (isVerySmallScreen) 24.dp else 28.dp)
+                        )
+                    }
+                }
                 HorizontalDivider()
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(folders) { folder ->
                         NavigationDrawerItem(
                             label = { 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(folder.name, modifier = Modifier.weight(1f), fontSize = if (isVerySmallScreen) 13.sp else 14.sp)
+                                    Text(folder.name, modifier = Modifier.weight(1f), fontSize = if (isVerySmallScreen) 16.sp else 18.sp)
                                     if (folder.unreadCount > 0) {
-                                        Badge(containerColor = MaterialTheme.colorScheme.primary, modifier = if (isVerySmallScreen) Modifier.size(16.dp) else Modifier) {
-                                            Text(folder.unreadCount.toString(), color = MaterialTheme.colorScheme.onPrimary, fontSize = if (isVerySmallScreen) 10.sp else 12.sp)
+                                        Badge(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier.size(24.dp)
+                                        ) {
+                                            Text(folder.unreadCount.toString(), color = MaterialTheme.colorScheme.onPrimary, fontSize = if (isVerySmallScreen) 12.sp else 14.sp)
                                         }
-                                        Spacer(modifier = Modifier.width(if (isVerySmallScreen) 4.dp else 8.dp))
+                                        Spacer(modifier = Modifier.width(if (isVerySmallScreen) 6.dp else 10.dp))
                                     }
-                                    Text("(${folder.messageCount})", fontSize = if (isVerySmallScreen) 10.sp else 12.sp, color = Color.Gray)
+                                    Text("(${folder.messageCount})", fontSize = if (isVerySmallScreen) 14.sp else 16.sp, color = Color.Gray)
                                     if (folder.name.lowercase().contains("trash")) {
-                                        Spacer(modifier = Modifier.width(if (isVerySmallScreen) 4.dp else 8.dp))
-                                        IconButton(onClick = { viewModel.emptyTrash() }, modifier = Modifier.size(if (isVerySmallScreen) 20.dp else 24.dp)) {
-                                            Icon(Icons.Default.DeleteSweep, contentDescription = "Empty Trash", modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp))
+                                        Spacer(modifier = Modifier.width(if (isVerySmallScreen) 6.dp else 10.dp))
+                                        IconButton(
+                                            onClick = { viewModel.emptyTrash() },
+                                            modifier = Modifier.size(if (isVerySmallScreen) 28.dp else 32.dp)
+                                        ) {
+                                            Icon(
+                                                Icons.Default.DeleteSweep,
+                                                contentDescription = "Empty Trash",
+                                                modifier = Modifier.size(if (isVerySmallScreen) 20.dp else 24.dp)
+                                            )
                                         }
                                     }
                                 }
@@ -188,7 +218,12 @@ fun MainScreen(
                                 viewModel.selectFolder(folder.name)
                                 scope.launch { drawerState.close() }
                             },
-                            modifier = Modifier.padding(if (isVerySmallScreen) PaddingValues(horizontal = 8.dp, vertical = 2.dp) else NavigationDrawerItemDefaults.ItemPadding)
+                            modifier = Modifier.padding(
+                                if (isVerySmallScreen) 
+                                    PaddingValues(horizontal = 8.dp, vertical = 6.dp) 
+                                else 
+                                    PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+                            )
                         )
                     }
                 }
