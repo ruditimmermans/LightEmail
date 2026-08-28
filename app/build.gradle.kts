@@ -1,4 +1,4 @@
-val appVersionName = "4.9"
+val appVersionName = "5.0"
 
 plugins {
     alias(libs.plugins.androidApp)
@@ -18,7 +18,7 @@ android {
         applicationId = "com.light.lightemail"
         minSdk = 33
         targetSdk = 35
-        versionCode = 40
+        versionCode = 41
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
