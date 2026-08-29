@@ -98,4 +98,6 @@
     <string name="app_icon_label">App Icon Style</string>
     <string name="black_icon_label">Black &amp; White Icon</string>
     <string name="blue_icon_label">Color Icon (Blue)</string>
+    <string name="large_text_label">Large Text</string>
+    <string name="large_header_text_label">Large Header Text</string>
 </resources>

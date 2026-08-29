@@ -67,11 +67,13 @@ import androidx.paging.LoadState
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemKey
+import androidx.compose.ui.viewinterop.AndroidView
 import com.light.lightemail.R
 import com.light.lightemail.data.Contact
 import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.data.ComposeData
 import com.light.lightemail.data.Attachment
+import com.light.lightemail.ui.components.LightToggle
 import com.light.lightemail.ui.viewmodel.EmailViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -1640,71 +1642,41 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Text(stringResource(R.string.theme_mode_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useColorMode = false }) {
-                Text(stringResource(R.string.black_mode_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (!useColorMode) FontWeight.Bold else FontWeight.Normal)
-                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = !useColorMode, onClick = { useColorMode = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useColorMode = true }) {
-                Text(stringResource(R.string.color_mode_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (useColorMode) FontWeight.Bold else FontWeight.Normal)
-                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = useColorMode, onClick = { useColorMode = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
-            }
-        }
+        LightToggleRow(
+            text = stringResource(R.string.color_mode_label),
+            checked = useColorMode,
+            onCheckedChange = { useColorMode = it }
+        )
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Text(stringResource(R.string.app_icon_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useBlueIcon = false }) {
-                Text(stringResource(R.string.black_icon_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (!useBlueIcon) FontWeight.Bold else FontWeight.Normal)
-                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = !useBlueIcon, onClick = { useBlueIcon = false }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
-            }
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.clickable { useBlueIcon = true }) {
-                Text(stringResource(R.string.blue_icon_label), fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (useBlueIcon) FontWeight.Bold else FontWeight.Normal)
-                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                LightRadioButton(selected = useBlueIcon, onClick = { useBlueIcon = true }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
-            }
-        }
+        LightToggleRow(
+            text = stringResource(R.string.blue_icon_label),
+            checked = useBlueIcon,
+            onCheckedChange = { useBlueIcon = it }
+        )
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Text(stringResource(R.string.text_size_label, textSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (textSize == size) FontWeight.Bold else FontWeight.Normal)
-                    Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                    LightRadioButton(selected = textSize == size, onClick = { textSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
-                }
-            }
+        listOf(16f, 18f, 20f, 22f, 24f).forEach { size ->
+            LightToggleRow(
+                text = "${size.toInt()} SP",
+                checked = textSize == size,
+                onCheckedChange = { if (it) textSize = size }
+            )
         }
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
         Text(stringResource(R.string.header_text_size_label, headerTextSize.toInt()).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isLP3) 16.dp else if (isShortScreen) 6.dp else 12.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
-        ) {
-            listOf(12f, 15f, 18f, 21f, 24f).forEach { size ->
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${size.toInt()}", fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp, fontWeight = if (headerTextSize == size) FontWeight.Bold else FontWeight.Normal)
-                    Spacer(modifier = Modifier.height(if (isVerySmallScreen) 2.dp else 4.dp))
-                    LightRadioButton(selected = headerTextSize == size, onClick = { headerTextSize = size }, modifier = if (isVerySmallScreen) Modifier.size(12.dp) else if (isLP3) Modifier.size(20.dp) else Modifier)
-                }
-            }
+        listOf(16f, 18f, 20f, 22f, 24f).forEach { size ->
+            LightToggleRow(
+                text = "${size.toInt()} SP",
+                checked = headerTextSize == size,
+                onCheckedChange = { if (it) headerTextSize = size }
+            )
         }
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp))
@@ -1777,14 +1749,11 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth().clickable { autoCheckUpdates = !autoCheckUpdates },
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(stringResource(R.string.auto_check_updates_label), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 18.sp else 16.sp)
-            LightSwitch(checked = autoCheckUpdates, onCheckedChange = { autoCheckUpdates = it }, modifier = if (isLP3) Modifier.scale(1.2f) else Modifier)
-        }
+        LightToggleRow(
+            text = stringResource(R.string.auto_check_updates_label).uppercase(),
+            checked = autoCheckUpdates,
+            onCheckedChange = { autoCheckUpdates = it }
+        )
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isLP3) 40.dp else if (isShortScreen) 16.dp else 32.dp))
 
@@ -1884,95 +1853,32 @@ fun AboutScreen(viewModel: EmailViewModel) {
 }
 
 @Composable
-fun LightRadioButton(
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isShortScreen = configuration.screenHeightDp < 600
-    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
-    val isVerySmallScreen = configuration.screenHeightDp < 480
-    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
-    val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
-
-    val outerSize = if (isLP3) 24.dp else 16.dp
-    val innerSize = if (isLP3) 14.dp else 10.dp
-
-    Box(
-        modifier = modifier
-            .size(outerSize)
-            .clickable { onClick() }
-            .border(1.dp, MaterialTheme.colorScheme.onBackground),
-        contentAlignment = Alignment.Center
-    ) {
-        if (selected) {
-            Box(
-                modifier = Modifier
-                    .size(innerSize)
-                    .background(MaterialTheme.colorScheme.onBackground)
-            )
-        }
-    }
-}
-
-@Composable
-fun LightSwitch(
+fun LightToggleRow(
+    text: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textSize: Float = 16f
 ) {
-    val color = MaterialTheme.colorScheme.onBackground
-    val density = LocalDensity.current
-
-    // Values from the Light OS style code provided
-    val circleSize = 13.dp
-    val lineWidth = 19.dp
-    val lineHeight = 3.dp
-    val borderSize = 3.dp
-
-    Canvas(
+    AndroidView(
+        factory = { context ->
+            LightToggle(context).apply {
+                setText(text)
+                isChecked = checked
+                setOnCheckedChangeListener(onCheckedChange)
+            }
+        },
+        update = { toggle ->
+            toggle.setText(text)
+            toggle.isChecked = checked
+            // Avoid setting the listener again if it hasn't changed, 
+            // but for simplicity here we just update it.
+            toggle.setOnCheckedChangeListener(onCheckedChange)
+        },
         modifier = modifier
-            .size(width = circleSize + lineWidth, height = circleSize)
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onCheckedChange(!checked) }
-    ) {
-        val cy = size.height / 2f
-        val r = circleSize.toPx() / 2f
-        val lw = lineWidth.toPx()
-        val lh = lineHeight.toPx()
-        val b = borderSize.toPx()
-        val cs = circleSize.toPx()
-
-        if (checked) {
-            // line on the left, filled dot on the right
-            drawRect(
-                color = color,
-                topLeft = Offset(0f, cy - lh / 2),
-                size = Size(lw, lh)
-            )
-            drawCircle(
-                color = color,
-                radius = r,
-                center = Offset(lw + r, cy)
-            )
-        } else {
-            // hollow dot on the left, line on the right
-            drawCircle(
-                color = color,
-                radius = r - b / 2,
-                center = Offset(r, cy),
-                style = Stroke(width = b)
-            )
-            drawRect(
-                color = color,
-                topLeft = Offset(cs, cy - lh / 2),
-                size = Size(lw, lh)
-            )
-        }
-    }
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+    )
 }
 
 @Composable

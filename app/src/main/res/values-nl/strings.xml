@@ -98,4 +98,6 @@
     <string name="app_icon_label">App Icoon Stijl</string>
     <string name="black_icon_label">Zwart-wit Icoon</string>
     <string name="blue_icon_label">Kleur Icoon (Blauw)</string>
+    <string name="large_text_label">Grote Tekst</string>
+    <string name="large_header_text_label">Grote Header Tekst</string>
 </resources>
