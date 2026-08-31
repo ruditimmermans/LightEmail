@@ -4,6 +4,8 @@ A Free Software, minimalistic and privacy friendly email app.
 
 LightEmail is primarily made for personal use; I only want to share the tool with others if they want to use it and are able to use it.
 
+[IMPORTANT INFO] My apps are no longer specifically designed for the Light Phone 3, as I have sold the device; all my apps are now being updated for Android 15 and up. However, they will retain the same look and feel.
+
 You can download directly from GitHub.
 
 ## Highlights
