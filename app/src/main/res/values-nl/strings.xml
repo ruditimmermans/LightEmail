@@ -76,6 +76,10 @@
     <string name="new_email_from">Nieuwe e-mail van %1$s</string>
     <string name="new_emails_count">%1$d nieuwe e-mails</string>
 
+    <string name="calendar_invitation">Agendauitnodiging</string>
+    <string name="add_to_calendar">Toevoegen aan agenda</string>
+    <string name="downloading_event">Evenement downloaden…</string>
+
     <string name="background_settings_title">Achtergrondinstellingen</string>
     <string name="battery_optimization_label">Onbeperkte Batterijmodus</string>
     <string name="battery_optimization_desc">Zorg ervoor dat de app op de achtergrond blijft draaien.</string>

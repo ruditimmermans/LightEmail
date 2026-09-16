@@ -569,6 +569,9 @@ fun EmailDetailScreen(
     val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
     val attachments by viewModel.getAttachments(email).collectAsState(initial = emptyList())
+    val regularAttachments = remember(attachments) {
+        attachments.filter { !(it.fileName.lowercase().endsWith(".ics") || it.mimeType.contains("calendar", ignoreCase = true)) }
+    }
     var attachmentsExpanded by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -591,13 +594,20 @@ fun EmailDetailScreen(
                     }
                     
                     if (attachments.isNotEmpty()) {
-                        AttachmentSection(
+                        CalendarSection(
                             attachments = attachments,
-                            expanded = attachmentsExpanded,
-                            onToggle = { attachmentsExpanded = !attachmentsExpanded },
                             textSize = textSize,
                             viewModel = viewModel
                         )
+                        if (regularAttachments.isNotEmpty()) {
+                            AttachmentSection(
+                                attachments = regularAttachments,
+                                expanded = attachmentsExpanded,
+                                onToggle = { attachmentsExpanded = !attachmentsExpanded },
+                                textSize = textSize,
+                                viewModel = viewModel
+                            )
+                        }
                     }
                 }
             } else {
@@ -652,13 +662,20 @@ fun EmailDetailScreen(
                     if (attachments.isNotEmpty()) {
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
-                            AttachmentSection(
+                            CalendarSection(
                                 attachments = attachments,
-                                expanded = attachmentsExpanded,
-                                onToggle = { attachmentsExpanded = !attachmentsExpanded },
                                 textSize = textSize,
                                 viewModel = viewModel
                             )
+                            if (regularAttachments.isNotEmpty()) {
+                                AttachmentSection(
+                                    attachments = regularAttachments,
+                                    expanded = attachmentsExpanded,
+                                    onToggle = { attachmentsExpanded = !attachmentsExpanded },
+                                    textSize = textSize,
+                                    viewModel = viewModel
+                                )
+                            }
                         }
                     }
                 }
@@ -741,6 +758,104 @@ fun EmailHeader(
             fontSize = textSize.sp,
             color = Color.Gray
         )
+    }
+}
+
+@Composable
+fun CalendarSection(
+    attachments: List<Attachment>,
+    textSize: Float,
+    viewModel: EmailViewModel
+) {
+    val context = LocalContext.current
+    val icsAttachments = remember(attachments) {
+        attachments.filter { it.fileName.lowercase().endsWith(".ics") || it.mimeType.contains("calendar", ignoreCase = true) }
+    }
+
+    if (icsAttachments.isEmpty()) return
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
+            .padding(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = stringResource(R.string.calendar_invitation).uppercase(),
+                fontSize = textSize.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+        }
+        
+        icsAttachments.forEach { attachment ->
+            var isDownloading by remember { mutableStateOf(false) }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = attachment.fileName,
+                    fontSize = (textSize * 0.9f).sp,
+                    modifier = Modifier.weight(1f),
+                    maxLines = 1
+                )
+                
+                Button(
+                    onClick = {
+                        if (attachment.localPath != null) {
+                            openCalendarFile(context, java.io.File(attachment.localPath), attachment.mimeType)
+                        } else {
+                            isDownloading = true
+                            viewModel.downloadAttachment(attachment) { success ->
+                                isDownloading = false
+                                if (success) {
+                                    val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_${attachment.fileName}")
+                                    openCalendarFile(context, file, attachment.mimeType)
+                                } else {
+                                    Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    },
+                    enabled = !isDownloading,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.heightIn(min = 32.dp)
+                ) {
+                    if (isDownloading) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text(stringResource(R.string.add_to_calendar).uppercase(), fontSize = (textSize * 0.8f).sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun openCalendarFile(context: Context, file: java.io.File, originalMimeType: String) {
+    try {
+        val uri = androidx.core.content.FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+        val mimeType = if (file.name.lowercase().endsWith(".ics")) "text/calendar" else originalMimeType
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+        context.startActivity(intent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "No app to open calendar event", Toast.LENGTH_SHORT).show()
     }
 }
 

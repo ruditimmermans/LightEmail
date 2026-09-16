@@ -105,7 +105,7 @@ class EmailPushService : Service() {
                                     .build()
                                 WorkManager.getInstance(applicationContext).enqueueUniqueWork(
                                     "email_sync_push",
-                                    ExistingWorkPolicy.KEEP, // Use KEEP to avoid restarting if one is already running/enqueued
+                                    ExistingWorkPolicy.REPLACE, // Use REPLACE to ensure new flags/read status are processed immediately
                                     syncRequest
                                 )
                             }

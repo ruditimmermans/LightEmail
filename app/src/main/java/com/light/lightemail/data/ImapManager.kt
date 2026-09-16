@@ -493,17 +493,21 @@ class ImapManager {
             // Check if this part has a Content-ID (inline image)
             val cid = part.getHeader("Content-ID")?.firstOrNull()?.trim()?.removeSurrounding("<", ">")
 
+            val isCalendar = part.isMimeType("text/calendar") || part.isMimeType("application/ics") || fileName?.lowercase()?.endsWith(".ics") == true
+            val effectiveFileName = fileName ?: if (isCalendar) "invite.ics" else null
+
             val isAttachment = disposition?.equals(Part.ATTACHMENT, ignoreCase = true) == true || 
-                              (disposition?.equals(Part.INLINE, ignoreCase = true) == true && cid == null && fileName != null)
+                              (disposition?.equals(Part.INLINE, ignoreCase = true) == true && cid == null && effectiveFileName != null) ||
+                              isCalendar
             
-            if (isAttachment && fileName != null) {
+            if (isAttachment && effectiveFileName != null) {
                 attachments.add(
                     Attachment(
                         emailUid = uid,
                         folder = folderName,
-                        fileName = fileName,
-                        mimeType = part.contentType.substringBefore(";"),
-                        size = part.size.toLong(),
+                        fileName = effectiveFileName,
+                        mimeType = if (part.isMimeType("text/calendar") || part.isMimeType("application/ics")) "text/calendar" else part.contentType.substringBefore(";"),
+                        size = part.size.toLong().coerceAtLeast(0L),
                         partIndex = partPath
                     )
                 )

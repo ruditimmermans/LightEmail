@@ -76,6 +76,10 @@
     <string name="new_email_from">New Email from %1$s</string>
     <string name="new_emails_count">%1$d new emails</string>
 
+    <string name="calendar_invitation">Calendar Invitation</string>
+    <string name="add_to_calendar">Add to Calendar</string>
+    <string name="downloading_event">Downloading event…</string>
+
     <string name="background_settings_title">Background Settings</string>
     <string name="battery_optimization_label">Unlimited Battery Mode</string>
     <string name="battery_optimization_desc">Ensure the app runs in the background without being killed.</string>
