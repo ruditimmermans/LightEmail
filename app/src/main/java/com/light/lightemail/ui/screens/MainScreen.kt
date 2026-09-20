@@ -820,14 +820,14 @@ fun CalendarSection(
                 Button(
                     onClick = {
                         if (attachment.localPath != null) {
-                            openCalendarFile(context, java.io.File(attachment.localPath), attachment.mimeType)
+                            openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
                         } else {
                             isDownloading = true
                             viewModel.downloadAttachment(attachment) { success ->
                                 isDownloading = false
                                 if (success) {
                                     val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_${attachment.fileName}")
-                                    openCalendarFile(context, file, attachment.mimeType)
+                                    openAttachmentFile(context, file, attachment.mimeType)
                                 } else {
                                     Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
                                 }
@@ -849,21 +849,30 @@ fun CalendarSection(
     }
 }
 
-fun openCalendarFile(context: Context, file: java.io.File, originalMimeType: String) {
+fun openAttachmentFile(context: Context, file: java.io.File, mimeType: String) {
     try {
         val uri = androidx.core.content.FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
             file
         )
-        val mimeType = if (file.name.lowercase().endsWith(".ics")) "text/calendar" else originalMimeType
+        val finalMimeType = if (file.name.lowercase().endsWith(".ics")) "text/calendar" else mimeType
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            setDataAndType(uri, mimeType)
+            setDataAndType(uri, finalMimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
+        
+        // Use createChooser only if we want to FORCE the selection every time.
+        // The user wants to "set as default", so we use the standard startActivity
+        // which triggers the system resolver (which has the "Always" option).
         context.startActivity(intent)
     } catch (e: Exception) {
-        Toast.makeText(context, "No app to open calendar event", Toast.LENGTH_SHORT).show()
+        val errorMessage = if (file.name.lowercase().endsWith(".ics")) {
+            "No calendar app found to open this invitation"
+        } else {
+            "No app found to open this file"
+        }
+        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -934,21 +943,7 @@ fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailView
         
         if (attachment.localPath != null) {
             IconButton(onClick = {
-                val file = java.io.File(attachment.localPath)
-                val uri = androidx.core.content.FileProvider.getUriForFile(
-                    context,
-                    "${context.packageName}.fileprovider",
-                    file
-                )
-                val intent = Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(uri, attachment.mimeType)
-                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }
-                try {
-                    context.startActivity(intent)
-                } catch (e: Exception) {
-                    Toast.makeText(context, "No app to open this file", Toast.LENGTH_SHORT).show()
-                }
+                openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
             }) {
                 Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open", tint = MaterialTheme.colorScheme.primary)
             }
@@ -1701,7 +1696,6 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val textSizeVal by viewModel.textSize.collectAsState()
     val headerTextSizeVal by viewModel.headerTextSize.collectAsState()
     val useColorModeVal by viewModel.useColorMode.collectAsState()
-    val useBlueIconVal by viewModel.useBlueIcon.collectAsState()
     val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
     val updateAvailable by viewModel.updateAvailable.collectAsState()
@@ -1718,7 +1712,6 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var headerTextSize by remember { mutableFloatStateOf(headerTextSizeVal) }
     var useColorMode by remember { mutableStateOf(useColorModeVal) }
-    var useBlueIcon by remember { mutableStateOf(useBlueIconVal) }
     var autoCheckUpdates by remember { mutableStateOf(autoCheckUpdatesVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -1750,13 +1743,13 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, useBlueIcon, autoCheckUpdates) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, autoCheckUpdates) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
             textSize != textSizeVal || headerTextSize != headerTextSizeVal || signature != signatureVal || useColorMode != useColorModeVal ||
-            useBlueIcon != useBlueIconVal || autoCheckUpdates != autoCheckUpdatesVal) {
+            autoCheckUpdates != autoCheckUpdatesVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, autoCheckUpdates, useBlueIcon)
+            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, autoCheckUpdates)
         }
     }
 
@@ -1812,15 +1805,6 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             text = stringResource(R.string.color_mode_label),
             checked = useColorMode,
             onCheckedChange = { useColorMode = it }
-        )
-
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
-
-        Text(stringResource(R.string.app_icon_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
-        LightToggleRow(
-            text = stringResource(R.string.blue_icon_label),
-            checked = useBlueIcon,
-            onCheckedChange = { useBlueIcon = it }
         )
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
@@ -1998,23 +1982,58 @@ fun AboutScreen(viewModel: EmailViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (isVerySmallScreen) 8.dp else 16.dp)
+            .padding(if (isVerySmallScreen) 16.dp else 24.dp)
             .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
-        Text(stringResource(R.string.app_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 18.sp else if (isShortScreen) 24.sp else 32.sp, letterSpacing = if (isShortScreen) 2.sp else 4.sp)
-        Text(stringResource(R.string.version_label, versionName ?: "1.0").uppercase(), fontSize = 10.sp, color = Color.Gray)
-        
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 16.dp else 32.dp))
+
+        Text(
+            text = stringResource(R.string.app_title).uppercase(),
+            fontWeight = FontWeight.ExtraBold,
+            fontSize = if (isVerySmallScreen) 24.sp else if (isShortScreen) 32.sp else 48.sp,
+            letterSpacing = if (isShortScreen) 2.sp else 4.sp,
+            textAlign = TextAlign.Center
+        )
+        Text(
+            text = stringResource(R.string.version_label, versionName ?: "1.0").uppercase(),
+            fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 24.dp else 48.dp))
         Text(
             text = stringResource(R.string.app_description),
             textAlign = TextAlign.Center,
-            fontSize = if (isVerySmallScreen) 11.sp else 13.sp,
-            lineHeight = if (isVerySmallScreen) 16.sp else 20.sp
+            fontSize = if (isVerySmallScreen) 14.sp else 18.sp,
+            lineHeight = if (isVerySmallScreen) 20.sp else 28.sp,
+            modifier = Modifier.fillMaxWidth()
         )
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else if (isShortScreen) 24.dp else 48.dp))
-        Text(stringResource(R.string.copyright).uppercase(), fontSize = 10.sp, color = Color.Gray)
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 24.dp else 48.dp))
+
+        Button(
+            onClick = {
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.paypal.com/paypalme/benoscamera"))
+                context.startActivity(intent)
+            },
+            modifier = Modifier.padding(bottom = 16.dp)
+        ) {
+            Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(stringResource(R.string.donate_paypal).uppercase(), fontWeight = FontWeight.Bold)
+        }
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else 24.dp))
+        Text(
+            text = stringResource(R.string.copyright).uppercase(),
+            fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center
+        )
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 16.dp else 32.dp))
     }
 }
 

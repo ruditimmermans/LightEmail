@@ -70,9 +70,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _useColorMode = MutableStateFlow(prefs.getBoolean("use_color_mode", false))
     val useColorMode: StateFlow<Boolean> = _useColorMode
 
-    private val _useBlueIcon = MutableStateFlow(prefs.getBoolean("use_blue_icon", false))
-    val useBlueIcon: StateFlow<Boolean> = _useBlueIcon
-
     private val _autoCheckUpdates = MutableStateFlow(prefs.getBoolean("auto_check_updates", true))
     val autoCheckUpdates: StateFlow<Boolean> = _autoCheckUpdates
 
@@ -125,7 +122,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val backupManager = BackupManager(application)
 
     init {
-        updateAppIcon(_useBlueIcon.value)
         if (_accountEmail.value.isNotEmpty()) {
             refreshEmails()
             refreshFolders()
@@ -165,14 +161,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _textSize.value = prefs.getFloat("text_size", 16f)
                 _headerTextSize.value = prefs.getFloat("header_text_size", 16f)
                 _useColorMode.value = prefs.getBoolean("use_color_mode", false)
-                _useBlueIcon.value = prefs.getBoolean("use_blue_icon", false)
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
                 _signature.value = prefs.getString("signature", getApplication<Application>().getString(R.string.default_signature)) ?: getApplication<Application>().getString(R.string.default_signature)
                 
                 refreshEmails()
                 refreshFolders()
                 updatePushService(true)
-                updateAppIcon(_useBlueIcon.value)
             }
             onResult(success)
         }
@@ -189,8 +183,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         headerTextSize: Float,
         signature: String,
         useColorMode: Boolean,
-        autoCheckUpdates: Boolean,
-        useBlueIcon: Boolean
+        autoCheckUpdates: Boolean
     ) {
         _accountEmail.value = email
         _accountPassword.value = password
@@ -202,7 +195,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _headerTextSize.value = headerTextSize
         _signature.value = signature
         _useColorMode.value = useColorMode
-        _useBlueIcon.value = useBlueIcon
         _autoCheckUpdates.value = autoCheckUpdates
 
         prefs.edit().apply {
@@ -217,7 +209,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putFloat("header_text_size", headerTextSize)
             putString("signature", signature)
             putBoolean("use_color_mode", useColorMode)
-            putBoolean("use_blue_icon", useBlueIcon)
             putBoolean("auto_check_updates", autoCheckUpdates)
             apply()
         }
@@ -225,7 +216,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         refreshEmails()
         refreshFolders()
         updatePushService(true)
-        updateAppIcon(useBlueIcon)
     }
 
     private fun updatePushService(enabled: Boolean) {
@@ -234,26 +224,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             getApplication<Application>().startForegroundService(intent)
         } else {
             getApplication<Application>().stopService(intent)
-        }
-    }
-
-    private fun updateAppIcon(useBlue: Boolean) {
-        val context = getApplication<Application>()
-        val pm = context.packageManager
-        
-        val blackComponent = ComponentName(context, "${context.packageName}.MainActivityBlack")
-        val blueComponent = ComponentName(context, "${context.packageName}.MainActivityBlue")
-        
-        val (enable, disable) = if (useBlue) {
-            blueComponent to blackComponent
-        } else {
-            blackComponent to blueComponent
-        }
-
-        // Only change if needed to avoid unnecessary launcher refreshes
-        if (pm.getComponentEnabledSetting(enable) != PackageManager.COMPONENT_ENABLED_STATE_ENABLED) {
-            pm.setComponentEnabledSetting(enable, PackageManager.COMPONENT_ENABLED_STATE_ENABLED, PackageManager.DONT_KILL_APP)
-            pm.setComponentEnabledSetting(disable, PackageManager.COMPONENT_ENABLED_STATE_DISABLED, PackageManager.DONT_KILL_APP)
         }
     }
 
