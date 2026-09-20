@@ -295,7 +295,7 @@ fun MainScreen(
                             unselectedTextColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f),
                             indicatorColor = Color.Transparent
                         )
-                        val iconSize = if (isVerySmallScreen) 20.dp else if (isLP3) 32.dp else if (isStandardPhone) 26.dp else 24.dp
+                        val iconSize = if (isSquareScreen) 24.dp else if (isVerySmallScreen) 20.dp else if (isLP3) 32.dp else if (isStandardPhone) 26.dp else 24.dp
                         val footerTextSize = if (isLP3) 12.sp else if (isStandardPhone) (textSize * 0.7f).sp else 11.sp
                         
                         NavigationBarItem(
@@ -768,6 +768,9 @@ fun CalendarSection(
     viewModel: EmailViewModel
 ) {
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isVerySmallScreen = configuration.screenHeightDp < 480
+
     val icsAttachments = remember(attachments) {
         attachments.filter { it.fileName.lowercase().endsWith(".ics") || it.mimeType.contains("calendar", ignoreCase = true) }
     }
@@ -777,17 +780,22 @@ fun CalendarSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f))
-            .padding(12.dp)
+            .padding(horizontal = if (isVerySmallScreen) 8.dp else 16.dp, vertical = if (isVerySmallScreen) 4.dp else 8.dp)
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.03f))
+            .padding(if (isVerySmallScreen) 6.dp else 12.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Default.CalendarToday, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.width(8.dp))
+            Icon(
+                Icons.Default.CalendarToday, 
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 20.dp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = stringResource(R.string.calendar_invitation).uppercase(),
-                fontSize = textSize.sp,
+                fontSize = (if (isVerySmallScreen) textSize * 0.8f else textSize).sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -796,7 +804,7 @@ fun CalendarSection(
         icsAttachments.forEach { attachment ->
             var isDownloading by remember { mutableStateOf(false) }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else 8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -804,11 +812,11 @@ fun CalendarSection(
             ) {
                 Text(
                     text = attachment.fileName,
-                    fontSize = (textSize * 0.9f).sp,
+                    fontSize = (if (isVerySmallScreen) textSize * 0.8f else textSize * 0.9f).sp,
                     modifier = Modifier.weight(1f),
                     maxLines = 1
                 )
-                
+                Spacer(modifier = Modifier.width(8.dp))
                 Button(
                     onClick = {
                         if (attachment.localPath != null) {
@@ -827,13 +835,13 @@ fun CalendarSection(
                         }
                     },
                     enabled = !isDownloading,
-                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                    modifier = Modifier.heightIn(min = 32.dp)
+                    contentPadding = PaddingValues(horizontal = if (isVerySmallScreen) 8.dp else 12.dp, vertical = if (isVerySmallScreen) 2.dp else 4.dp),
+                    modifier = Modifier.heightIn(min = if (isVerySmallScreen) 28.dp else 32.dp)
                 ) {
                     if (isDownloading) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 1.5.dp, color = MaterialTheme.colorScheme.onPrimary)
                     } else {
-                        Text(stringResource(R.string.add_to_calendar).uppercase(), fontSize = (textSize * 0.8f).sp)
+                        Text(stringResource(R.string.add_to_calendar).uppercase(), fontSize = (if (isVerySmallScreen) textSize * 0.7f else textSize * 0.8f).sp)
                     }
                 }
             }
@@ -994,64 +1002,107 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
     } else ""
 
     // Clean the input HTML to avoid double wrapping if possible
-    val bodyContent = if (html.contains("<body", ignoreCase = true)) {
-        // Extract content within body if possible, or just use as is
-        // For robustness, we'll use a wrapper that should override nested body styles
-        html
+    val cleanedHtml = html.trim()
+    val hasHtmlTag = cleanedHtml.contains("<html", ignoreCase = true)
+    val hasHeadTag = cleanedHtml.contains("<head", ignoreCase = true)
+    val hasBodyTag = cleanedHtml.contains("<body", ignoreCase = true)
+
+    val styledHtml = if (hasHtmlTag || hasHeadTag || hasBodyTag) {
+        // Inject styles into the existing head or body if possible
+        var result = cleanedHtml
+        val styleBlock = """
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+            * { 
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            body { 
+                margin: 0;
+                padding: ${if (isVerySmallScreen) "4px" else "12px"};
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+                font-size: ${textSize}px !important;
+                line-height: 1.6 !important;
+                word-wrap: break-word;
+            }
+            h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+                font-size: ${textSize}px !important;
+            }
+            $darkModeCss
+            img { 
+                height: auto !important; 
+                max-width: 100% !important;
+            }
+            a {
+                color: $linkColor !important;
+                text-decoration: underline !important;
+            }
+            table {
+                max-width: 100% !important;
+            }
+            </style>
+        """.trimIndent()
+
+        if (result.contains("<head>", ignoreCase = true)) {
+            result = result.replace("<head>", "<head>$styleBlock", ignoreCase = true)
+        } else if (result.contains("<head ", ignoreCase = true)) {
+            val idx = result.indexOf("<head", ignoreCase = true)
+            val closeIdx = result.indexOf(">", idx)
+            if (closeIdx != -1) {
+                result = result.substring(0, closeIdx + 1) + styleBlock + result.substring(closeIdx + 1)
+            }
+        } else if (result.contains("<html>", ignoreCase = true)) {
+            result = result.replace("<html>", "<html><head>$styleBlock</head>", ignoreCase = true)
+        } else if (result.contains("<html ", ignoreCase = true)) {
+            val idx = result.indexOf("<html", ignoreCase = true)
+            val closeIdx = result.indexOf(">", idx)
+            if (closeIdx != -1) {
+                result = result.substring(0, closeIdx + 1) + "<head>" + styleBlock + "</head>" + result.substring(closeIdx + 1)
+            }
+        } else {
+            result = "<head>$styleBlock</head>$result"
+        }
+        result
     } else {
-        "<body>$html</body>"
+        """
+            <!DOCTYPE html>
+            <html>
+            <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+            * { 
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+            }
+            html, body { 
+                margin: 0;
+                padding: ${if (isVerySmallScreen) "4px" else "12px"};
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+                font-size: ${textSize}px !important;
+                line-height: 1.6 !important;
+                word-wrap: break-word;
+            }
+            h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+                font-size: ${textSize}px !important;
+            }
+            $darkModeCss
+            img { 
+                height: auto !important; 
+                max-width: 100% !important;
+            }
+            a {
+                color: $linkColor !important;
+                text-decoration: underline !important;
+            }
+            table {
+                max-width: 100% !important;
+            }
+            </style>
+            </head>
+            <body>$html</body>
+            </html>
+        """.trimIndent()
     }
-
-    val styledHtml = """
-        <!DOCTYPE html>
-        <html>
-        <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-        * { 
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-        }
-        html, body { 
-            margin: 0;
-            padding: ${if (isVerySmallScreen) "4px" else "12px"};
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-            font-size: ${textSize}px !important;
-            line-height: 1.6 !important;
-            word-wrap: break-word;
-        }
-        
-        h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
-            font-size: ${textSize}px !important;
-        }
-        
-        $darkModeCss
-        
-        /* Ensure images are visible and responsive */
-        img { 
-            height: auto !important; 
-            display: block !important;
-            margin: 10px 0 !important;
-            max-width: 100% !important;
-        }
-        
-        /* Keep links visible */
-        a {
-            color: $linkColor !important;
-            text-decoration: underline !important;
-        }
-
-        /* Responsive tables */
-        table {
-            display: block !important;
-            width: 100% !important;
-            overflow-x: auto !important;
-        }
-        </style>
-        </head>
-        $bodyContent
-        </html>
-    """.trimIndent()
 
     var webViewError by remember { mutableStateOf(false) }
 
@@ -1234,7 +1285,7 @@ fun ComposeEmailScreen(
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel), tint = headerIconTint, modifier = Modifier.size(headerIconSize))
             }
             
-            if (!isVerySmallScreen) {
+            if (!isVerySmallScreen || isSquareScreen) {
                 Text(
                     text = stringResource(when(mode) {
                         ComposeMode.Reply -> R.string.reply
@@ -1244,7 +1295,7 @@ fun ComposeEmailScreen(
                         ComposeMode.New -> R.string.new_email
                     }).uppercase(),
                     fontWeight = FontWeight.ExtraBold,
-                    fontSize = textSize.sp,
+                    fontSize = if (isVerySmallScreen && isSquareScreen) (textSize * 0.85f).sp else textSize.sp,
                     letterSpacing = if (isShortScreen) 1.sp else 2.sp
                 )
             }
