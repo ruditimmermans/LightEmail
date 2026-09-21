@@ -104,5 +104,5 @@
     <string name="blue_icon_label">Kleur Icoon (Blauw)</string>
     <string name="large_text_label">Grote Tekst</string>
     <string name="large_header_text_label">Grote Header Tekst</string>
-    <string name="donate_paypal">Doneren via PayPal</string>
+    <string name="support_kofi">Steun via Ko-Fi</string>
 </resources>

@@ -2016,14 +2016,14 @@ fun AboutScreen(viewModel: EmailViewModel) {
 
         Button(
             onClick = {
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.paypal.com/paypalme/benoscamera"))
+                val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/ruditimmermans"))
                 context.startActivity(intent)
             },
             modifier = Modifier.padding(bottom = 16.dp)
         ) {
-            Icon(Icons.Default.Favorite, contentDescription = null, modifier = Modifier.size(20.dp))
+            Icon(Icons.Default.Coffee, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.donate_paypal).uppercase(), fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.support_kofi).uppercase(), fontWeight = FontWeight.Bold)
         }
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else 24.dp))
