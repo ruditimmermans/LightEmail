@@ -17,5 +17,6 @@ data class EmailMessage(
     val htmlContent: String? = null,
     val date: String,
     val folder: String = "Inbox",
-    val isRead: Boolean = false
+    val isRead: Boolean = false,
+    val hasAttachments: Boolean = false
 ) : Serializable

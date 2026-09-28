@@ -80,6 +80,7 @@ class EmailRepository(private val context: Context) {
         emailDao.updateContent(emailMessage.uid, emailMessage.folder, text, html)
         if (attachments.isNotEmpty()) {
             emailDao.insertAttachments(attachments)
+            emailDao.updateHasAttachments(emailMessage.uid, emailMessage.folder, true)
         }
     }
 

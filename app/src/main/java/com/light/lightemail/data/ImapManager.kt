@@ -152,7 +152,7 @@ class ImapManager {
             folder.fetch(lastMessages, fp)
 
             val result = lastMessages.reversedArray().map { msg ->
-                val (text, html, _) = if (fetchContent) {
+                val (text, html, atts) = if (fetchContent) {
                     val uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L
                     getContent(msg, uid, folderName, errorReadingContentString)
                 } else {
@@ -170,7 +170,8 @@ class ImapManager {
                     htmlContent = html,
                     date = msg.sentDate?.toString() ?: "",
                     folder = folderName,
-                    isRead = msg.flags.contains(Flags.Flag.SEEN)
+                    isRead = msg.flags.contains(Flags.Flag.SEEN),
+                    hasAttachments = atts.isNotEmpty() || checkHasAttachments(msg)
                 )
             }
 
@@ -304,7 +305,8 @@ class ImapManager {
                     htmlContent = null,
                     date = msg.sentDate?.toString() ?: "",
                     folder = folderName,
-                    isRead = msg.flags.contains(Flags.Flag.SEEN)
+                    isRead = msg.flags.contains(Flags.Flag.SEEN),
+                    hasAttachments = checkHasAttachments(msg)
                 )
             }.reversed()
 
@@ -368,7 +370,8 @@ class ImapManager {
                     htmlContent = null,
                     date = msg.sentDate?.toString() ?: "",
                     folder = folderName,
-                    isRead = false
+                    isRead = false,
+                    hasAttachments = checkHasAttachments(msg)
                 )
             }
 
@@ -378,6 +381,16 @@ class ImapManager {
         } catch (e: Exception) {
             e.printStackTrace()
             throw e
+        }
+    }
+
+    private fun checkHasAttachments(msg: Message): Boolean {
+        return try {
+            val contentType = msg.contentType?.lowercase() ?: ""
+            contentType.contains("multipart/mixed") || contentType.contains("multipart/related") ||
+            contentType.contains("attachment") || msg.isMimeType("multipart/mixed")
+        } catch (e: Exception) {
+            false
         }
     }
 
@@ -560,15 +573,15 @@ class ImapManager {
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
-                } else if (fileName != null) {
-                    // Inline image without CID, treat as attachment
+                }
+                if (fileName != null) {
                     attachments.add(
                         Attachment(
                             emailUid = uid,
                             folder = folderName,
                             fileName = fileName,
                             mimeType = part.contentType.substringBefore(";"),
-                            size = part.size.toLong(),
+                            size = part.size.toLong().coerceAtLeast(0L),
                             partIndex = partPath
                         )
                     )

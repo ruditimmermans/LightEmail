@@ -27,6 +27,9 @@ interface EmailDao {
     @Query("UPDATE emails SET isRead = :isRead WHERE uid = :uid AND folder = :folder")
     suspend fun updateReadStatus(uid: Long, folder: String, isRead: Boolean)
 
+    @Query("UPDATE emails SET hasAttachments = :hasAttachments WHERE uid = :uid AND folder = :folder")
+    suspend fun updateHasAttachments(uid: Long, folder: String, hasAttachments: Boolean)
+
     @Query("DELETE FROM emails WHERE uid = :uid AND folder = :folder")
     suspend fun deleteEmail(uid: Long, folder: String)
 

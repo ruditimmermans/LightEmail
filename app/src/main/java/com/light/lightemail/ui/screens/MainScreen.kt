@@ -22,6 +22,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -498,13 +499,25 @@ fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, t
                                     fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
                                     color = MaterialTheme.colorScheme.onBackground
                                 )
-                                Text(
-                                    text = email.subject, 
-                                    fontSize = headerTextSize.sp, 
-                                    fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onBackground,
-                                    maxLines = if (isVerySmallScreen) 1 else 2
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    if (email.hasAttachments) {
+                                        Icon(
+                                            imageVector = Icons.Default.AttachFile,
+                                            contentDescription = "Has attachments",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier
+                                                .size(if (isVerySmallScreen) 14.dp else 16.dp)
+                                                .padding(end = 4.dp)
+                                        )
+                                    }
+                                    Text(
+                                        text = email.subject, 
+                                        fontSize = headerTextSize.sp, 
+                                        fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                        maxLines = if (isVerySmallScreen) 1 else 2
+                                    )
+                                }
                             }
                             if (email.isRead) {
                                 Icon(
@@ -572,7 +585,7 @@ fun EmailDetailScreen(
     val regularAttachments = remember(attachments) {
         attachments.filter { !(it.fileName.lowercase().endsWith(".ics") || it.mimeType.contains("calendar", ignoreCase = true)) }
     }
-    var attachmentsExpanded by remember { mutableStateOf(false) }
+    var showAttachments by remember { mutableStateOf(false) }
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
@@ -584,30 +597,24 @@ fun EmailDetailScreen(
                         textSize = textSize,
                         isVerySmallScreen = isVerySmallScreen,
                         isShortScreen = isShortScreen,
+                        hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
+                        attachmentsCount = attachments.size,
+                        isAttachmentsExpanded = showAttachments,
+                        onToggleAttachments = { showAttachments = !showAttachments },
                         onAddContact = onAddContact
                     )
                     
                     HorizontalDivider()
                     
                     Box(modifier = Modifier.weight(1f)) {
-                        HtmlView(html = email.htmlContent, isDark = isDark, textSize = textSize)
-                    }
-                    
-                    if (attachments.isNotEmpty()) {
-                        CalendarSection(
-                            attachments = attachments,
+                        HtmlView(
+                            html = email.htmlContent,
+                            isDark = isDark,
                             textSize = textSize,
+                            attachments = attachments,
+                            showAttachments = showAttachments,
                             viewModel = viewModel
                         )
-                        if (regularAttachments.isNotEmpty()) {
-                            AttachmentSection(
-                                attachments = regularAttachments,
-                                expanded = attachmentsExpanded,
-                                onToggle = { attachmentsExpanded = !attachmentsExpanded },
-                                textSize = textSize,
-                                viewModel = viewModel
-                            )
-                        }
                     }
                 }
             } else {
@@ -622,6 +629,10 @@ fun EmailDetailScreen(
                             textSize = textSize,
                             isVerySmallScreen = isVerySmallScreen,
                             isShortScreen = isShortScreen,
+                            hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
+                            attachmentsCount = attachments.size,
+                            isAttachmentsExpanded = showAttachments,
+                            onToggleAttachments = { showAttachments = !showAttachments },
                             onAddContact = onAddContact
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -659,7 +670,7 @@ fun EmailDetailScreen(
                         }
                     }
                     
-                    if (attachments.isNotEmpty()) {
+                    if (showAttachments && attachments.isNotEmpty()) {
                         item {
                             Spacer(modifier = Modifier.height(16.dp))
                             CalendarSection(
@@ -670,8 +681,8 @@ fun EmailDetailScreen(
                             if (regularAttachments.isNotEmpty()) {
                                 AttachmentSection(
                                     attachments = regularAttachments,
-                                    expanded = attachmentsExpanded,
-                                    onToggle = { attachmentsExpanded = !attachmentsExpanded },
+                                    expanded = true,
+                                    onToggle = { showAttachments = !showAttachments },
                                     textSize = textSize,
                                     viewModel = viewModel
                                 )
@@ -718,6 +729,10 @@ fun EmailHeader(
     textSize: Float,
     isVerySmallScreen: Boolean,
     isShortScreen: Boolean,
+    hasAttachments: Boolean = false,
+    attachmentsCount: Int = 0,
+    isAttachmentsExpanded: Boolean = false,
+    onToggleAttachments: () -> Unit = {},
     onAddContact: (String, String) -> Unit
 ) {
     Column(modifier = Modifier.padding(horizontal = if (isVerySmallScreen) 8.dp else 16.dp, vertical = 8.dp)) {
@@ -753,11 +768,46 @@ fun EmailHeader(
             Icon(Icons.Default.PersonAdd, contentDescription = "Add Contact", modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 18.dp))
         }
         
-        Text(
-            text = stringResource(R.string.date_label, email.date), 
-            fontSize = textSize.sp,
-            color = Color.Gray
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = if (isVerySmallScreen) 2.dp else 4.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.date_label, email.date), 
+                fontSize = textSize.sp,
+                color = Color.Gray,
+                modifier = Modifier.weight(1f)
+            )
+            if (hasAttachments || email.hasAttachments || attachmentsCount > 0) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .background(
+                            if (isAttachmentsExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
+                            shape = CircleShape
+                        )
+                        .clickable { onToggleAttachments() }
+                        .padding(horizontal = if (isVerySmallScreen) 6.dp else 8.dp, vertical = if (isVerySmallScreen) 2.dp else 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AttachFile,
+                        contentDescription = "Toggle attachments",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(if (isVerySmallScreen) 22.dp else 26.dp)
+                    )
+                    if (attachmentsCount > 0) {
+                        Text(
+                            text = "$attachmentsCount",
+                            fontSize = (textSize * 0.9f).sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 2.dp)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -767,84 +817,15 @@ fun CalendarSection(
     textSize: Float,
     viewModel: EmailViewModel
 ) {
-    val context = LocalContext.current
-    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
-    val isVerySmallScreen = configuration.screenHeightDp < 480
-
     val icsAttachments = remember(attachments) {
         attachments.filter { it.fileName.lowercase().endsWith(".ics") || it.mimeType.contains("calendar", ignoreCase = true) }
     }
 
     if (icsAttachments.isEmpty()) return
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = if (isVerySmallScreen) 8.dp else 16.dp, vertical = if (isVerySmallScreen) 4.dp else 8.dp)
-            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
-            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.03f))
-            .padding(if (isVerySmallScreen) 6.dp else 12.dp)
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(
-                Icons.Default.CalendarToday, 
-                contentDescription = null, 
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 20.dp)
-            )
-            Spacer(modifier = Modifier.width(6.dp))
-            Text(
-                text = stringResource(R.string.calendar_invitation).uppercase(),
-                fontSize = (if (isVerySmallScreen) textSize * 0.8f else textSize).sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary
-            )
-        }
-        
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
         icsAttachments.forEach { attachment ->
-            var isDownloading by remember { mutableStateOf(false) }
-            
-            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else 8.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = attachment.fileName,
-                    fontSize = (if (isVerySmallScreen) textSize * 0.8f else textSize * 0.9f).sp,
-                    modifier = Modifier.weight(1f),
-                    maxLines = 1
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        if (attachment.localPath != null) {
-                            openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
-                        } else {
-                            isDownloading = true
-                            viewModel.downloadAttachment(attachment) { success ->
-                                isDownloading = false
-                                if (success) {
-                                    val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_${attachment.fileName}")
-                                    openAttachmentFile(context, file, attachment.mimeType)
-                                } else {
-                                    Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    },
-                    enabled = !isDownloading,
-                    contentPadding = PaddingValues(horizontal = if (isVerySmallScreen) 8.dp else 12.dp, vertical = if (isVerySmallScreen) 2.dp else 4.dp),
-                    modifier = Modifier.heightIn(min = if (isVerySmallScreen) 28.dp else 32.dp)
-                ) {
-                    if (isDownloading) {
-                        CircularProgressIndicator(modifier = Modifier.size(14.dp), strokeWidth = 1.5.dp, color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text(stringResource(R.string.add_to_calendar).uppercase(), fontSize = (if (isVerySmallScreen) textSize * 0.7f else textSize * 0.8f).sp)
-                    }
-                }
-            }
+            AttachmentItem(attachment, textSize, viewModel)
         }
     }
 }
@@ -861,10 +842,6 @@ fun openAttachmentFile(context: Context, file: java.io.File, mimeType: String) {
             setDataAndType(uri, finalMimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
-        
-        // Use createChooser only if we want to FORCE the selection every time.
-        // The user wants to "set as default", so we use the standard startActivity
-        // which triggers the system resolver (which has the "Always" option).
         context.startActivity(intent)
     } catch (e: Exception) {
         val errorMessage = if (file.name.lowercase().endsWith(".ics")) {
@@ -884,41 +861,9 @@ fun AttachmentSection(
     textSize: Float,
     viewModel: EmailViewModel
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .border(1.dp, Color.Gray.copy(alpha = 0.2f))
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onToggle() }
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color.Gray)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "ATTACHMENTS (${attachments.size})",
-                fontSize = textSize.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
-                contentDescription = null,
-                tint = Color.Gray
-            )
-        }
-        
-        if (expanded) {
-            Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, bottom = 8.dp)) {
-                attachments.forEach { attachment ->
-                    AttachmentItem(attachment, textSize, viewModel)
-                }
-            }
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        attachments.forEach { attachment ->
+            AttachmentItem(attachment, textSize, viewModel)
         }
     }
 }
@@ -926,49 +871,68 @@ fun AttachmentSection(
 @Composable
 fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailViewModel) {
     val context = LocalContext.current
+    val configuration = androidx.compose.ui.platform.LocalConfiguration.current
+    val isVerySmallScreen = configuration.screenHeightDp < 480
     var isDownloading by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp)
-            .background(Color.Gray.copy(alpha = 0.05f))
-            .padding(horizontal = 8.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(attachment.fileName, fontSize = textSize.sp, fontWeight = FontWeight.Medium, maxLines = 1)
-            Text("${attachment.size / 1024} KB", fontSize = textSize.sp, color = Color.Gray)
-        }
-        
-        if (attachment.localPath != null) {
-            IconButton(onClick = {
-                openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
-            }) {
-                Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = "Open", tint = MaterialTheme.colorScheme.primary)
-            }
-        } else {
-            if (isDownloading) {
-                CircularProgressIndicator(modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
-            } else {
-                IconButton(onClick = {
+            .clickable {
+                if (attachment.localPath != null) {
+                    openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
+                } else {
                     isDownloading = true
                     viewModel.downloadAttachment(attachment) { success ->
                         isDownloading = false
-                        if (!success) {
+                        if (success) {
+                            val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_${attachment.fileName}")
+                            openAttachmentFile(context, file, attachment.mimeType)
+                        } else {
                             Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
                         }
                     }
-                }) {
-                    Icon(Icons.Default.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.onSurface)
                 }
             }
+            .padding(vertical = 2.dp, horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Default.AttachFile,
+            contentDescription = "Attachment",
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = attachment.fileName,
+            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.85f).sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1,
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = "${attachment.size / 1024} KB",
+            fontSize = (if (isVerySmallScreen) textSize * 0.65f else textSize * 0.75f).sp,
+            color = Color.Gray
+        )
+        if (isDownloading) {
+            Spacer(modifier = Modifier.width(4.dp))
+            CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
         }
     }
 }
 
 @Composable
-fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
+fun HtmlView(
+    html: String,
+    isDark: Boolean,
+    textSize: Float,
+    attachments: List<Attachment> = emptyList(),
+    showAttachments: Boolean = false,
+    viewModel: EmailViewModel? = null
+) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
@@ -985,14 +949,30 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             background-color: $backgroundColor !important;
             color: $textColor !important;
         }
-        /* Force text color on common elements while allowing background images to show if they are not colors */
         h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
             color: $textColor !important;
         }
-        /* Handle containers that might have white backgrounds */
         div, table, td, section, article {
             background-color: transparent !important;
         }
+        """.trimIndent()
+    } else ""
+
+    val attachmentsHtml = if (showAttachments && attachments.isNotEmpty()) {
+        val itemsHtml = attachments.joinToString("") { att ->
+            val sizeKb = att.size / 1024
+            """<div style="margin-bottom: 6px; font-size: ${textSize * 0.85f}px;">
+                📎 <a href="attach:${att.id}" style="color: $linkColor; text-decoration: underline; font-weight: bold;">${att.fileName}</a>
+                <span style="color: #888888; margin-left: 4px;">(${sizeKb} KB)</span>
+            </div>"""
+        }
+        """
+        <div style="margin-top: 20px; padding-top: 8px; border-top: 1px dashed ${if (isDark) "#555" else "#ccc"};">
+            <div style="font-weight: bold; margin-bottom: 6px; color: ${if (isDark) "#8ab4f8" else "#1a73e8"}; font-size: ${textSize * 0.85f}px;">
+                ATTACHMENTS (${attachments.size}):
+            </div>
+            $itemsHtml
+        </div>
         """.trimIndent()
     } else ""
 
@@ -1002,41 +982,50 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
     val hasHeadTag = cleanedHtml.contains("<head", ignoreCase = true)
     val hasBodyTag = cleanedHtml.contains("<body", ignoreCase = true)
 
+    val styleBlock = """
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+        * { 
+            max-width: 100% !important;
+            box-sizing: border-box !important;
+        }
+        body { 
+            margin: 0;
+            padding: ${if (isVerySmallScreen) "4px" else "12px"};
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            font-size: ${textSize}px !important;
+            line-height: 1.6 !important;
+            word-wrap: break-word;
+        }
+        h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+            font-size: ${textSize}px !important;
+        }
+        $darkModeCss
+        img { 
+            height: auto !important; 
+            max-width: 100% !important;
+            max-height: ${if (isVerySmallScreen) "150px" else "250px"} !important;
+            object-fit: contain !important;
+        }
+        a {
+            color: $linkColor !important;
+            text-decoration: underline !important;
+        }
+        table {
+            max-width: 100% !important;
+        }
+        </style>
+    """.trimIndent()
+
     val styledHtml = if (hasHtmlTag || hasHeadTag || hasBodyTag) {
-        // Inject styles into the existing head or body if possible
         var result = cleanedHtml
-        val styleBlock = """
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-            * { 
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            body { 
-                margin: 0;
-                padding: ${if (isVerySmallScreen) "4px" else "12px"};
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-                font-size: ${textSize}px !important;
-                line-height: 1.6 !important;
-                word-wrap: break-word;
-            }
-            h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
-                font-size: ${textSize}px !important;
-            }
-            $darkModeCss
-            img { 
-                height: auto !important; 
-                max-width: 100% !important;
-            }
-            a {
-                color: $linkColor !important;
-                text-decoration: underline !important;
-            }
-            table {
-                max-width: 100% !important;
-            }
-            </style>
-        """.trimIndent()
+        if (result.contains("</body>", ignoreCase = true)) {
+            result = result.replace("</body>", "$attachmentsHtml</body>", ignoreCase = true)
+        } else if (result.contains("</html>", ignoreCase = true)) {
+            result = result.replace("</html>", "$attachmentsHtml</html>", ignoreCase = true)
+        } else {
+            result = "$result$attachmentsHtml"
+        }
 
         if (result.contains("<head>", ignoreCase = true)) {
             result = result.replace("<head>", "<head>$styleBlock", ignoreCase = true)
@@ -1063,38 +1052,9 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
             <!DOCTYPE html>
             <html>
             <head>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <style>
-            * { 
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-            }
-            html, body { 
-                margin: 0;
-                padding: ${if (isVerySmallScreen) "4px" else "12px"};
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-                font-size: ${textSize}px !important;
-                line-height: 1.6 !important;
-                word-wrap: break-word;
-            }
-            h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
-                font-size: ${textSize}px !important;
-            }
-            $darkModeCss
-            img { 
-                height: auto !important; 
-                max-width: 100% !important;
-            }
-            a {
-                color: $linkColor !important;
-                text-decoration: underline !important;
-            }
-            table {
-                max-width: 100% !important;
-            }
-            </style>
+            $styleBlock
             </head>
-            <body>$html</body>
+            <body>$html$attachmentsHtml</body>
             </html>
         """.trimIndent()
     }
@@ -1131,9 +1091,31 @@ fun HtmlView(html: String, isDark: Boolean, textSize: Float) {
                         webViewClient = object : WebViewClient() {
                             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
                                 if (url != null) {
-                                    val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                                    context.startActivity(intent)
-                                    return true
+                                    if (url.startsWith("attach:")) {
+                                        val attIdStr = url.substringAfter("attach:")
+                                        val attId = attIdStr.toIntOrNull()
+                                        val attachment = attachments.find { it.id == attId } ?: attachments.firstOrNull()
+                                        if (attachment != null && viewModel != null) {
+                                            if (attachment.localPath != null) {
+                                                openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
+                                            } else {
+                                                Toast.makeText(context, "Downloading attachment...", Toast.LENGTH_SHORT).show()
+                                                viewModel.downloadAttachment(attachment) { success ->
+                                                    if (success) {
+                                                        val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_${attachment.fileName}")
+                                                        openAttachmentFile(context, file, attachment.mimeType)
+                                                    } else {
+                                                        Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        return true
+                                    } else {
+                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
+                                        context.startActivity(intent)
+                                        return true
+                                    }
                                 }
                                 return false
                             }
