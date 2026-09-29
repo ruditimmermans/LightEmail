@@ -639,13 +639,13 @@ fun EmailDetailScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back to Email",
+                                            contentDescription = stringResource(R.string.back_to_email),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "Back to Email",
+                                            text = stringResource(R.string.back_to_email),
                                             fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.primary
@@ -683,13 +683,13 @@ fun EmailDetailScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back to Email",
+                                            contentDescription = stringResource(R.string.back_to_email),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "Back to Email",
+                                            text = stringResource(R.string.back_to_email),
                                             fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.primary
@@ -773,13 +773,13 @@ fun EmailDetailScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back to Email",
+                                            contentDescription = stringResource(R.string.back_to_email),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "Back to Email",
+                                            text = stringResource(R.string.back_to_email),
                                             fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.primary
@@ -817,13 +817,13 @@ fun EmailDetailScreen(
                                     ) {
                                         Icon(
                                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                            contentDescription = "Back to Email",
+                                            contentDescription = stringResource(R.string.back_to_email),
                                             tint = MaterialTheme.colorScheme.primary,
                                             modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
                                         )
                                         Spacer(modifier = Modifier.width(4.dp))
                                         Text(
-                                            text = "Back to Email",
+                                            text = stringResource(R.string.back_to_email),
                                             fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
                                             fontWeight = FontWeight.SemiBold,
                                             color = MaterialTheme.colorScheme.primary

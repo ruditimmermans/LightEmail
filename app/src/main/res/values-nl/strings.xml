@@ -3,6 +3,7 @@
     <string name="app_title">LightEmail</string>
     <string name="default_signature">Verzonden vanaf mijn Light Phone 3</string>
     <string name="back">Terug</string>
+    <string name="back_to_email">Terug naar e-mail</string>
     <string name="refresh">Vernieuwen</string>
     <string name="reply_sent">Antwoord verzonden</string>
     <string name="email_sent">E-mail verzonden</string>
