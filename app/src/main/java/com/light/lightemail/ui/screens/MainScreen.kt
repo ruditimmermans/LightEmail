@@ -262,8 +262,8 @@ fun MainScreen(
                             AnimatedContent(
                                 targetState = isTopLevelScreen,
                                 transitionSpec = {
-                                    fadeIn(animationSpec = tween(220, delayMillis = 90)) togetherWith
-                                            fadeOut(animationSpec = tween(90))
+                                    fadeIn(animationSpec = tween(150)) togetherWith
+                                            fadeOut(animationSpec = tween(150))
                                 }, label = "NavIcon"
                             ) { targetIsTopLevel ->
                                 if (targetIsTopLevel) {
@@ -603,64 +603,104 @@ fun EmailDetailScreen(
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
             if (email.htmlContent != null) {
-                // HTML Layout: Compact header + WebView + Collapsible Attachments
-                Column(modifier = Modifier.fillMaxSize()) {
-                    EmailHeader(
-                        email = email,
-                        textSize = textSize,
-                        isVerySmallScreen = isVerySmallScreen,
-                        isShortScreen = isShortScreen,
-                        hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
-                        attachmentsCount = attachments.size,
-                        isAttachmentsExpanded = showAttachments,
-                        onToggleAttachments = { showAttachments = !showAttachments },
-                        onAddContact = onAddContact
-                    )
-                    
-                    HorizontalDivider()
-                    
-                    Box(modifier = Modifier.weight(1f)) {
-                        HtmlView(
-                            html = email.htmlContent,
-                            isDark = isDark,
-                            textSize = textSize,
-                            attachments = attachments,
-                            showAttachments = showAttachments,
-                            viewModel = viewModel
-                        )
-                    }
-
+                // HTML Layout: Unified scrolling for Attachments, Email Header, and WebView
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     if (showAttachments && attachments.isNotEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surface)
-                                .padding(8.dp)
-                        ) {
-                            CalendarSection(
-                                attachments = attachments,
-                                textSize = textSize,
-                                viewModel = viewModel
-                            )
-                            if (regularAttachments.isNotEmpty()) {
-                                AttachmentSection(
-                                    attachments = regularAttachments,
-                                    expanded = true,
-                                    onToggle = { showAttachments = !showAttachments },
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(if (isVerySmallScreen) 8.dp else 16.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "ATTACHMENTS (${attachments.size})",
+                                        fontSize = (textSize * 0.85f).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    TextButton(
+                                        onClick = {
+                                            showAttachments = false
+                                            coroutineScope.launch {
+                                                lazyListState.scrollToItem(index = 0)
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back to Email",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Back to Email",
+                                            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                CalendarSection(
+                                    attachments = attachments,
                                     textSize = textSize,
                                     viewModel = viewModel
                                 )
+                                if (regularAttachments.isNotEmpty()) {
+                                    AttachmentSection(
+                                        attachments = regularAttachments,
+                                        expanded = true,
+                                        onToggle = { showAttachments = !showAttachments },
+                                        textSize = textSize,
+                                        viewModel = viewModel
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            showAttachments = false
+                                            coroutineScope.launch {
+                                                lazyListState.scrollToItem(index = 0)
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back to Email",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Back to Email",
+                                            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
                             }
                         }
                     }
-                }
-            } else {
-                // Plain Text Layout: Unified scrolling for everything
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(if (isVerySmallScreen) 8.dp else 16.dp)
-                ) {
+
                     item {
                         EmailHeader(
                             email = email,
@@ -675,7 +715,141 @@ fun EmailDetailScreen(
                                 showAttachments = nextShow
                                 if (nextShow && attachments.isNotEmpty()) {
                                     coroutineScope.launch {
-                                        lazyListState.animateScrollToItem(2)
+                                        lazyListState.animateScrollToItem(index = 0)
+                                    }
+                                }
+                            },
+                            onAddContact = onAddContact
+                        )
+                        HorizontalDivider()
+                    }
+
+                    item {
+                        HtmlView(
+                            html = email.htmlContent,
+                            isDark = isDark,
+                            textSize = textSize,
+                            attachments = emptyList(),
+                            showAttachments = false,
+                            viewModel = viewModel
+                        )
+                    }
+                }
+            } else {
+                // Plain Text Layout: Unified scrolling for everything
+                LazyColumn(
+                    state = lazyListState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(if (isVerySmallScreen) 8.dp else 16.dp)
+                ) {
+                    if (showAttachments && attachments.isNotEmpty()) {
+                        item {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(bottom = 8.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "ATTACHMENTS (${attachments.size})",
+                                        fontSize = (textSize * 0.85f).sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    TextButton(
+                                        onClick = {
+                                            showAttachments = false
+                                            coroutineScope.launch {
+                                                lazyListState.scrollToItem(index = 0)
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back to Email",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Back to Email",
+                                            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                CalendarSection(
+                                    attachments = attachments,
+                                    textSize = textSize,
+                                    viewModel = viewModel
+                                )
+                                if (regularAttachments.isNotEmpty()) {
+                                    AttachmentSection(
+                                        attachments = regularAttachments,
+                                        expanded = true,
+                                        onToggle = { showAttachments = !showAttachments },
+                                        textSize = textSize,
+                                        viewModel = viewModel
+                                    )
+                                }
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 4.dp),
+                                    horizontalArrangement = Arrangement.End
+                                ) {
+                                    TextButton(
+                                        onClick = {
+                                            showAttachments = false
+                                            coroutineScope.launch {
+                                                lazyListState.scrollToItem(index = 0)
+                                            }
+                                        },
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back to Email",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text(
+                                            text = "Back to Email",
+                                            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = MaterialTheme.colorScheme.primary
+                                        )
+                                    }
+                                }
+                                HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+                            }
+                        }
+                    }
+
+                    item {
+                        EmailHeader(
+                            email = email,
+                            textSize = textSize,
+                            isVerySmallScreen = isVerySmallScreen,
+                            isShortScreen = isShortScreen,
+                            hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
+                            attachmentsCount = attachments.size,
+                            isAttachmentsExpanded = showAttachments,
+                            onToggleAttachments = {
+                                val nextShow = !showAttachments
+                                showAttachments = nextShow
+                                if (nextShow && attachments.isNotEmpty()) {
+                                    coroutineScope.launch {
+                                        lazyListState.animateScrollToItem(index = 0)
                                     }
                                 }
                             },
@@ -712,26 +886,6 @@ fun EmailDetailScreen(
                         } else {
                             Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
-                            }
-                        }
-                    }
-                    
-                    if (showAttachments && attachments.isNotEmpty()) {
-                        item {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            CalendarSection(
-                                attachments = attachments,
-                                textSize = textSize,
-                                viewModel = viewModel
-                            )
-                            if (regularAttachments.isNotEmpty()) {
-                                AttachmentSection(
-                                    attachments = regularAttachments,
-                                    expanded = true,
-                                    onToggle = { showAttachments = !showAttachments },
-                                    textSize = textSize,
-                                    viewModel = viewModel
-                                )
                             }
                         }
                     }
@@ -825,30 +979,47 @@ fun EmailHeader(
                 modifier = Modifier.weight(1f)
             )
             if (hasAttachments || email.hasAttachments || attachmentsCount > 0) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .background(
-                            if (isAttachmentsExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                            else MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
-                            shape = CircleShape
-                        )
-                        .clickable { onToggleAttachments() }
-                        .padding(horizontal = if (isVerySmallScreen) 6.dp else 8.dp, vertical = if (isVerySmallScreen) 2.dp else 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AttachFile,
-                        contentDescription = "Toggle attachments",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(if (isVerySmallScreen) 22.dp else 26.dp)
+                Surface(
+                    onClick = { onToggleAttachments() },
+                    shape = CircleShape,
+                    color = if (isAttachmentsExpanded) {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                    } else {
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                    },
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        if (isAttachmentsExpanded) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
                     )
-                    if (attachmentsCount > 0) {
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(
+                            horizontal = if (isVerySmallScreen) 8.dp else 10.dp,
+                            vertical = if (isVerySmallScreen) 3.dp else 5.dp
+                        )
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AttachFile,
+                            contentDescription = "Attachments",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        val countText = if (attachmentsCount > 0) "$attachmentsCount" else "Attachments"
                         Text(
-                            text = "$attachmentsCount",
-                            fontSize = (textSize * 0.9f).sp,
+                            text = countText,
+                            fontSize = (if (isVerySmallScreen) textSize * 0.8f else textSize * 0.85f).sp,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 2.dp)
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Icon(
+                            imageVector = if (isAttachmentsExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                            contentDescription = if (isAttachmentsExpanded) "Collapse" else "Expand",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 18.dp)
                         )
                     }
                 }
@@ -968,6 +1139,31 @@ fun openUri(context: Context, uri: Uri) {
     }
 }
 
+fun getAttachmentIcon(fileName: String, mimeType: String): androidx.compose.ui.graphics.vector.ImageVector {
+    val ext = fileName.substringAfterLast('.', "").lowercase()
+    val mime = mimeType.lowercase()
+    return when {
+        ext == "pdf" || mime.contains("pdf") -> Icons.Default.PictureAsPdf
+        ext in listOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "svg") || mime.startsWith("image/") -> Icons.Default.Image
+        ext in listOf("mp4", "mkv", "mov", "avi", "webm") || mime.startsWith("video/") -> Icons.Default.Movie
+        ext in listOf("mp3", "wav", "m4a", "aac", "ogg", "flac") || mime.startsWith("audio/") -> Icons.Default.AudioFile
+        ext in listOf("zip", "rar", "7z", "tar", "gz") || mime.contains("zip") || mime.contains("compressed") -> Icons.Default.FolderZip
+        ext == "ics" || mime.contains("calendar") -> Icons.Default.Event
+        ext in listOf("doc", "docx", "txt", "rtf", "odt") || mime.contains("word") || mime.contains("text") -> Icons.Default.Description
+        ext in listOf("xls", "xlsx", "csv") || mime.contains("sheet") || mime.contains("excel") -> Icons.Default.TableChart
+        else -> Icons.Default.InsertDriveFile
+    }
+}
+
+fun formatFileSize(bytes: Long): String {
+    if (bytes <= 0) return "0 B"
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return String.format(java.util.Locale.US, "%.1f KB", kb)
+    val mb = kb / 1024.0
+    return String.format(java.util.Locale.US, "%.1f MB", mb)
+}
+
 @Composable
 fun AttachmentSection(
     attachments: List<Attachment>,
@@ -976,7 +1172,7 @@ fun AttachmentSection(
     textSize: Float,
     viewModel: EmailViewModel
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         attachments.forEach { attachment ->
             AttachmentItem(attachment, textSize, viewModel)
         }
@@ -990,11 +1186,16 @@ fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailView
     val isVerySmallScreen = configuration.screenHeightDp < 480
     var isDownloading by remember { mutableStateOf(false) }
 
-    Row(
+    val localFile = attachment.localPath?.let { java.io.File(it) }
+    val isDownloaded = localFile != null && localFile.exists()
+
+    val cardShape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(vertical = 4.dp)
             .clickable {
-                val localFile = attachment.localPath?.let { java.io.File(it) }
                 if (localFile != null && localFile.exists()) {
                     openAttachmentFile(context, localFile, attachment.mimeType)
                 } else {
@@ -1005,37 +1206,85 @@ fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailView
                             val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_${attachment.fileName}")
                             openAttachmentFile(context, file, attachment.mimeType)
                         } else {
-                            Toast.makeText(context, "Failed to download", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Failed to download attachment", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
-            }
-            .padding(vertical = 2.dp, horizontal = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+            },
+        shape = cardShape,
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+        )
     ) {
-        Icon(
-            imageVector = Icons.Default.AttachFile,
-            contentDescription = "Attachment",
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = attachment.fileName,
-            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.85f).sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            modifier = Modifier.weight(1f)
-        )
-        Spacer(modifier = Modifier.width(4.dp))
-        Text(
-            text = "${attachment.size / 1024} KB",
-            fontSize = (if (isVerySmallScreen) textSize * 0.65f else textSize * 0.75f).sp,
-            color = Color.Gray
-        )
-        if (isDownloading) {
-            Spacer(modifier = Modifier.width(4.dp))
-            CircularProgressIndicator(modifier = Modifier.size(12.dp), strokeWidth = 1.5.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(if (isVerySmallScreen) 32.dp else 38.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = getAttachmentIcon(attachment.fileName, attachment.mimeType),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(if (isVerySmallScreen) 18.dp else 22.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = attachment.fileName,
+                    fontSize = (if (isVerySmallScreen) textSize * 0.8f else textSize * 0.9f).sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = formatFileSize(attachment.size),
+                        fontSize = (if (isVerySmallScreen) textSize * 0.7f else textSize * 0.75f).sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = if (isDownloaded) "Tap to open" else "Tap to download",
+                        fontSize = (if (isVerySmallScreen) textSize * 0.68f else textSize * 0.72f).sp,
+                        fontWeight = FontWeight.Medium,
+                        color = if (isDownloaded) MaterialTheme.colorScheme.primary else Color.Gray
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            if (isDownloading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(20.dp),
+                    strokeWidth = 2.dp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            } else {
+                Icon(
+                    imageVector = if (isDownloaded) Icons.AutoMirrored.Filled.OpenInNew else Icons.Default.Download,
+                    contentDescription = if (isDownloaded) "Open file" else "Download file",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(if (isVerySmallScreen) 18.dp else 20.dp)
+                )
+            }
         }
     }
 }
@@ -1270,7 +1519,10 @@ fun HtmlView(
                         // Enable algorithmic darkening for better dark mode support (API 33+)
                         settings.isAlgorithmicDarkeningAllowed = isDark
                         
-                        setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                        val bgArgb = if (isDark) android.graphics.Color.parseColor("#121212") else android.graphics.Color.WHITE
+                        setBackgroundColor(bgArgb)
+                        loadDataWithBaseURL("https://light-email.local/", styledHtml, "text/html", "utf-8", null)
+                        lastLoadedHtml.value = styledHtml
                     }
                 } catch (e: Exception) {
                     webViewError = true
@@ -1279,16 +1531,12 @@ fun HtmlView(
             },
             update = { webView ->
                 if (webView is WebView) {
+                    val bgArgb = if (isDark) android.graphics.Color.parseColor("#121212") else android.graphics.Color.WHITE
+                    webView.setBackgroundColor(bgArgb)
                     webView.settings.isAlgorithmicDarkeningAllowed = isDark
                     if (lastLoadedHtml.value != styledHtml) {
                         webView.loadDataWithBaseURL("https://light-email.local/", styledHtml, "text/html", "utf-8", null)
                         lastLoadedHtml.value = styledHtml
-                        if (showAttachments) {
-                            webView.postDelayed({
-                                webView.evaluateJavascript("window.scrollTo(0, document.body.scrollHeight);", null)
-                                webView.pageDown(true)
-                            }, 200)
-                        }
                     }
                 }
             },
