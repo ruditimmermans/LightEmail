@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
+import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
@@ -17,8 +18,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,7 +29,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -45,19 +50,24 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import android.webkit.MimeTypeMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -587,6 +597,9 @@ fun EmailDetailScreen(
     }
     var showAttachments by remember { mutableStateOf(false) }
 
+    val lazyListState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
+
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
             if (email.htmlContent != null) {
@@ -616,10 +629,35 @@ fun EmailDetailScreen(
                             viewModel = viewModel
                         )
                     }
+
+                    if (showAttachments && attachments.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surface)
+                                .padding(8.dp)
+                        ) {
+                            CalendarSection(
+                                attachments = attachments,
+                                textSize = textSize,
+                                viewModel = viewModel
+                            )
+                            if (regularAttachments.isNotEmpty()) {
+                                AttachmentSection(
+                                    attachments = regularAttachments,
+                                    expanded = true,
+                                    onToggle = { showAttachments = !showAttachments },
+                                    textSize = textSize,
+                                    viewModel = viewModel
+                                )
+                            }
+                        }
+                    }
                 }
             } else {
                 // Plain Text Layout: Unified scrolling for everything
                 LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(if (isVerySmallScreen) 8.dp else 16.dp)
                 ) {
@@ -632,7 +670,15 @@ fun EmailDetailScreen(
                             hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
                             attachmentsCount = attachments.size,
                             isAttachmentsExpanded = showAttachments,
-                            onToggleAttachments = { showAttachments = !showAttachments },
+                            onToggleAttachments = {
+                                val nextShow = !showAttachments
+                                showAttachments = nextShow
+                                if (nextShow && attachments.isNotEmpty()) {
+                                    coroutineScope.launch {
+                                        lazyListState.animateScrollToItem(2)
+                                    }
+                                }
+                            },
                             onAddContact = onAddContact
                         )
                         Spacer(modifier = Modifier.height(8.dp))
@@ -830,26 +876,95 @@ fun CalendarSection(
     }
 }
 
+fun getEffectiveMimeType(file: java.io.File, givenMimeType: String?): String {
+    val extension = file.extension.lowercase()
+    if (extension == "ics") return "text/calendar"
+
+    val mapMime = MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
+    if (!mapMime.isNullOrBlank()) {
+        return mapMime
+    }
+
+    if (!givenMimeType.isNullOrBlank() && 
+        givenMimeType != "application/octet-stream" && 
+        givenMimeType != "*/*") {
+        return givenMimeType
+    }
+
+    return "*/*"
+}
+
 fun openAttachmentFile(context: Context, file: java.io.File, mimeType: String) {
+    if (!file.exists()) {
+        Toast.makeText(context, "Attachment file does not exist", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val finalMimeType = getEffectiveMimeType(file, mimeType)
+
     try {
         val uri = androidx.core.content.FileProvider.getUriForFile(
             context,
             "${context.packageName}.fileprovider",
             file
         )
-        val finalMimeType = if (file.name.lowercase().endsWith(".ics")) "text/calendar" else mimeType
-        val intent = Intent(Intent.ACTION_VIEW).apply {
+
+        val viewIntent = Intent(Intent.ACTION_VIEW).apply {
             setDataAndType(uri, finalMimeType)
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        context.startActivity(intent)
+
+        val chooserIntent = Intent.createChooser(viewIntent, "Open ${file.name} with").apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        context.startActivity(chooserIntent)
     } catch (e: Exception) {
-        val errorMessage = if (file.name.lowercase().endsWith(".ics")) {
-            "No calendar app found to open this invitation"
-        } else {
-            "No app found to open this file"
+        // Fallback to generic */*
+        try {
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file
+            )
+            val fallbackIntent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "*/*")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            val chooserIntent = Intent.createChooser(fallbackIntent, "Open ${file.name} with").apply {
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(chooserIntent)
+        } catch (e2: Exception) {
+            val errorMessage = if (file.name.lowercase().endsWith(".ics")) {
+                "No calendar app found to open this invitation"
+            } else {
+                "No app found to open this file"
+            }
+            Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
         }
-        Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+    }
+}
+
+fun openUri(context: Context, uri: Uri) {
+    try {
+        val mimeType = context.contentResolver.getType(uri) ?: "*/*"
+        val viewIntent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, mimeType)
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        val chooserIntent = Intent.createChooser(viewIntent, "Open file with").apply {
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(chooserIntent)
+    } catch (e: Exception) {
+        Toast.makeText(context, "No app found to open this file", Toast.LENGTH_SHORT).show()
     }
 }
 
@@ -879,8 +994,9 @@ fun AttachmentItem(attachment: Attachment, textSize: Float, viewModel: EmailView
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                if (attachment.localPath != null) {
-                    openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
+                val localFile = attachment.localPath?.let { java.io.File(it) }
+                if (localFile != null && localFile.exists()) {
+                    openAttachmentFile(context, localFile, attachment.mimeType)
                 } else {
                     isDownloading = true
                     viewModel.downloadAttachment(attachment) { success ->
@@ -988,6 +1104,8 @@ fun HtmlView(
         * { 
             max-width: 100% !important;
             box-sizing: border-box !important;
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
         body { 
             margin: 0;
@@ -996,6 +1114,8 @@ fun HtmlView(
             font-size: ${textSize}px !important;
             line-height: 1.6 !important;
             word-wrap: break-word;
+            user-select: text !important;
+            -webkit-user-select: text !important;
         }
         h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
             font-size: ${textSize}px !important;
@@ -1089,15 +1209,25 @@ fun HtmlView(
                 try {
                     WebView(context).apply {
                         webViewClient = object : WebViewClient() {
+                            override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                return handleUrl(request?.url?.toString())
+                            }
+
+                            @Deprecated("Deprecated in Java")
                             override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                                return handleUrl(url)
+                            }
+
+                            private fun handleUrl(url: String?): Boolean {
                                 if (url != null) {
                                     if (url.startsWith("attach:")) {
                                         val attIdStr = url.substringAfter("attach:")
                                         val attId = attIdStr.toIntOrNull()
                                         val attachment = attachments.find { it.id == attId } ?: attachments.firstOrNull()
                                         if (attachment != null && viewModel != null) {
-                                            if (attachment.localPath != null) {
-                                                openAttachmentFile(context, java.io.File(attachment.localPath), attachment.mimeType)
+                                            val localFile = attachment.localPath?.let { java.io.File(it) }
+                                            if (localFile != null && localFile.exists()) {
+                                                openAttachmentFile(context, localFile, attachment.mimeType)
                                             } else {
                                                 Toast.makeText(context, "Downloading attachment...", Toast.LENGTH_SHORT).show()
                                                 viewModel.downloadAttachment(attachment) { success ->
@@ -1112,8 +1242,14 @@ fun HtmlView(
                                         }
                                         return true
                                     } else {
-                                        val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url))
-                                        context.startActivity(intent)
+                                        try {
+                                            val intent = android.content.Intent(android.content.Intent.ACTION_VIEW, android.net.Uri.parse(url)).apply {
+                                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(context, "Cannot open link", Toast.LENGTH_SHORT).show()
+                                        }
                                         return true
                                     }
                                 }
@@ -1147,6 +1283,12 @@ fun HtmlView(
                     if (lastLoadedHtml.value != styledHtml) {
                         webView.loadDataWithBaseURL("https://light-email.local/", styledHtml, "text/html", "utf-8", null)
                         lastLoadedHtml.value = styledHtml
+                        if (showAttachments) {
+                            webView.postDelayed({
+                                webView.evaluateJavascript("window.scrollTo(0, document.body.scrollHeight);", null)
+                                webView.pageDown(true)
+                            }, 200)
+                        }
                     }
                 }
             },
@@ -1384,6 +1526,7 @@ fun ComposeEmailScreen(
                                 .fillMaxWidth()
                                 .padding(vertical = 2.dp)
                                 .background(Color.Gray.copy(alpha = 0.1f))
+                                .clickable { openUri(context, uri) }
                                 .padding(4.dp)
                         ) {
                             Icon(Icons.Default.AttachFile, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -2048,6 +2191,7 @@ fun LightToggleRow(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun LightTextField(
     value: String,
@@ -2062,6 +2206,19 @@ fun LightTextField(
     trailingIcon: @Composable (() -> Unit)? = null,
     focusRequester: FocusRequester? = null
 ) {
+    val clipboardManager = LocalClipboardManager.current
+    var textFieldValueState by remember {
+        mutableStateOf(TextFieldValue(text = value, selection = TextRange(value.length)))
+    }
+
+    LaunchedEffect(value) {
+        if (value != textFieldValueState.text) {
+            textFieldValueState = textFieldValueState.copy(text = value, selection = TextRange(value.length))
+        }
+    }
+
+    var showMenu by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
             text = label.uppercase(),
@@ -2070,28 +2227,114 @@ fun LightTextField(
             color = Color.Gray,
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            val textFieldModifier = if (focusRequester != null) {
-                Modifier.weight(1f).focusRequester(focusRequester)
-            } else {
-                Modifier.weight(1f)
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                val baseModifier = if (focusRequester != null) {
+                    Modifier.weight(1f).focusRequester(focusRequester)
+                } else {
+                    Modifier.weight(1f)
+                }
+                val textFieldModifier = baseModifier.combinedClickable(
+                    onClick = {},
+                    onLongClick = {
+                        val hasSelection = !textFieldValueState.selection.collapsed
+                        val hasClipboard = !clipboardManager.getText()?.text.isNullOrEmpty()
+                        if (hasSelection || hasClipboard || value.isNotEmpty()) {
+                            showMenu = true
+                        }
+                    }
+                )
+
+                BasicTextField(
+                    value = textFieldValueState,
+                    onValueChange = { newValue ->
+                        textFieldValueState = newValue
+                        if (newValue.text != value) {
+                            onValueChange(newValue.text)
+                        }
+                    },
+                    modifier = textFieldModifier,
+                    textStyle = LocalTextStyle.current.copy(
+                        fontSize = textSize.sp,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
+                    singleLine = singleLine,
+                    minLines = minLines,
+                    keyboardOptions = keyboardOptions,
+                    visualTransformation = visualTransformation
+                )
+                if (trailingIcon != null) {
+                    trailingIcon()
+                }
             }
-            BasicTextField(
-                value = value,
-                onValueChange = onValueChange,
-                modifier = textFieldModifier,
-                textStyle = LocalTextStyle.current.copy(
-                    fontSize = textSize.sp,
-                    color = MaterialTheme.colorScheme.onBackground
-                ),
-                cursorBrush = SolidColor(MaterialTheme.colorScheme.onBackground),
-                singleLine = singleLine,
-                minLines = minLines,
-                keyboardOptions = keyboardOptions,
-                visualTransformation = visualTransformation
-            )
-            if (trailingIcon != null) {
-                trailingIcon()
+
+            val hasSelection = !textFieldValueState.selection.collapsed
+            val clipboardText = clipboardManager.getText()?.text
+            val hasClipboard = !clipboardText.isNullOrEmpty()
+
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false }
+            ) {
+                if (hasSelection) {
+                    DropdownMenuItem(
+                        text = { Text("Cut") },
+                        onClick = {
+                            val selectedText = textFieldValueState.text.substring(
+                                textFieldValueState.selection.min,
+                                textFieldValueState.selection.max
+                            )
+                            clipboardManager.setText(AnnotatedString(selectedText))
+                            val newText = textFieldValueState.text.removeRange(
+                                textFieldValueState.selection.min,
+                                textFieldValueState.selection.max
+                            )
+                            val newSelection = TextRange(textFieldValueState.selection.min)
+                            textFieldValueState = TextFieldValue(newText, selection = newSelection)
+                            onValueChange(newText)
+                            showMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("Copy") },
+                        onClick = {
+                            val selectedText = textFieldValueState.text.substring(
+                                textFieldValueState.selection.min,
+                                textFieldValueState.selection.max
+                            )
+                            clipboardManager.setText(AnnotatedString(selectedText))
+                            showMenu = false
+                        }
+                    )
+                }
+                if (hasClipboard) {
+                    DropdownMenuItem(
+                        text = { Text("Paste") },
+                        onClick = {
+                            val pasteText = clipboardText ?: ""
+                            val currentText = textFieldValueState.text
+                            val min = textFieldValueState.selection.min
+                            val max = textFieldValueState.selection.max
+                            val newText = currentText.replaceRange(min, max, pasteText)
+                            val newSelection = TextRange(min + pasteText.length)
+                            textFieldValueState = TextFieldValue(newText, selection = newSelection)
+                            onValueChange(newText)
+                            showMenu = false
+                        }
+                    )
+                }
+                if (value.isNotEmpty()) {
+                    DropdownMenuItem(
+                        text = { Text("Select All") },
+                        onClick = {
+                            textFieldValueState = textFieldValueState.copy(
+                                selection = TextRange(0, textFieldValueState.text.length)
+                            )
+                            showMenu = false
+                        }
+                    )
+                }
             }
         }
         HorizontalDivider(
