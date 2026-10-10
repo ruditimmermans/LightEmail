@@ -1,29 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Circular Ring -->
+    <!-- Inner Subtle Glow Ring (radius 31dp, well within 33dp safe circle) -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3"
-        android:pathData="M54,54m-38,0a38,38 0,1 1,76 0a38,38 0,1 1,-76 0" />
+        android:strokeColor="#40FFFFFF"
+        android:strokeWidth="1.5"
+        android:pathData="M54,54m-31,0a31,31 0,1 1,62 0a31,31 0,1 1,-62 0" />
 
-    <!-- Envelope Outline -->
+    <!-- Envelope Body Base (White) -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3"
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M34,37h40c3.3,0 6,2.7 6,6v24c0,3.3 -2.7,6 -6,6h-40c-3.3,0 -6,-2.7 -6,-6v-24c0,-3.3 2.7,-6 6,-6z" />
+
+    <!-- Envelope Interior / Flap Shadow Overlay -->
+    <path
+        android:fillColor="#150052D4"
+        android:pathData="M28,43l26,19l26,-19v24c0,3.3 -2.7,6 -6,6h-40c-3.3,0 -6,-2.7 -6,-6z" />
+
+    <!-- Envelope Bottom Folds -->
+    <path
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1.5"
+        android:strokeLineCap="round"
+        android:pathData="M28,68l20,-15 M80,68l-20,-15" />
+
+    <!-- Top Flap Stroke (Crisp White & Accent Blue) -->
+    <path
+        android:strokeColor="#0066FF"
+        android:strokeWidth="2.5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M34,42h40c2.2,0 4,1.8 4,4v20c0,2.2 -1.8,4 -4,4h-40c-2.2,0 -4,-1.8 -4,-4v-20c0,-2.2 1.8,-4 4,-4z" />
+        android:pathData="M28,41l26,19l26,-19" />
 
-    <!-- Envelope Flap -->
+    <!-- Light Sparkle Accent (Top Right) -->
     <path
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="3"
-        android:strokeLineCap="round"
-        android:strokeLineJoin="round"
-        android:pathData="M34,44l20,14l20,-14" />
-
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M75,26l1.2,2.8l2.8,1.2l-2.8,1.2l-1.2,2.8l-1.2,-2.8l-2.8,-1.2l2.8,-1.2z" />
 </vector>
