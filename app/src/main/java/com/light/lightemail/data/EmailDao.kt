@@ -30,11 +30,14 @@ interface EmailDao {
     @Query("UPDATE emails SET hasAttachments = :hasAttachments WHERE uid = :uid AND folder = :folder")
     suspend fun updateHasAttachments(uid: Long, folder: String, hasAttachments: Boolean)
 
+    @Query("SELECT * FROM emails WHERE folder = :folder ORDER BY uid DESC")
+    suspend fun getEmailsListByFolder(folder: String): List<EmailMessage>
+
     @Query("DELETE FROM emails WHERE uid = :uid AND folder = :folder")
     suspend fun deleteEmail(uid: Long, folder: String)
 
-    @Query("DELETE FROM emails WHERE folder = :folder AND uid NOT IN (:uids)")
-    suspend fun deleteOldEmails(folder: String, uids: List<Long>)
+    @Query("DELETE FROM emails WHERE folder = :folder AND uid >= :minUid AND uid NOT IN (:uids)")
+    suspend fun deleteOldEmailsInRange(folder: String, minUid: Long, uids: List<Long>)
 
     @Query("DELETE FROM emails WHERE folder = :folder")
     suspend fun clearFolder(folder: String)

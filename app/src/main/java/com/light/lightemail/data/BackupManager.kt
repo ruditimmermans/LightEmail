@@ -56,19 +56,13 @@ class BackupManager(private val context: Context) {
                     val key = keys.next()
                     if (prefsJson.isNull(key)) continue
                     
-                    when (key) {
-                        "email", "password", "host", "smtp_host", "smtp_port", "sender_name", "signature" -> {
-                            editor.putString(key, prefsJson.getString(key))
-                        }
-                        "enable_push", "use_color_mode", "auto_check_updates" -> {
-                            editor.putBoolean(key, prefsJson.getBoolean(key))
-                        }
-                        "text_size", "header_text_size" -> {
-                            editor.putFloat(key, prefsJson.getDouble(key).toFloat())
-                        }
-                        "last_seen_uid", "last_unread_count" -> {
-                            editor.putLong(key, prefsJson.getLong(key))
-                        }
+                    when (val value = prefsJson.get(key)) {
+                        is String -> editor.putString(key, value)
+                        is Boolean -> editor.putBoolean(key, value)
+                        is Double -> editor.putFloat(key, value.toFloat())
+                        is Float -> editor.putFloat(key, value)
+                        is Long -> editor.putLong(key, value)
+                        is Int -> editor.putLong(key, value.toLong())
                     }
                 }
                 editor.apply()

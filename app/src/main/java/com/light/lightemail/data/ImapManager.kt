@@ -77,20 +77,15 @@ class ImapManager {
                 }
             })
 
-            while (!Thread.interrupted() && store.isConnected) {
+            while (!Thread.currentThread().isInterrupted && store.isConnected) {
                 if (!folder.isOpen) folder.open(Folder.READ_ONLY)
                 
                 try {
                     // Start IDLE. This blocks until a message arrives or server kicks us.
                     folder.idle()
                 } catch (e: Exception) {
-                    // If IDLE fails, try to recover
-                    if (!store.isConnected) break
+                    if (e is InterruptedException || Thread.currentThread().isInterrupted || !store.isConnected) break
                 }
-                
-                // Periodically check if connection is still alive if idle() returns
-                // or just loop back and re-enter IDLE.
-                // Some servers time out after 29-30 minutes.
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -473,8 +468,8 @@ class ImapManager {
     }
 
     private fun stripHtml(html: String): String {
-        return html.replace(Regex("<style.*?>.*?</style>", RegexOption.DOT_MATCHES_ALL), "")
-            .replace(Regex("<script.*?>.*?</script>", RegexOption.DOT_MATCHES_ALL), "")
+        return html.replace(Regex("(?s)<style.*?>.*?</style>"), "")
+            .replace(Regex("(?s)<script.*?>.*?</script>"), "")
             .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
             .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n\n")
             .replace(Regex("</div>", RegexOption.IGNORE_CASE), "\n")
@@ -630,28 +625,30 @@ class ImapManager {
         }
     }
 
-    fun deleteEmail(email: String, password: String, host: String, folderName: String, messageId: Int): Boolean {
+    fun deleteEmail(email: String, password: String, host: String, folderName: String, uid: Long): Boolean {
         val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val folder = store.getFolder(folderName)
+            val folder = store.getFolder(folderName) as IMAPFolder
             folder.open(Folder.READ_WRITE)
-            val message = folder.getMessage(messageId)
+            val message = folder.getMessageByUID(uid)
 
-            if (folderName.lowercase().contains("trash")) {
-                message.setFlag(Flags.Flag.DELETED, true)
-            } else {
-                val trashFolder = store.defaultFolder.list().find { it.name.lowercase().contains("trash") }
-                    ?: store.getFolder("Trash")
-                if (!trashFolder.exists()) trashFolder.create(Folder.HOLDS_MESSAGES)
-                folder.copyMessages(arrayOf(message), trashFolder)
-                message.setFlag(Flags.Flag.DELETED, true)
+            if (message != null) {
+                if (folderName.lowercase().contains("trash")) {
+                    message.setFlag(Flags.Flag.DELETED, true)
+                } else {
+                    val trashFolder = store.defaultFolder.list().find { it.name.lowercase().contains("trash") }
+                        ?: store.getFolder("Trash")
+                    if (!trashFolder.exists()) trashFolder.create(Folder.HOLDS_MESSAGES)
+                    folder.copyMessages(arrayOf(message), trashFolder)
+                    message.setFlag(Flags.Flag.DELETED, true)
+                }
+                folder.expunge()
             }
             
-            folder.expunge()
             folder.close(true)
             store.close()
             true
@@ -661,17 +658,17 @@ class ImapManager {
         }
     }
 
-    fun markAsRead(email: String, password: String, host: String, folderName: String, messageId: Int): Boolean {
+    fun markAsRead(email: String, password: String, host: String, folderName: String, uid: Long): Boolean {
         val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val folder = store.getFolder(folderName)
+            val folder = store.getFolder(folderName) as IMAPFolder
             folder.open(Folder.READ_WRITE)
-            val message = folder.getMessage(messageId)
-            message.setFlag(Flags.Flag.SEEN, true)
+            val message = folder.getMessageByUID(uid)
+            message?.setFlag(Flags.Flag.SEEN, true)
             folder.close(true)
             store.close()
             true

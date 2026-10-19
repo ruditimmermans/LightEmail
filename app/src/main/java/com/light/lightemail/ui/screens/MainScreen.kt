@@ -3,6 +3,7 @@ package com.light.lightemail.ui.screens
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
 import android.view.View
@@ -23,6 +24,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -139,6 +142,18 @@ fun MainScreen(
     val isVerySmallScreen = configuration.screenHeightDp < 480
     val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
     val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
+
+    // Intercept Back button press to return to Home or close drawer/modals
+    androidx.activity.compose.BackHandler(enabled = drawerState.isOpen) {
+        scope.launch { drawerState.close() }
+    }
+
+    androidx.activity.compose.BackHandler(enabled = currentScreen != Screen.Home && !drawerState.isOpen) {
+        if (currentScreen == Screen.Compose) {
+            viewModel.clearPendingAttachments()
+        }
+        currentScreen = Screen.Home
+    }
 
     // Handle deep link from notification
     LaunchedEffect(initialEmailUid, emails) {
@@ -493,7 +508,7 @@ fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, t
             }
         } else {
             LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(emails.itemCount, key = emails.itemKey { it.uid }) { index ->
+                items(emails.itemCount, key = emails.itemKey { "${it.folder}_${it.uid}" }) { index ->
                     val email = emails[index]
                     if (email != null) {
                         Row(
@@ -960,6 +975,7 @@ fun openAttachmentFile(context: Context, file: java.io.File, mimeType: String) {
         val chooserIntent = Intent.createChooser(viewIntent, "Open ${file.name} with").apply {
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            clipData = android.content.ClipData.newRawUri("", uri)
         }
 
         context.startActivity(chooserIntent)
@@ -1388,7 +1404,9 @@ fun HtmlView(
                         settings.displayZoomControls = false
                         
                         // Enable algorithmic darkening for better dark mode support (API 33+)
-                        settings.isAlgorithmicDarkeningAllowed = isDark
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            settings.isAlgorithmicDarkeningAllowed = isDark
+                        }
                         
                         val bgArgb = if (isDark) android.graphics.Color.parseColor("#121212") else android.graphics.Color.WHITE
                         setBackgroundColor(bgArgb)
@@ -1404,7 +1422,9 @@ fun HtmlView(
                 if (webView is WebView) {
                     val bgArgb = if (isDark) android.graphics.Color.parseColor("#121212") else android.graphics.Color.WHITE
                     webView.setBackgroundColor(bgArgb)
-                    webView.settings.isAlgorithmicDarkeningAllowed = isDark
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        webView.settings.isAlgorithmicDarkeningAllowed = isDark
+                    }
                     if (lastLoadedHtml.value != styledHtml) {
                         webView.loadDataWithBaseURL("https://light-email.local/", styledHtml, "text/html", "utf-8", null)
                         lastLoadedHtml.value = styledHtml
@@ -1491,6 +1511,10 @@ fun ComposeEmailScreen(
     var content by remember(initialBody) { mutableStateOf(initialBody) }
     var showContactPicker by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
+
+    androidx.activity.compose.BackHandler(enabled = showContactPicker) {
+        showContactPicker = false
+    }
 
     val toFocusRequester = remember { FocusRequester() }
     val contentFocusRequester = remember { FocusRequester() }
@@ -2353,16 +2377,17 @@ fun LightTextField(
                 } else {
                     Modifier.weight(1f)
                 }
-                val textFieldModifier = baseModifier.combinedClickable(
-                    onClick = {},
-                    onLongClick = {
-                        val hasSelection = !textFieldValueState.selection.collapsed
-                        val hasClipboard = !clipboardManager.getText()?.text.isNullOrEmpty()
-                        if (hasSelection || hasClipboard || value.isNotEmpty()) {
-                            showMenu = true
+                val textFieldModifier = baseModifier.pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = {
+                            val hasSelection = !textFieldValueState.selection.collapsed
+                            val hasClipboard = !clipboardManager.getText()?.text.isNullOrEmpty()
+                            if (hasSelection || hasClipboard || value.isNotEmpty()) {
+                                showMenu = true
+                            }
                         }
-                    }
-                )
+                    )
+                }
 
                 BasicTextField(
                     value = textFieldValueState,

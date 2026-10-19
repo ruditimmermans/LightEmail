@@ -15,6 +15,10 @@ class EmailRepository(private val context: Context) {
         return emailDao.getEmailsByFolder(folder)
     }
 
+    suspend fun getEmailsList(folder: String): List<EmailMessage> {
+        return emailDao.getEmailsListByFolder(folder)
+    }
+
     fun getEmailsPaging(folder: String) = emailDao.getEmailsPaging(folder)
 
     suspend fun syncEmails(
@@ -59,8 +63,11 @@ class EmailRepository(private val context: Context) {
                 }
             }
 
-            // 5. Cleanup: delete emails that are no longer on the server (within our limit)
-            emailDao.deleteOldEmails(folder, latestUids)
+            // 5. Cleanup: delete emails that are no longer on the server within our fetched UID range
+            val minUid = latestUids.minOrNull()
+            if (minUid != null) {
+                emailDao.deleteOldEmailsInRange(folder, minUid, latestUids)
+            }
 
         } catch (e: Exception) {
             e.printStackTrace()
@@ -113,16 +120,12 @@ class EmailRepository(private val context: Context) {
         password: String,
         host: String,
         folder: String,
-        uid: Long,
-        messageId: Int
+        uid: Long
     ) = withContext(Dispatchers.IO) {
         // Optimistic update
         emailDao.updateReadStatus(uid, folder, true)
         
-        val success = imapManager.markAsRead(email, password, host, folder, messageId)
-        if (!success) {
-            // Revert if failed? Or just let next sync fix it.
-        }
+        imapManager.markAsRead(email, password, host, folder, uid)
     }
 
     suspend fun deleteEmail(
@@ -130,16 +133,12 @@ class EmailRepository(private val context: Context) {
         password: String,
         host: String,
         folder: String,
-        uid: Long,
-        messageId: Int
+        uid: Long
     ) = withContext(Dispatchers.IO) {
         // Optimistic update
         emailDao.deleteEmail(uid, folder)
         
-        val success = imapManager.deleteEmail(email, password, host, folder, messageId)
-        if (!success) {
-            // Revert or let next sync fix it
-        }
+        imapManager.deleteEmail(email, password, host, folder, uid)
     }
     
     suspend fun clearCache(folder: String) {

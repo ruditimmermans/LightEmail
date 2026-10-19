@@ -219,11 +219,19 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun updatePushService(enabled: Boolean) {
-        val intent = android.content.Intent(getApplication(), com.light.lightemail.service.EmailPushService::class.java)
-        if (enabled) {
-            getApplication<Application>().startForegroundService(intent)
-        } else {
-            getApplication<Application>().stopService(intent)
+        try {
+            val intent = android.content.Intent(getApplication(), com.light.lightemail.service.EmailPushService::class.java)
+            if (enabled) {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    getApplication<Application>().startForegroundService(intent)
+                } else {
+                    getApplication<Application>().startService(intent)
+                }
+            } else {
+                getApplication<Application>().stopService(intent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -252,8 +260,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _accountPassword.value,
                 _imapHost.value,
                 emailMessage.folder,
-                emailMessage.uid,
-                emailMessage.id.toInt()
+                emailMessage.uid
             )
             // Update folders to reflect unread count change
             refreshFolders()
@@ -298,7 +305,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             // Only show loading if we don't have any emails cached for this folder yet
-            val currentList = repository.getEmails(folder).first()
+            val currentList = repository.getEmailsList(folder)
             if (showLoading && currentList.isEmpty()) _isLoading.value = true
             
             try {
@@ -311,7 +318,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 
                 // Pre-fetch content for the latest emails in the background
                 viewModelScope.launch(Dispatchers.IO) {
-                    val updatedEmails = repository.getEmails(folder).first()
+                    val updatedEmails = repository.getEmailsList(folder)
                     updatedEmails.take(10).forEach { emailMsg ->
                         if (emailMsg.content.isEmpty() || emailMsg.content == getApplication<Application>().getString(R.string.error_reading_content)) {
                             repository.fetchEmailContent(
@@ -326,7 +333,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
                 // Update last seen UID and count for notifications (using cached data)
                 if (folder == "Inbox") {
-                    val currentEmails = repository.getEmails(folder).first()
+                    val currentEmails = repository.getEmailsList(folder)
                     if (currentEmails.isNotEmpty()) {
                         val latestUid = currentEmails.first().uid
                         val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
@@ -359,8 +366,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _accountPassword.value,
                 _imapHost.value,
                 emailMessage.folder,
-                emailMessage.uid,
-                emailMessage.id.toInt()
+                emailMessage.uid
             )
             refreshFolders()
         }
