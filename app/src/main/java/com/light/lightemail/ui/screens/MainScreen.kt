@@ -2239,69 +2239,354 @@ fun AboutScreen(viewModel: EmailViewModel) {
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
+    val isSquareScreen = configuration.screenWidthDp.toFloat() / configuration.screenHeightDp > 0.8f
     val isVerySmallScreen = configuration.screenHeightDp < 480
+    val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
 
-    val versionName = try {
-        context.packageManager.getPackageInfo(context.packageName, 0).versionName
-    } catch (e: Exception) {
-        "1.0"
+    val versionName = remember(context) {
+        try {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0"
+        } catch (e: Exception) {
+            "1.0"
+        }
     }
+
+    var showFullLicense by remember { mutableStateOf(false) }
+
+    val horizontalPadding = if (isVerySmallScreen) 12.dp else if (isLP3) 16.dp else 20.dp
+    val verticalSpacing = if (isVerySmallScreen) 12.dp else if (isLP3) 16.dp else 20.dp
 
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (isVerySmallScreen) 16.dp else 24.dp)
-            .verticalScroll(rememberScrollState()),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = horizontalPadding, vertical = if (isVerySmallScreen) 12.dp else 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Top
     ) {
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 16.dp else 32.dp))
+        // App Header & Branding Card
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(if (isVerySmallScreen) 16.dp else 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Icon Badge
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(if (isVerySmallScreen) 48.dp else 60.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_envelope),
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            modifier = Modifier.size(if (isVerySmallScreen) 26.dp else 32.dp)
+                        )
+                    }
+                }
 
-        Text(
-            text = stringResource(R.string.app_title).uppercase(),
-            fontWeight = FontWeight.ExtraBold,
-            fontSize = if (isVerySmallScreen) 24.sp else if (isShortScreen) 32.sp else 48.sp,
-            letterSpacing = if (isShortScreen) 2.sp else 4.sp,
-            textAlign = TextAlign.Center
-        )
-        Text(
-            text = stringResource(R.string.version_label, versionName ?: "1.0").uppercase(),
-            fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center
-        )
+                Spacer(modifier = Modifier.height(12.dp))
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 24.dp else 48.dp))
-        Text(
-            text = stringResource(R.string.app_description),
-            textAlign = TextAlign.Center,
-            fontSize = if (isVerySmallScreen) 14.sp else 18.sp,
-            lineHeight = if (isVerySmallScreen) 20.sp else 28.sp,
-            modifier = Modifier.fillMaxWidth()
-        )
+                Text(
+                    text = stringResource(R.string.app_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (isVerySmallScreen) 22.sp else 26.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 24.dp else 48.dp))
+                Spacer(modifier = Modifier.height(4.dp))
 
+                Text(
+                    text = stringResource(R.string.app_tagline),
+                    fontSize = if (isVerySmallScreen) 13.sp else 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Version Badge
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.secondaryContainer
+                ) {
+                    Text(
+                        text = stringResource(R.string.version_label, versionName),
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(verticalSpacing))
+
+        // Key Features Card
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(if (isVerySmallScreen) 14.dp else 18.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.key_features_title),
+                    fontWeight = FontWeight.Bold,
+                    fontSize = if (isVerySmallScreen) 15.sp else 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                AboutFeatureItem(
+                    icon = Icons.Outlined.Layers,
+                    title = stringResource(R.string.feature_minimal_title),
+                    description = stringResource(R.string.feature_minimal_desc),
+                    isVerySmallScreen = isVerySmallScreen
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                AboutFeatureItem(
+                    icon = Icons.Outlined.Security,
+                    title = stringResource(R.string.feature_privacy_title),
+                    description = stringResource(R.string.feature_privacy_desc),
+                    isVerySmallScreen = isVerySmallScreen
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 10.dp),
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                )
+
+                AboutFeatureItem(
+                    icon = Icons.Outlined.BatteryChargingFull,
+                    title = stringResource(R.string.feature_eink_title),
+                    description = stringResource(R.string.feature_eink_desc),
+                    isVerySmallScreen = isVerySmallScreen
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(verticalSpacing))
+
+        // Open Source & License Card
+        OutlinedCard(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.outlinedCardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(if (isVerySmallScreen) 14.dp else 18.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Code,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = stringResource(R.string.open_source_title),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = if (isVerySmallScreen) 15.sp else 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surfaceVariant
+                ) {
+                    Text(
+                        text = stringResource(R.string.open_source_badge),
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Text(
+                    text = stringResource(R.string.gpl_license_summary),
+                    fontSize = 13.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    lineHeight = 18.sp
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Toggle for full license text
+                TextButton(
+                    onClick = { showFullLicense = !showFullLicense },
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Icon(
+                        imageVector = if (showFullLicense) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = if (showFullLicense) stringResource(R.string.hide_license_details) else stringResource(R.string.show_license_details),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = showFullLicense,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Surface(
+                        shape = MaterialTheme.shapes.small,
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.app_description),
+                            fontSize = 11.sp,
+                            lineHeight = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://www.gnu.org/licenses/gpl-3.0.html"))
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentPadding = PaddingValues(vertical = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.view_license_online),
+                        fontSize = 13.sp
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(verticalSpacing))
+
+        // Support on Ko-Fi Section
         Button(
             onClick = {
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://ko-fi.com/ruditimmermans"))
                 context.startActivity(intent)
             },
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(vertical = 12.dp)
         ) {
             Icon(Icons.Default.Coffee, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.support_kofi).uppercase(), fontWeight = FontWeight.Bold)
+            Text(
+                stringResource(R.string.support_kofi).uppercase(),
+                fontWeight = FontWeight.Bold,
+                fontSize = 14.sp
+            )
         }
 
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 12.dp else 24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Copyright Footer
         Text(
-            text = stringResource(R.string.copyright).uppercase(),
-            fontSize = if (isVerySmallScreen) 12.sp else 14.sp,
-            color = Color.Gray,
+            text = stringResource(R.string.copyright),
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
-        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 16.dp else 32.dp))
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 16.dp else 24.dp))
+    }
+}
+
+@Composable
+private fun AboutFeatureItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    title: String,
+    description: String,
+    isVerySmallScreen: Boolean
+) {
+    Row(
+        verticalAlignment = Alignment.Top,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f),
+            modifier = Modifier.size(if (isVerySmallScreen) 28.dp else 32.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(if (isVerySmallScreen) 16.dp else 18.dp)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = if (isVerySmallScreen) 13.sp else 14.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = description,
+                fontSize = if (isVerySmallScreen) 12.sp else 13.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                lineHeight = 17.sp
+            )
+        }
     }
 }
 
