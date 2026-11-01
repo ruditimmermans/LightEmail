@@ -45,6 +45,12 @@ interface EmailDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertAttachments(attachments: List<Attachment>)
 
+    @Query("DELETE FROM attachments WHERE emailUid = :uid AND folder = :folder")
+    suspend fun deleteAttachmentsForEmail(uid: Long, folder: String)
+
+    @Query("DELETE FROM attachments WHERE folder = :folder")
+    suspend fun clearAttachmentsForFolder(folder: String)
+
     @Query("SELECT * FROM attachments WHERE emailUid = :uid AND folder = :folder")
     fun getAttachmentsForEmail(uid: Long, folder: String): Flow<List<Attachment>>
 

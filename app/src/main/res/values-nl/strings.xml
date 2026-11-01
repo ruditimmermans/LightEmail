@@ -131,4 +131,8 @@
     <string name="discard_draft_message">U heeft niet-opgeslagen berichtinhoud. Weet u zeker dat u deze wilt weggooien?</string>
     <string name="discard">Weggooien</string>
     <string name="keep_editing">Bewerken voortzetten</string>
+    <string name="move_to_inbox">Verplaatsen naar Postvak IN</string>
+    <string name="move_to_folder">Verplaatsen naar map</string>
+    <string name="select_target_folder">Selecteer map</string>
+    <string name="restore">Herstellen</string>
 </resources>

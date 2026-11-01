@@ -20,6 +20,8 @@ import com.light.lightemail.data.SyncEvent
 import com.light.lightemail.worker.SyncWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -76,7 +78,14 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _signature = MutableStateFlow(prefs.getString("signature", application.getString(R.string.default_signature)) ?: application.getString(R.string.default_signature))
     val signature: StateFlow<String> = _signature
 
-    private val _folders = MutableStateFlow<List<com.light.lightemail.data.FolderInfo>>(emptyList())
+    private val _folders = MutableStateFlow<List<com.light.lightemail.data.FolderInfo>>(
+        listOf(
+            com.light.lightemail.data.FolderInfo("Inbox", 0, 0),
+            com.light.lightemail.data.FolderInfo("Sent", 0, 0),
+            com.light.lightemail.data.FolderInfo("Drafts", 0, 0),
+            com.light.lightemail.data.FolderInfo("Trash", 0, 0)
+        )
+    )
     val folders: StateFlow<List<com.light.lightemail.data.FolderInfo>> = _folders
 
     private val _currentFolder = MutableStateFlow("Inbox")
@@ -349,17 +358,20 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     folder = folder
                 )
                 
-                // Pre-fetch content for the latest emails in the background
+                // Pre-fetch content for the latest 3 emails in the background safely with timeout
                 viewModelScope.launch(Dispatchers.IO) {
                     val updatedEmails = repository.getEmailsList(folder)
-                    updatedEmails.take(10).forEach { emailMsg ->
+                    for (emailMsg in updatedEmails.take(3)) {
+                        if (!isActive) break
                         if (emailMsg.content.isEmpty() || emailMsg.content == getApplication<Application>().getString(R.string.error_reading_content)) {
-                            repository.fetchEmailContent(
-                                _accountEmail.value,
-                                _accountPassword.value,
-                                _imapHost.value,
-                                emailMsg
-                            )
+                            withTimeoutOrNull(5000L) {
+                                repository.fetchEmailContent(
+                                    _accountEmail.value,
+                                    _accountPassword.value,
+                                    _imapHost.value,
+                                    emailMsg
+                                )
+                            }
                         }
                     }
                 }
@@ -389,18 +401,50 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteEmail(emailMessage: EmailMessage) {
-        // Remove notification if email is deleted
-        val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(1)
+        try {
+            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(1)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
 
         viewModelScope.launch {
-            repository.deleteEmail(
-                _accountEmail.value,
-                _accountPassword.value,
-                _imapHost.value,
-                emailMessage.folder,
-                emailMessage.uid
-            )
+            try {
+                repository.deleteEmail(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    emailMessage.uid
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            refreshFolders()
+        }
+    }
+
+    fun moveEmail(emailMessage: EmailMessage, targetFolder: String) {
+        try {
+            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(1)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        viewModelScope.launch {
+            try {
+                repository.moveEmail(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    targetFolder,
+                    emailMessage.uid
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             refreshFolders()
         }
     }
@@ -433,6 +477,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     fun emptyTrash() {
         viewModelScope.launch {
+            val currentFolderVal = _currentFolder.value
             val success = withContext(Dispatchers.IO) {
                 imapManager.emptyTrash(
                     _accountEmail.value,
@@ -441,6 +486,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 )
             }
             if (success) {
+                repository.clearCache(currentFolderVal)
+                repository.clearCache("Trash")
                 refreshEmails()
                 refreshFolders()
             }

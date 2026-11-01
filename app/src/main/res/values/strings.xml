@@ -131,4 +131,8 @@
     <string name="discard_draft_message">You have unsaved message content. Are you sure you want to discard it?</string>
     <string name="discard">Discard</string>
     <string name="keep_editing">Keep Editing</string>
+    <string name="move_to_inbox">Move to Inbox</string>
+    <string name="move_to_folder">Move to Folder</string>
+    <string name="select_target_folder">Select Folder</string>
+    <string name="restore">Restore</string>
 </resources>

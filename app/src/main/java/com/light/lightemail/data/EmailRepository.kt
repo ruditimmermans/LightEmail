@@ -31,7 +31,11 @@ class EmailRepository(private val context: Context) {
         try {
             // 1. Fetch latest UIDs from IMAP
             val latestUids = imapManager.fetchLatestUids(email, password, host, folder, limit)
-            if (latestUids.isEmpty()) return@withContext
+            if (latestUids.isEmpty()) {
+                emailDao.clearFolder(folder)
+                emailDao.clearAttachmentsForFolder(folder)
+                return@withContext
+            }
 
             // 2. Identify which UIDs we don't have in DB and which we do
             val existingUids = mutableListOf<Long>()
@@ -151,11 +155,32 @@ class EmailRepository(private val context: Context) {
     ) = withContext(Dispatchers.IO) {
         // Optimistic update
         emailDao.deleteEmail(uid, folder)
+        emailDao.deleteAttachmentsForEmail(uid, folder)
         
         imapManager.deleteEmail(email, password, host, folder, uid)
+    }
+
+    suspend fun moveEmail(
+        email: String,
+        password: String,
+        host: String,
+        srcFolder: String,
+        targetFolder: String,
+        uid: Long
+    ) = withContext(Dispatchers.IO) {
+        // Optimistic update
+        emailDao.deleteEmail(uid, srcFolder)
+        emailDao.deleteAttachmentsForEmail(uid, srcFolder)
+
+        val success = imapManager.moveEmail(email, password, host, srcFolder, targetFolder, uid)
+        if (success) {
+            syncEmails(email, password, host, targetFolder)
+            syncEmails(email, password, host, srcFolder)
+        }
     }
     
     suspend fun clearCache(folder: String) {
         emailDao.clearFolder(folder)
+        emailDao.clearAttachmentsForFolder(folder)
     }
 }

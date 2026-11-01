@@ -18,14 +18,15 @@ class ImapManager {
         properties["mail.imaps.host"] = host
         properties["mail.imaps.port"] = "993"
         properties["mail.imaps.ssl.enable"] = "true"
-        // Battery and Performance Optimizations
-        properties["mail.imaps.connectiontimeout"] = "30000" // 30s
-        properties["mail.imaps.timeout"] = "30000" // 30s
+        // Prevent sockets from hanging indefinitely and causing ANRs
+        properties["mail.imaps.connectiontimeout"] = "10000" // 10s
+        properties["mail.imaps.timeout"] = "10000" // 10s
+        properties["mail.imaps.writetimeout"] = "10000" // 10s
         properties["mail.imaps.compress.enable"] = "true" // Enable compression
         properties["mail.imaps.partialfetch"] = "false"
         properties["mail.imaps.fetchsize"] = "2097152" // Increase fetch size to 2MB for faster and more complete transfers
         properties["mail.imaps.connectionpoolsize"] = "5"
-        properties["mail.imaps.connectionpooltimeout"] = "300000"
+        properties["mail.imaps.connectionpooltimeout"] = "60000" // 1 min
         // IDLE optimization
         properties["mail.imaps.peek"] = "true"
         return properties
@@ -50,7 +51,8 @@ class ImapManager {
             store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            folder = store.getFolder(folderName) as IMAPFolder
+            folder = getFolderSafely(store, folderName) as? IMAPFolder
+            if (folder == null) return
             folder.open(Folder.READ_ONLY)
 
             if (store is com.sun.mail.imap.IMAPStore && !store.hasCapability("IDLE")) {
@@ -116,7 +118,7 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName)
+            val folder = getFolderSafely(store, folderName) ?: return emptyList()
             folder.open(Folder.READ_ONLY)
 
             val totalMessages = folder.messageCount
@@ -192,7 +194,7 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder) ?: return emptyList()
             folder.open(Folder.READ_ONLY)
 
             val totalMessages = folder.messageCount
@@ -236,7 +238,7 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder) ?: return emptyMap()
             folder.open(Folder.READ_ONLY)
 
             val messages = folder.getMessagesByUID(uids.toLongArray())
@@ -276,7 +278,7 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder) ?: return emptyList()
             folder.open(Folder.READ_ONLY)
 
             val messages = folder.getMessagesByUID(uids.toLongArray())
@@ -330,7 +332,7 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName)
+            val folder = getFolderSafely(store, folderName) ?: return emptyList()
             folder.open(Folder.READ_ONLY)
 
             val unreadMessages = folder.search(FlagTerm(Flags(Flags.Flag.SEEN), false))
@@ -403,7 +405,8 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder)
+            if (folder == null) return Triple(errorReadingContentString, null, emptyList())
             folder.open(Folder.READ_ONLY)
 
             val msg = folder.getMessageByUID(uid)
@@ -587,6 +590,105 @@ class ImapManager {
         }
     }
 
+    private fun getAllFolders(store: Store): Array<Folder> {
+        return try {
+            store.defaultFolder.list("*")
+        } catch (e: Exception) {
+            try {
+                store.defaultFolder.list()
+            } catch (e2: Exception) {
+                emptyArray()
+            }
+        }
+    }
+
+    private fun getFolderSafely(store: Store, folderName: String): Folder? {
+        return try {
+            val folder = store.getFolder(folderName)
+            if (folder.exists()) {
+                folder
+            } else {
+                val allFolders = getAllFolders(store)
+                val exactOrNameMatch = allFolders.find { 
+                    it.fullName.equals(folderName, ignoreCase = true) || 
+                    it.name.equals(folderName, ignoreCase = true) 
+                }
+                if (exactOrNameMatch != null) return exactOrNameMatch
+
+                val lower = folderName.lowercase()
+                when {
+                    lower.contains("trash") || lower.contains("bin") || lower.contains("deleted") || lower.contains("papierkorb") || lower.contains("corbeille") -> findTrashFolder(store)
+                    lower.contains("sent") || lower.contains("gesendet") || lower.contains("envoyés") -> findSentFolder(store)
+                    lower.contains("draft") || lower.contains("brouillon") || lower.contains("entwürfe") -> findDraftsFolder(store)
+                    lower.contains("inbox") -> store.getFolder("INBOX")
+                    else -> folder
+                }
+            }
+        } catch (e: Exception) {
+            try { store.getFolder(folderName) } catch (e2: Exception) { null }
+        }
+    }
+
+    private fun findTrashFolder(store: Store): Folder? {
+        return try {
+            val allFolders = getAllFolders(store)
+            allFolders.find { folder ->
+                val name = folder.name.lowercase()
+                val fullName = folder.fullName.lowercase()
+                name.contains("trash") || fullName.contains("trash") || 
+                name.contains("bin") || fullName.contains("bin") || 
+                name.contains("deleted") || fullName.contains("deleted") || 
+                name.contains("papierkorb") || fullName.contains("papierkorb") || 
+                name.contains("corbeille") || fullName.contains("corbeille")
+            } ?: store.getFolder("Trash")
+        } catch (e: Exception) {
+            try { store.getFolder("Trash") } catch (e2: Exception) { null }
+        }
+    }
+
+    private fun findSentFolder(store: Store): Folder? {
+        return try {
+            val allFolders = getAllFolders(store)
+            allFolders.find { folder ->
+                val name = folder.name.lowercase()
+                val fullName = folder.fullName.lowercase()
+                name.contains("sent") || fullName.contains("sent") || 
+                name.contains("gesendet") || fullName.contains("gesendet") || 
+                name.contains("envoyés") || fullName.contains("envoyés")
+            } ?: store.getFolder("Sent")
+        } catch (e: Exception) {
+            try { store.getFolder("Sent") } catch (e2: Exception) { null }
+        }
+    }
+
+    private fun findDraftsFolder(store: Store): Folder? {
+        return try {
+            val allFolders = getAllFolders(store)
+            allFolders.find { folder ->
+                val name = folder.name.lowercase()
+                val fullName = folder.fullName.lowercase()
+                name.contains("draft") || fullName.contains("draft") || 
+                name.contains("brouillon") || fullName.contains("brouillon") || 
+                name.contains("entwürfe") || fullName.contains("entwürfe")
+            } ?: store.getFolder("Drafts")
+        } catch (e: Exception) {
+            try { store.getFolder("Drafts") } catch (e2: Exception) { null }
+        }
+    }
+
+    fun isTrashFolder(folderName: String, folder: Folder?, trashFolder: Folder?): Boolean {
+        if (trashFolder != null && folder != null && trashFolder.fullName.equals(folder.fullName, ignoreCase = true)) {
+            return true
+        }
+        val nameLower = folderName.lowercase()
+        val fullNameLower = folder?.fullName?.lowercase() ?: ""
+        val nameShortLower = folder?.name?.lowercase() ?: ""
+        val trashKeywords = listOf("trash", "bin", "deleted", "papierkorb", "corbeille", "rubbish")
+        return trashKeywords.any { 
+            nameLower.contains(it) || fullNameLower.contains(it) || nameShortLower.contains(it) 
+        }
+    }
+
     fun fetchFolders(email: String, password: String, host: String): List<FolderInfo> {
         val properties = getImapProperties(host)
 
@@ -595,64 +697,163 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
             
-            val folders = store.defaultFolder.list().map { folder ->
-                if (folder is IMAPFolder) {
-                    try {
-                        // STATUS command is efficient for getting counts without opening the folder
-                        // Some servers might not support all attributes, but message count and unread are standard
-                        folder.messageCount
-                        val unread = folder.unreadMessageCount
-                        FolderInfo(folder.fullName, folder.messageCount, unread)
-                    } catch (e: Exception) {
-                        // Fallback if STATUS fails
-                        folder.open(Folder.READ_ONLY)
-                        val info = FolderInfo(folder.fullName, folder.messageCount, folder.unreadMessageCount)
-                        folder.close(false)
-                        info
+            val rawFolders = getAllFolders(store)
+            val folders = rawFolders.mapNotNull { folder ->
+                try {
+                    if ((folder.type and Folder.HOLDS_MESSAGES) == 0) {
+                        return@mapNotNull null
                     }
-                } else {
-                    folder.open(Folder.READ_ONLY)
-                    val info = FolderInfo(folder.fullName, folder.messageCount, folder.unreadMessageCount)
-                    folder.close(false)
-                    info
+                    val fullName = folder.fullName
+                    var messageCount = 0
+                    var unreadCount = 0
+                    if (folder is IMAPFolder) {
+                        try {
+                            messageCount = folder.messageCount
+                            unreadCount = folder.unreadMessageCount
+                        } catch (e: Exception) {
+                            try {
+                                folder.open(Folder.READ_ONLY)
+                                messageCount = folder.messageCount
+                                unreadCount = folder.unreadMessageCount
+                                folder.close(false)
+                            } catch (e2: Exception) {}
+                        }
+                    } else {
+                        try {
+                            folder.open(Folder.READ_ONLY)
+                            messageCount = folder.messageCount
+                            unreadCount = folder.unreadMessageCount
+                            folder.close(false)
+                        } catch (e2: Exception) {}
+                    }
+                    FolderInfo(fullName, messageCount, unreadCount)
+                } catch (e: Exception) {
+                    null
                 }
             }
             store.close()
-            folders
+            if (folders.none { it.name.equals("Inbox", ignoreCase = true) }) {
+                listOf(FolderInfo("Inbox", 0, 0)) + folders
+            } else {
+                folders
+            }
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
+            listOf(
+                FolderInfo("Inbox", 0, 0),
+                FolderInfo("Sent", 0, 0),
+                FolderInfo("Drafts", 0, 0),
+                FolderInfo("Trash", 0, 0)
+            )
         }
     }
 
     fun deleteEmail(email: String, password: String, host: String, folderName: String, uid: Long): Boolean {
+        if (email.isEmpty() || password.isEmpty() || host.isEmpty()) return false
         val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = getFolderSafely(store, folderName) as? IMAPFolder
+            if (folder == null) {
+                try { store.close() } catch (e: Exception) {}
+                return false
+            }
             folder.open(Folder.READ_WRITE)
             val message = folder.getMessageByUID(uid)
 
             if (message != null) {
-                if (folderName.lowercase().contains("trash")) {
+                val trashFolder = findTrashFolder(store)
+                val inTrash = isTrashFolder(folderName, folder, trashFolder)
+
+                if (inTrash) {
                     message.setFlag(Flags.Flag.DELETED, true)
                 } else {
-                    val trashFolder = store.defaultFolder.list().find { it.name.lowercase().contains("trash") }
-                        ?: store.getFolder("Trash")
-                    if (!trashFolder.exists()) trashFolder.create(Folder.HOLDS_MESSAGES)
-                    folder.copyMessages(arrayOf(message), trashFolder)
+                    if (trashFolder != null && !trashFolder.fullName.equals(folder.fullName, ignoreCase = true)) {
+                        if (!trashFolder.exists()) {
+                            try {
+                                trashFolder.create(Folder.HOLDS_MESSAGES)
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                        try {
+                            folder.copyMessages(arrayOf(message), trashFolder)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                     message.setFlag(Flags.Flag.DELETED, true)
                 }
-                folder.expunge()
+                try {
+                    folder.expunge()
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
             
-            folder.close(true)
-            store.close()
+            try { folder.close(true) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            false
+        }
+    }
+
+    fun moveEmail(
+        email: String,
+        password: String,
+        host: String,
+        srcFolderName: String,
+        targetFolderName: String,
+        uid: Long
+    ): Boolean {
+        if (email.isEmpty() || password.isEmpty() || host.isEmpty()) return false
+        val properties = getImapProperties(host)
+
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val srcFolder = getFolderSafely(store, srcFolderName) as? IMAPFolder
+            val targetFolder = getFolderSafely(store, targetFolderName)
+
+            if (srcFolder == null || targetFolder == null) {
+                try { store.close() } catch (e: Exception) {}
+                return false
+            }
+
+            srcFolder.open(Folder.READ_WRITE)
+            val message = srcFolder.getMessageByUID(uid)
+
+            if (message != null) {
+                if (!targetFolder.exists()) {
+                    try {
+                        targetFolder.create(Folder.HOLDS_MESSAGES)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+
+                if (!targetFolder.fullName.equals(srcFolder.fullName, ignoreCase = true)) {
+                    try {
+                        srcFolder.copyMessages(arrayOf(message), targetFolder)
+                        message.setFlag(Flags.Flag.DELETED, true)
+                        srcFolder.expunge()
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
+                }
+            }
+
+            try { srcFolder.close(true) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
+            true
+        } catch (e: Throwable) {
             e.printStackTrace()
             false
         }
@@ -663,20 +864,25 @@ class ImapManager {
     }
 
     fun updateReadStatusOnServer(email: String, password: String, host: String, folderName: String, uid: Long, isRead: Boolean): Boolean {
+        if (email.isEmpty() || password.isEmpty() || host.isEmpty()) return false
         val properties = getImapProperties(host)
 
         return try {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = getFolderSafely(store, folderName) as? IMAPFolder
+            if (folder == null) {
+                try { store.close() } catch (e: Exception) {}
+                return false
+            }
             folder.open(Folder.READ_WRITE)
             val message = folder.getMessageByUID(uid)
             message?.setFlag(Flags.Flag.SEEN, isRead)
-            folder.close(true)
-            store.close()
+            try { folder.close(true) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             false
         }
@@ -689,7 +895,7 @@ class ImapManager {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val trashFolder = store.defaultFolder.list().find { it.name.lowercase().contains("trash") }
+            val trashFolder = findTrashFolder(store)
             if (trashFolder != null) {
                 trashFolder.open(Folder.READ_WRITE)
                 val messages = trashFolder.messages
@@ -697,11 +903,11 @@ class ImapManager {
                     msg.setFlag(Flags.Flag.DELETED, true)
                 }
                 trashFolder.expunge()
-                trashFolder.close(true)
+                try { trashFolder.close(true) } catch (e: Exception) {}
             }
-            store.close()
+            try { store.close() } catch (e: Exception) {}
             true
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             false
         }
@@ -719,11 +925,10 @@ class ImapManager {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
-            val sentFolder = store.defaultFolder.list().find { it.name.lowercase().contains("sent") }
-                ?: store.getFolder("Sent")
+            val sentFolder = findSentFolder(store) ?: store.getFolder("Sent")
             if (!sentFolder.exists()) sentFolder.create(Folder.HOLDS_MESSAGES)
             sentFolder.appendMessages(arrayOf(message))
-            store.close()
+            try { store.close() } catch (e: Exception) {}
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -857,7 +1062,11 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = store.getFolder(folderName) as IMAPFolder
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder)
+            if (folder == null) {
+                try { store.close() } catch (e: Exception) {}
+                return false
+            }
             folder.open(Folder.READ_ONLY)
 
             val msg = folder.getMessageByUID(uid)

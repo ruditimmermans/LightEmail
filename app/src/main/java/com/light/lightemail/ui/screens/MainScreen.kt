@@ -41,6 +41,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DriveFileMove
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -213,10 +214,17 @@ fun MainScreen(
                 HorizontalDivider()
                 LazyColumn(modifier = Modifier.weight(1f)) {
                     items(folders) { folder ->
+                        val displayName = remember(folder.name) {
+                            folder.name
+                                .removePrefix("[Gmail]/")
+                                .removePrefix("[GMAIL]/")
+                                .removePrefix("INBOX.")
+                                .removePrefix("INBOX/")
+                        }
                         NavigationDrawerItem(
                             label = { 
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text(folder.name, modifier = Modifier.weight(1f), fontSize = if (isVerySmallScreen) 16.sp else 18.sp)
+                                    Text(displayName, modifier = Modifier.weight(1f), fontSize = if (isVerySmallScreen) 16.sp else 18.sp)
                                     if (folder.unreadCount > 0) {
                                         Badge(
                                             containerColor = MaterialTheme.colorScheme.primary,
@@ -227,7 +235,9 @@ fun MainScreen(
                                         Spacer(modifier = Modifier.width(if (isVerySmallScreen) 6.dp else 10.dp))
                                     }
                                     Text("(${folder.messageCount})", fontSize = if (isVerySmallScreen) 14.sp else 16.sp, color = Color.Gray)
-                                    if (folder.name.lowercase().contains("trash")) {
+                                    val folderLower = folder.name.lowercase()
+                                    val isTrashFolder = folderLower.contains("trash") || folderLower.contains("bin") || folderLower.contains("deleted") || folderLower.contains("papierkorb") || folderLower.contains("corbeille")
+                                    if (isTrashFolder) {
                                         Spacer(modifier = Modifier.width(if (isVerySmallScreen) 6.dp else 10.dp))
                                         IconButton(
                                             onClick = { viewModel.emptyTrash() },
@@ -448,8 +458,14 @@ fun MainScreen(
                                             currentScreen = Screen.Compose
                                         },
                                         onDelete = {
-                                            viewModel.deleteEmail(email)
+                                            selectedEmail = null
                                             currentScreen = Screen.Home
+                                            viewModel.deleteEmail(email)
+                                        },
+                                        onMoveToFolder = { targetFolder ->
+                                            selectedEmail = null
+                                            currentScreen = Screen.Home
+                                            viewModel.moveEmail(email, targetFolder)
                                         },
                                         onReplyAll = {
                                             selectedEmail = email
@@ -518,6 +534,32 @@ fun EmailListScreen(
     var searchQuery by remember { mutableStateOf("") }
     var unreadOnly by remember { mutableStateOf(false) }
 
+    val currentItemCount = emails.itemCount
+
+    val safePeek = remember(emails) {
+        { index: Int ->
+            if (index in 0 until emails.itemCount) {
+                try {
+                    emails.peek(index)
+                } catch (e: Exception) {
+                    null
+                }
+            } else null
+        }
+    }
+
+    val safeGet = remember(emails) {
+        { index: Int ->
+            if (index in 0 until emails.itemCount) {
+                try {
+                    emails[index]
+                } catch (e: Exception) {
+                    null
+                }
+            } else null
+        }
+    }
+
     Column(modifier = Modifier.fillMaxSize()) {
         Row(
             modifier = Modifier
@@ -552,10 +594,10 @@ fun EmailListScreen(
         }
 
         Box(modifier = Modifier.weight(1f)) {
-            val filteredIndices = remember(emails.itemCount, searchQuery, unreadOnly) {
+            val filteredIndices = remember(currentItemCount, searchQuery, unreadOnly) {
                 val list = mutableListOf<Int>()
-                for (i in 0 until emails.itemCount) {
-                    val item = emails.peek(i)
+                for (i in 0 until currentItemCount) {
+                    val item = safePeek(i)
                     if (item != null) {
                         if (unreadOnly && item.isRead) continue
                         if (searchQuery.isNotEmpty()) {
@@ -575,13 +617,18 @@ fun EmailListScreen(
                 }
             } else {
                 LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(filteredIndices.size, key = { idx ->
-                        val itemIndex = filteredIndices[idx]
-                        val email = emails.peek(itemIndex)
-                        if (email != null) "${email.folder}_${email.uid}" else "idx_$itemIndex"
-                    }) { idx ->
-                        val itemIndex = filteredIndices[idx]
-                        val email = emails[itemIndex]
+                    items(
+                        count = filteredIndices.size,
+                        key = { idx ->
+                            val itemIndex = filteredIndices.getOrNull(idx)
+                            if (itemIndex != null) {
+                                val email = safePeek(itemIndex)
+                                if (email != null) "${email.folder}_${email.uid}" else "idx_${idx}_$itemIndex"
+                            } else "idx_$idx"
+                        }
+                    ) { idx ->
+                        val itemIndex = filteredIndices.getOrNull(idx)
+                        val email = if (itemIndex != null) safeGet(itemIndex) else null
                         if (email != null) {
                             Row(
                                 modifier = Modifier
@@ -670,12 +717,14 @@ fun EmailDetailScreen(
     onReply: () -> Unit, 
     onForward: () -> Unit, 
     onDelete: () -> Unit, 
+    onMoveToFolder: ((String) -> Unit)? = null,
     onReplyAll: () -> Unit, 
     onReplyToSender: () -> Unit, 
     onAddContact: (String, String) -> Unit
 ) {
     val isDark = isSystemInDarkTheme()
     val context = LocalContext.current
+    var showMoveDialog by remember { mutableStateOf(false) }
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
@@ -855,6 +904,9 @@ fun EmailDetailScreen(
             }
         }
 
+        val folderLower = email.folder.lowercase()
+        val isTrashFolder = folderLower.contains("trash") || folderLower.contains("bin") || folderLower.contains("deleted") || folderLower.contains("papierkorb") || folderLower.contains("corbeille")
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -868,6 +920,14 @@ fun EmailDetailScreen(
             
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error, modifier = iconModifier)
+            }
+            if (isTrashFolder) {
+                IconButton(onClick = { onMoveToFolder?.invoke("Inbox") }) {
+                    Icon(Icons.Default.Inbox, contentDescription = stringResource(R.string.move_to_inbox), tint = iconTint, modifier = iconModifier)
+                }
+            }
+            IconButton(onClick = { showMoveDialog = true }) {
+                Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.move_to_folder), tint = iconTint, modifier = iconModifier)
             }
             IconButton(onClick = onToggleReadStatus) {
                 Icon(
@@ -889,6 +949,43 @@ fun EmailDetailScreen(
             IconButton(onClick = onReply) {
                 Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply), tint = iconTint, modifier = iconModifier)
             }
+        }
+
+        if (showMoveDialog) {
+            val folders by viewModel.folders.collectAsState()
+            val headerTextSize = viewModel.headerTextSize.collectAsState().value
+            AlertDialog(
+                onDismissRequest = { showMoveDialog = false },
+                title = { Text(stringResource(R.string.move_to_folder), fontSize = headerTextSize.sp, fontWeight = FontWeight.Bold) },
+                text = {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        folders.filter { !it.name.equals(email.folder, ignoreCase = true) }.forEach { folder ->
+                            val displayName = remember(folder.name) {
+                                folder.name
+                                    .removePrefix("[Gmail]/")
+                                    .removePrefix("[GMAIL]/")
+                                    .removePrefix("INBOX.")
+                                    .removePrefix("INBOX/")
+                            }
+                            TextButton(
+                                onClick = {
+                                    showMoveDialog = false
+                                    onMoveToFolder?.invoke(folder.name)
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(displayName, fontSize = textSize.sp)
+                            }
+                        }
+                    }
+                },
+                confirmButton = {},
+                dismissButton = {
+                    TextButton(onClick = { showMoveDialog = false }) {
+                        Text(stringResource(R.string.cancel))
+                    }
+                }
+            )
         }
     }
 }
@@ -1273,130 +1370,129 @@ fun HtmlView(
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
     
-    // Use theme colors for HTML emails
-    val backgroundColor = if (isDark) "#121212" else "#FFFFFF"
-    val textColor = if (isDark) "#FFFFFF" else "#000000"
-    val linkColor = if (isDark) "#8ab4f8" else "#1a73e8"
-    
-    // Inject dark mode styles more aggressively if dark mode is active
-    val darkModeCss = if (isDark) {
-        """
-        html, body {
-            background-color: $backgroundColor !important;
-            color: $textColor !important;
-        }
-        h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
-            color: $textColor !important;
-        }
-        div, table, td, section, article {
-            background-color: transparent !important;
-        }
-        """.trimIndent()
-    } else ""
+    val styledHtml = remember(html, isDark, textSize, attachments, showAttachments) {
+        val backgroundColor = if (isDark) "#121212" else "#FFFFFF"
+        val textColor = if (isDark) "#FFFFFF" else "#000000"
+        val linkColor = if (isDark) "#8ab4f8" else "#1a73e8"
+        
+        val darkModeCss = if (isDark) {
+            """
+            html, body {
+                background-color: $backgroundColor !important;
+                color: $textColor !important;
+            }
+            h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+                color: $textColor !important;
+            }
+            div, table, td, section, article {
+                background-color: transparent !important;
+            }
+            """.trimIndent()
+        } else ""
 
-    val attachmentsHtml = if (showAttachments && attachments.isNotEmpty()) {
-        val itemsHtml = attachments.joinToString("") { att ->
-            val sizeKb = att.size / 1024
-            """<div style="margin-bottom: 6px; font-size: ${textSize * 0.85f}px;">
-                📎 <a href="attach:${att.id}" style="color: $linkColor; text-decoration: underline; font-weight: bold;">${att.fileName}</a>
-                <span style="color: #888888; margin-left: 4px;">(${sizeKb} KB)</span>
-            </div>"""
-        }
-        """
-        <div style="margin-top: 20px; padding-top: 8px; border-top: 1px dashed ${if (isDark) "#555" else "#ccc"};">
-            <div style="font-weight: bold; margin-bottom: 6px; color: ${if (isDark) "#8ab4f8" else "#1a73e8"}; font-size: ${textSize * 0.85f}px;">
-                ATTACHMENTS (${attachments.size}):
+        val attachmentsHtml = if (showAttachments && attachments.isNotEmpty()) {
+            val itemsHtml = attachments.joinToString("") { att ->
+                val sizeKb = att.size / 1024
+                """<div style="margin-bottom: 6px; font-size: ${textSize * 0.85f}px;">
+                    📎 <a href="attach:${att.id}" style="color: $linkColor; text-decoration: underline; font-weight: bold;">${att.fileName}</a>
+                    <span style="color: #888888; margin-left: 4px;">(${sizeKb} KB)</span>
+                </div>"""
+            }
+            """
+            <div style="margin-top: 20px; padding-top: 8px; border-top: 1px dashed ${if (isDark) "#555" else "#ccc"};">
+                <div style="font-weight: bold; margin-bottom: 6px; color: ${if (isDark) "#8ab4f8" else "#1a73e8"}; font-size: ${textSize * 0.85f}px;">
+                    ATTACHMENTS (${attachments.size}):
+                </div>
+                $itemsHtml
             </div>
-            $itemsHtml
-        </div>
-        """.trimIndent()
-    } else ""
+            """.trimIndent()
+        } else ""
 
-    // Clean the input HTML to avoid double wrapping if possible
-    val cleanedHtml = html.trim()
-    val hasHtmlTag = cleanedHtml.contains("<html", ignoreCase = true)
-    val hasHeadTag = cleanedHtml.contains("<head", ignoreCase = true)
-    val hasBodyTag = cleanedHtml.contains("<body", ignoreCase = true)
+        val cleanedHtml = html.trim()
+        val hasHtmlTag = cleanedHtml.contains("<html", ignoreCase = true)
+        val hasHeadTag = cleanedHtml.contains("<head", ignoreCase = true)
+        val hasBodyTag = cleanedHtml.contains("<body", ignoreCase = true)
 
-    val styleBlock = """
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <style>
-        * { 
-            max-width: 100% !important;
-            box-sizing: border-box !important;
-            user-select: text !important;
-            -webkit-user-select: text !important;
-        }
-        body { 
-            margin: 0;
-            padding: ${if (isVerySmallScreen) "4px" else "12px"};
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-            font-size: ${textSize}px !important;
-            line-height: 1.6 !important;
-            word-wrap: break-word;
-            user-select: text !important;
-            -webkit-user-select: text !important;
-        }
-        h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
-            font-size: ${textSize}px !important;
-        }
-        $darkModeCss
-        img { 
-            height: auto !important; 
-            max-width: 100% !important;
-            max-height: ${if (isVerySmallScreen) "150px" else "250px"} !important;
-            object-fit: contain !important;
-        }
-        a {
-            color: $linkColor !important;
-            text-decoration: underline !important;
-        }
-        table {
-            max-width: 100% !important;
-        }
-        </style>
-    """.trimIndent()
-
-    val styledHtml = if (hasHtmlTag || hasHeadTag || hasBodyTag) {
-        var result = cleanedHtml
-        if (result.contains("</body>", ignoreCase = true)) {
-            result = result.replace("</body>", "$attachmentsHtml</body>", ignoreCase = true)
-        } else if (result.contains("</html>", ignoreCase = true)) {
-            result = result.replace("</html>", "$attachmentsHtml</html>", ignoreCase = true)
-        } else {
-            result = "$result$attachmentsHtml"
-        }
-
-        if (result.contains("<head>", ignoreCase = true)) {
-            result = result.replace("<head>", "<head>$styleBlock", ignoreCase = true)
-        } else if (result.contains("<head ", ignoreCase = true)) {
-            val idx = result.indexOf("<head", ignoreCase = true)
-            val closeIdx = result.indexOf(">", idx)
-            if (closeIdx != -1) {
-                result = result.substring(0, closeIdx + 1) + styleBlock + result.substring(closeIdx + 1)
+        val styleBlock = """
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+            * { 
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                user-select: text !important;
+                -webkit-user-select: text !important;
             }
-        } else if (result.contains("<html>", ignoreCase = true)) {
-            result = result.replace("<html>", "<html><head>$styleBlock</head>", ignoreCase = true)
-        } else if (result.contains("<html ", ignoreCase = true)) {
-            val idx = result.indexOf("<html", ignoreCase = true)
-            val closeIdx = result.indexOf(">", idx)
-            if (closeIdx != -1) {
-                result = result.substring(0, closeIdx + 1) + "<head>" + styleBlock + "</head>" + result.substring(closeIdx + 1)
+            body { 
+                margin: 0;
+                padding: ${if (isVerySmallScreen) "4px" else "12px"};
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+                font-size: ${textSize}px !important;
+                line-height: 1.6 !important;
+                word-wrap: break-word;
+                user-select: text !important;
+                -webkit-user-select: text !important;
             }
-        } else {
-            result = "<head>$styleBlock</head>$result"
-        }
-        result
-    } else {
-        """
-            <!DOCTYPE html>
-            <html>
-            <head>
-            $styleBlock
-            </head>
-            <body>$html$attachmentsHtml</body>
-            </html>
+            h1, h2, h3, h4, h5, h6, p, span, div, td, th, li, b, i, strong, em {
+                font-size: ${textSize}px !important;
+            }
+            $darkModeCss
+            img { 
+                height: auto !important; 
+                max-width: 100% !important;
+                max-height: ${if (isVerySmallScreen) "150px" else "250px"} !important;
+                object-fit: contain !important;
+            }
+            a {
+                color: $linkColor !important;
+                text-decoration: underline !important;
+            }
+            table {
+                max-width: 100% !important;
+            }
+            </style>
         """.trimIndent()
+
+        if (hasHtmlTag || hasHeadTag || hasBodyTag) {
+            var result = cleanedHtml
+            if (result.contains("</body>", ignoreCase = true)) {
+                result = result.replace("</body>", "$attachmentsHtml</body>", ignoreCase = true)
+            } else if (result.contains("</html>", ignoreCase = true)) {
+                result = result.replace("</html>", "$attachmentsHtml</html>", ignoreCase = true)
+            } else {
+                result = "$result$attachmentsHtml"
+            }
+
+            if (result.contains("<head>", ignoreCase = true)) {
+                result = result.replace("<head>", "<head>$styleBlock", ignoreCase = true)
+            } else if (result.contains("<head ", ignoreCase = true)) {
+                val idx = result.indexOf("<head", ignoreCase = true)
+                val closeIdx = result.indexOf(">", idx)
+                if (closeIdx != -1) {
+                    result = result.substring(0, closeIdx + 1) + styleBlock + result.substring(closeIdx + 1)
+                }
+            } else if (result.contains("<html>", ignoreCase = true)) {
+                result = result.replace("<html>", "<html><head>$styleBlock</head>", ignoreCase = true)
+            } else if (result.contains("<html ", ignoreCase = true)) {
+                val idx = result.indexOf("<html", ignoreCase = true)
+                val closeIdx = result.indexOf(">", idx)
+                if (closeIdx != -1) {
+                    result = result.substring(0, closeIdx + 1) + "<head>" + styleBlock + "</head>" + result.substring(closeIdx + 1)
+                }
+            } else {
+                result = "<head>$styleBlock</head>$result"
+            }
+            result
+        } else {
+            """
+                <!DOCTYPE html>
+                <html>
+                <head>
+                $styleBlock
+                </head>
+                <body>$html$attachmentsHtml</body>
+                </html>
+            """.trimIndent()
+        }
     }
 
     var webViewError by remember { mutableStateOf(false) }
