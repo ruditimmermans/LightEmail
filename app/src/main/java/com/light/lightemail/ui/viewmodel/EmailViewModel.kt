@@ -267,6 +267,39 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun markAsUnread(emailMessage: EmailMessage) {
+        viewModelScope.launch {
+            repository.updateReadStatus(
+                _accountEmail.value,
+                _accountPassword.value,
+                _imapHost.value,
+                emailMessage.folder,
+                emailMessage.uid,
+                false
+            )
+            refreshFolders()
+        }
+    }
+
+    fun toggleReadStatus(emailMessage: EmailMessage) {
+        val targetStatus = !emailMessage.isRead
+        if (targetStatus) {
+            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(1)
+        }
+        viewModelScope.launch {
+            repository.updateReadStatus(
+                _accountEmail.value,
+                _accountPassword.value,
+                _imapHost.value,
+                emailMessage.folder,
+                emailMessage.uid,
+                targetStatus
+            )
+            refreshFolders()
+        }
+    }
+
     fun fetchEmailContent(emailMessage: EmailMessage) {
         // If content already fetched, don't fetch again
         if (emailMessage.content.isNotEmpty() && emailMessage.content != getApplication<Application>().getString(R.string.error_reading_content)) return

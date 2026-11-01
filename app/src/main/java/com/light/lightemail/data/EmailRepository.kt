@@ -128,6 +128,20 @@ class EmailRepository(private val context: Context) {
         imapManager.markAsRead(email, password, host, folder, uid)
     }
 
+    suspend fun updateReadStatus(
+        email: String,
+        password: String,
+        host: String,
+        folder: String,
+        uid: Long,
+        isRead: Boolean
+    ) = withContext(Dispatchers.IO) {
+        // Optimistic update
+        emailDao.updateReadStatus(uid, folder, isRead)
+        
+        imapManager.updateReadStatusOnServer(email, password, host, folder, uid, isRead)
+    }
+
     suspend fun deleteEmail(
         email: String,
         password: String,

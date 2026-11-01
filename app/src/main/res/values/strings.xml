@@ -121,4 +121,14 @@
     <string name="large_text_label">Large Text</string>
     <string name="large_header_text_label">Large Header Text</string>
     <string name="support_kofi">Support on Ko-Fi</string>
+
+    <string name="search_emails">Search emails…</string>
+    <string name="search_contacts">Search contacts…</string>
+    <string name="unread_only">Unread</string>
+    <string name="mark_as_unread">Mark Unread</string>
+    <string name="mark_as_read">Mark Read</string>
+    <string name="discard_draft_title">Discard draft?</string>
+    <string name="discard_draft_message">You have unsaved message content. Are you sure you want to discard it?</string>
+    <string name="discard">Discard</string>
+    <string name="keep_editing">Keep Editing</string>
 </resources>

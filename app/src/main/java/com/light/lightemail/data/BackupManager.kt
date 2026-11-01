@@ -51,18 +51,32 @@ class BackupManager(private val context: Context) {
                 val prefs = context.getSharedPreferences("light_email_prefs", Context.MODE_PRIVATE)
                 val editor = prefs.edit()
                 editor.clear()
+                val floatKeys = setOf("text_size", "header_text_size")
+                val longKeys = setOf("last_seen_uid", "last_unread_count")
                 val keys = prefsJson.keys()
                 while (keys.hasNext()) {
                     val key = keys.next()
                     if (prefsJson.isNull(key)) continue
                     
-                    when (val value = prefsJson.get(key)) {
-                        is String -> editor.putString(key, value)
-                        is Boolean -> editor.putBoolean(key, value)
-                        is Double -> editor.putFloat(key, value.toFloat())
-                        is Float -> editor.putFloat(key, value)
-                        is Long -> editor.putLong(key, value)
-                        is Int -> editor.putLong(key, value.toLong())
+                    when (key) {
+                        in floatKeys -> {
+                            val num = (prefsJson.opt(key) as? Number)?.toFloat() ?: 16f
+                            editor.putFloat(key, num)
+                        }
+                        in longKeys -> {
+                            val num = (prefsJson.opt(key) as? Number)?.toLong() ?: 0L
+                            editor.putLong(key, num)
+                        }
+                        else -> {
+                            when (val value = prefsJson.get(key)) {
+                                is String -> editor.putString(key, value)
+                                is Boolean -> editor.putBoolean(key, value)
+                                is Double -> editor.putFloat(key, value.toFloat())
+                                is Float -> editor.putFloat(key, value)
+                                is Long -> editor.putLong(key, value)
+                                is Int -> editor.putInt(key, value)
+                            }
+                        }
                     }
                 }
                 editor.apply()

@@ -121,4 +121,14 @@
     <string name="large_text_label">Grote Tekst</string>
     <string name="large_header_text_label">Grote Header Tekst</string>
     <string name="support_kofi">Steun via Ko-Fi</string>
+
+    <string name="search_emails">Zoek e-mails…</string>
+    <string name="search_contacts">Zoek contacten…</string>
+    <string name="unread_only">Ongelezen</string>
+    <string name="mark_as_unread">Markeer ongelezen</string>
+    <string name="mark_as_read">Markeer gelezen</string>
+    <string name="discard_draft_title">Concept verwijderen?</string>
+    <string name="discard_draft_message">U heeft niet-opgeslagen berichtinhoud. Weet u zeker dat u deze wilt weggooien?</string>
+    <string name="discard">Weggooien</string>
+    <string name="keep_editing">Bewerken voortzetten</string>
 </resources>

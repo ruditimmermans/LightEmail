@@ -659,6 +659,10 @@ class ImapManager {
     }
 
     fun markAsRead(email: String, password: String, host: String, folderName: String, uid: Long): Boolean {
+        return updateReadStatusOnServer(email, password, host, folderName, uid, true)
+    }
+
+    fun updateReadStatusOnServer(email: String, password: String, host: String, folderName: String, uid: Long, isRead: Boolean): Boolean {
         val properties = getImapProperties(host)
 
         return try {
@@ -668,7 +672,7 @@ class ImapManager {
             val folder = store.getFolder(folderName) as IMAPFolder
             folder.open(Folder.READ_WRITE)
             val message = folder.getMessageByUID(uid)
-            message?.setFlag(Flags.Flag.SEEN, true)
+            message?.setFlag(Flags.Flag.SEEN, isRead)
             folder.close(true)
             store.close()
             true

@@ -407,11 +407,18 @@ fun MainScreen(
                     label = "ScreenTransition"
                 ) { targetScreen ->
                     when (targetScreen) {
-                        Screen.Home -> EmailListScreen(pagingEmails, isLoading, textSize, headerTextSize) { emailMsg ->
-                            selectedEmail = emailMsg
-                            currentScreen = Screen.ViewEmail
-                            viewModel.markAsRead(emailMsg)
-                        }
+                        Screen.Home -> EmailListScreen(
+                            emails = pagingEmails, 
+                            isLoading = isLoading, 
+                            textSize = textSize, 
+                            headerTextSize = headerTextSize,
+                            onToggleReadStatus = { emailMsg -> viewModel.toggleReadStatus(emailMsg) },
+                            onEmailClick = { emailMsg ->
+                                selectedEmail = emailMsg
+                                currentScreen = Screen.ViewEmail
+                                viewModel.markAsRead(emailMsg)
+                            }
+                        )
                         Screen.About -> AboutScreen(viewModel = viewModel)
                         Screen.Settings -> SettingsScreen(viewModel = viewModel)
                         Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
@@ -429,6 +436,7 @@ fun MainScreen(
                                         viewModel = viewModel,
                                         email = email,
                                         textSize = textSize,
+                                        onToggleReadStatus = { viewModel.toggleReadStatus(email) },
                                         onReply = {
                                             selectedEmail = email
                                             composeMode = ComposeMode.Reply
@@ -495,91 +503,158 @@ fun MainScreen(
 }
 
 @Composable
-fun EmailListScreen(emails: LazyPagingItems<EmailMessage>, isLoading: Boolean, textSize: Float, headerTextSize: Float, onEmailClick: (EmailMessage) -> Unit) {
+fun EmailListScreen(
+    emails: LazyPagingItems<EmailMessage>, 
+    isLoading: Boolean, 
+    textSize: Float, 
+    headerTextSize: Float,
+    onToggleReadStatus: ((EmailMessage) -> Unit)? = null,
+    onEmailClick: (EmailMessage) -> Unit
+) {
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
-    
     val isPagingLoading = emails.loadState.refresh is LoadState.Loading
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        if (emails.itemCount == 0 && !isLoading && !isPagingLoading) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.no_emails), fontSize = textSize.sp)
+    var searchQuery by remember { mutableStateOf("") }
+    var unreadOnly by remember { mutableStateOf(false) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = if (isVerySmallScreen) 8.dp else 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                placeholder = { Text(stringResource(R.string.search_emails), fontSize = (textSize * 0.85f).sp) },
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(20.dp)) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear", modifier = Modifier.size(16.dp))
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .weight(1f)
+                    .heightIn(min = 40.dp),
+                textStyle = LocalTextStyle.current.copy(fontSize = (textSize * 0.85f).sp)
+            )
+            Spacer(modifier = Modifier.width(6.dp))
+            FilterChip(
+                selected = unreadOnly,
+                onClick = { unreadOnly = !unreadOnly },
+                label = { Text(stringResource(R.string.unread_only), fontSize = (textSize * 0.75f).sp, fontWeight = FontWeight.Bold) }
+            )
+        }
+
+        Box(modifier = Modifier.weight(1f)) {
+            val filteredIndices = remember(emails.itemCount, searchQuery, unreadOnly) {
+                val list = mutableListOf<Int>()
+                for (i in 0 until emails.itemCount) {
+                    val item = emails.peek(i)
+                    if (item != null) {
+                        if (unreadOnly && item.isRead) continue
+                        if (searchQuery.isNotEmpty()) {
+                            val matchesSender = item.sender.contains(searchQuery, ignoreCase = true)
+                            val matchesSubject = item.subject.contains(searchQuery, ignoreCase = true)
+                            if (!matchesSender && !matchesSubject) continue
+                        }
+                    }
+                    list.add(i)
+                }
+                list
             }
-        } else {
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(emails.itemCount, key = emails.itemKey { "${it.folder}_${it.uid}" }) { index ->
-                    val email = emails[index]
-                    if (email != null) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onEmailClick(email) }
-                                .padding(if (isVerySmallScreen) 8.dp else 16.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = email.sender.uppercase(), 
-                                    fontSize = headerTextSize.sp, 
-                                    fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
-                                    color = MaterialTheme.colorScheme.onBackground
-                                )
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    if (email.hasAttachments) {
-                                        Icon(
-                                            imageVector = Icons.Default.AttachFile,
-                                            contentDescription = "Has attachments",
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier
-                                                .size(if (isVerySmallScreen) 14.dp else 16.dp)
-                                                .padding(end = 4.dp)
+
+            if (filteredIndices.isEmpty() && !isLoading && !isPagingLoading) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text(stringResource(R.string.no_emails), fontSize = textSize.sp)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(filteredIndices.size, key = { idx ->
+                        val itemIndex = filteredIndices[idx]
+                        val email = emails.peek(itemIndex)
+                        if (email != null) "${email.folder}_${email.uid}" else "idx_$itemIndex"
+                    }) { idx ->
+                        val itemIndex = filteredIndices[idx]
+                        val email = emails[itemIndex]
+                        if (email != null) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { onEmailClick(email) }
+                                    .padding(if (isVerySmallScreen) 8.dp else 14.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = email.sender.uppercase(), 
+                                        fontSize = headerTextSize.sp, 
+                                        fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.ExtraBold,
+                                        color = MaterialTheme.colorScheme.onBackground
+                                    )
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        if (email.hasAttachments) {
+                                            Icon(
+                                                imageVector = Icons.Default.AttachFile,
+                                                contentDescription = "Has attachments",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier
+                                                    .size(if (isVerySmallScreen) 14.dp else 16.dp)
+                                                    .padding(end = 4.dp)
+                                            )
+                                        }
+                                        Text(
+                                            text = email.subject, 
+                                            fontSize = headerTextSize.sp, 
+                                            fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onBackground,
+                                            maxLines = if (isVerySmallScreen) 1 else 2
                                         )
                                     }
-                                    Text(
-                                        text = email.subject, 
-                                        fontSize = headerTextSize.sp, 
-                                        fontWeight = if (email.isRead) FontWeight.Normal else FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onBackground,
-                                        maxLines = if (isVerySmallScreen) 1 else 2
+                                }
+                                IconButton(
+                                    onClick = { onToggleReadStatus?.invoke(email) },
+                                    modifier = Modifier.size(if (isVerySmallScreen) 28.dp else 36.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (email.isRead) Icons.Default.Check else Icons.Outlined.MarkEmailUnread,
+                                        contentDescription = if (email.isRead) "Read" else "Unread",
+                                        tint = if (email.isRead) MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f) else MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 18.dp)
                                     )
                                 }
                             }
-                            if (email.isRead) {
-                                Icon(
-                                    imageVector = Icons.Default.Check,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onBackground,
-                                    modifier = Modifier.size(if (isVerySmallScreen) 12.dp else 16.dp)
-                                )
-                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                         }
-                        HorizontalDivider(color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f))
                     }
-                }
-                
-                // Show loading indicator at the bottom when loading more
-                if (emails.loadState.append is LoadState.Loading) {
-                    item {
-                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                    
+                    if (emails.loadState.append is LoadState.Loading) {
+                        item {
+                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
                         }
                     }
                 }
             }
-        }
 
-        if (isLoading || isPagingLoading) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(if (emails.itemCount == 0) MaterialTheme.colorScheme.background else Color.Transparent),
-                contentAlignment = if (emails.itemCount == 0) Alignment.Center else Alignment.TopCenter
-            ) {
-                if (emails.itemCount == 0) {
-                    CircularProgressIndicator()
-                } else {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
+            if (isLoading || isPagingLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(if (emails.itemCount == 0) MaterialTheme.colorScheme.background else Color.Transparent),
+                    contentAlignment = if (emails.itemCount == 0) Alignment.Center else Alignment.TopCenter
+                ) {
+                    if (emails.itemCount == 0) {
+                        CircularProgressIndicator()
+                    } else {
+                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth().height(2.dp))
+                    }
                 }
             }
         }
@@ -591,6 +666,7 @@ fun EmailDetailScreen(
     viewModel: EmailViewModel,
     email: EmailMessage, 
     textSize: Float, 
+    onToggleReadStatus: () -> Unit = {},
     onReply: () -> Unit, 
     onForward: () -> Unit, 
     onDelete: () -> Unit, 
@@ -792,6 +868,14 @@ fun EmailDetailScreen(
             
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error, modifier = iconModifier)
+            }
+            IconButton(onClick = onToggleReadStatus) {
+                Icon(
+                    imageVector = if (email.isRead) Icons.Outlined.MarkAsUnread else Icons.Outlined.Drafts,
+                    contentDescription = stringResource(if (email.isRead) R.string.mark_as_unread else R.string.mark_as_read),
+                    tint = iconTint,
+                    modifier = iconModifier
+                )
             }
             IconButton(onClick = onForward) {
                 Icon(Icons.Default.Forward, contentDescription = stringResource(R.string.forward), tint = iconTint, modifier = iconModifier)
@@ -1477,27 +1561,39 @@ fun ComposeEmailScreen(
     val forwardPrefix = stringResource(R.string.forward_subject_prefix, originalEmail?.subject ?: "")
     val attribution = originalEmail?.let { stringResource(R.string.reply_attribution, it.date, it.sender) } ?: ""
 
+    fun extractCleanAddress(raw: String): String {
+        val trimmed = raw.trim()
+        return if (trimmed.contains("<") && trimmed.contains(">")) {
+            trimmed.substringAfter("<").substringBefore(">").trim()
+        } else trimmed
+    }
+
+    fun filterRecipients(raw: String?, selfEmail: String): String {
+        if (raw.isNullOrBlank()) return ""
+        val regex = Regex(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)(?=(?:[^<]*<[^>]*>)*[^<]*$)")
+        val list = raw.split(regex).map { it.trim() }.filter { it.isNotEmpty() }
+        val cleanSelf = extractCleanAddress(selfEmail).lowercase()
+        return list.filter { addr ->
+            val cleanAddr = extractCleanAddress(addr).lowercase()
+            cleanAddr != cleanSelf && !cleanAddr.contains(cleanSelf)
+        }.distinct().joinToString(", ")
+    }
+
     var to by remember(initialTo, mode, originalEmail) { mutableStateOf(
         if (initialTo.isNotEmpty()) initialTo else when(mode) {
             ComposeMode.New, ComposeMode.Forward -> ""
             ComposeMode.Reply -> originalEmail?.replyTo ?: originalEmail?.sender ?: ""
             ComposeMode.ReplyToSender -> originalEmail?.sender ?: ""
             ComposeMode.ReplyAll -> {
-                val recipients = mutableListOf<String>()
-                recipients.add(originalEmail?.replyTo ?: originalEmail?.sender ?: "")
-                originalEmail?.toRecipients?.let { recipients.addAll(it.split(", ")) }
-                // Filter out current user email
-                recipients.distinct()
-                    .filter { it.lowercase() != accountEmail.lowercase() && !it.contains(accountEmail, ignoreCase = true) }
-                    .joinToString(", ")
+                val primary = originalEmail?.replyTo ?: originalEmail?.sender ?: ""
+                val allRaw = if (originalEmail?.toRecipients != null) "$primary, ${originalEmail.toRecipients}" else primary
+                filterRecipients(allRaw, accountEmail)
             }
         }
     ) }
     var cc by remember(initialCc, mode, originalEmail) { mutableStateOf(
         if (initialCc.isNotEmpty()) initialCc else if (mode == ComposeMode.ReplyAll) {
-            originalEmail?.ccRecipients?.split(", ")
-                ?.filter { it.lowercase() != accountEmail.lowercase() && !it.contains(accountEmail, ignoreCase = true) }
-                ?.joinToString(", ") ?: ""
+            filterRecipients(originalEmail?.ccRecipients, accountEmail)
         } else ""
     ) }
     var bcc by remember(initialBcc) { mutableStateOf(initialBcc) }
@@ -1511,9 +1607,24 @@ fun ComposeEmailScreen(
     var content by remember(initialBody) { mutableStateOf(initialBody) }
     var showContactPicker by remember { mutableStateOf(false) }
     var isSending by remember { mutableStateOf(false) }
+    var showDiscardDialog by remember { mutableStateOf(false) }
 
-    androidx.activity.compose.BackHandler(enabled = showContactPicker) {
+    fun checkDiscardAndExit() {
+        val hasChanges = content.isNotEmpty() || (to.isNotEmpty() && mode == ComposeMode.New) || pendingAttachments.isNotEmpty()
+        if (hasChanges) {
+            showDiscardDialog = true
+        } else {
+            viewModel.clearPendingAttachments()
+            onFinished()
+        }
+    }
+
+    BackHandler(enabled = showContactPicker) {
         showContactPicker = false
+    }
+
+    BackHandler(enabled = !showContactPicker && !showDiscardDialog) {
+        checkDiscardAndExit()
     }
 
     val toFocusRequester = remember { FocusRequester() }
@@ -1523,8 +1634,29 @@ fun ComposeEmailScreen(
         toFocusRequester.requestFocus()
     }
 
+    if (showDiscardDialog) {
+        AlertDialog(
+            onDismissRequest = { showDiscardDialog = false },
+            title = { Text(stringResource(R.string.discard_draft_title), fontWeight = FontWeight.Bold) },
+            text = { Text(stringResource(R.string.discard_draft_message)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDiscardDialog = false
+                    viewModel.clearPendingAttachments()
+                    onFinished()
+                }) {
+                    Text(stringResource(R.string.discard), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDiscardDialog = false }) {
+                    Text(stringResource(R.string.keep_editing), fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+
     Column(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).imePadding()) {
-        // Custom Light Phone Style Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1540,10 +1672,7 @@ fun ComposeEmailScreen(
             val headerIconSize = if (isVerySmallScreen) 24.dp else 28.dp
             val headerIconTint = MaterialTheme.colorScheme.onSurface
             
-            IconButton(onClick = { 
-                viewModel.clearPendingAttachments()
-                onFinished() 
-            }) {
+            IconButton(onClick = { checkDiscardAndExit() }) {
                 Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cancel), tint = headerIconTint, modifier = Modifier.size(headerIconSize))
             }
             
@@ -1862,6 +1991,14 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var editingContact by remember { mutableStateOf<Contact?>(null) }
+    var searchQuery by remember { mutableStateOf("") }
+
+    val filteredContacts = remember(contacts, searchQuery) {
+        if (searchQuery.isBlank()) contacts
+        else contacts.filter {
+            it.name.contains(searchQuery, ignoreCase = true) || it.email.contains(searchQuery, ignoreCase = true)
+        }
+    }
 
     LazyColumn(modifier = Modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp)) {
         item {
@@ -1921,11 +2058,22 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
             }
 
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+            
+            if (contacts.isNotEmpty()) {
+                LightTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = stringResource(R.string.search_contacts),
+                    textSize = textSize
+                )
+                Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
+            }
+
             HorizontalDivider(thickness = 1.dp)
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
         }
 
-        items(contacts) { contact ->
+        items(filteredContacts) { contact ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(contact.name.uppercase(), fontWeight = FontWeight.Bold, fontSize = textSize.sp)
