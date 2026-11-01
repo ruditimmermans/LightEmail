@@ -50,7 +50,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.FocusRequester
@@ -911,44 +914,80 @@ fun EmailDetailScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .horizontalScroll(rememberScrollState())
-                .padding(vertical = if (isVerySmallScreen) 4.dp else 8.dp),
+                .padding(vertical = if (isVerySmallScreen) 4.dp else 8.dp, horizontal = 4.dp),
             horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val iconModifier = if (isVerySmallScreen) Modifier.size(24.dp) else Modifier.size(32.dp)
+            val iconSize = if (isVerySmallScreen) 20.dp else 24.dp
+            val labelFontSize = (if (isVerySmallScreen) textSize * 0.55f else textSize * 0.65f).coerceIn(9f, 13f).sp
             val iconTint = MaterialTheme.colorScheme.onSurface
-            
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.delete), tint = MaterialTheme.colorScheme.error, modifier = iconModifier)
-            }
+
+            DetailActionButton(
+                icon = Icons.Default.Delete,
+                label = stringResource(R.string.delete),
+                onClick = onDelete,
+                tint = MaterialTheme.colorScheme.error,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
             if (isTrashFolder) {
-                IconButton(onClick = { onMoveToFolder?.invoke("Inbox") }) {
-                    Icon(Icons.Default.Inbox, contentDescription = stringResource(R.string.move_to_inbox), tint = iconTint, modifier = iconModifier)
-                }
-            }
-            IconButton(onClick = { showMoveDialog = true }) {
-                Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = stringResource(R.string.move_to_folder), tint = iconTint, modifier = iconModifier)
-            }
-            IconButton(onClick = onToggleReadStatus) {
-                Icon(
-                    imageVector = if (email.isRead) Icons.Outlined.MarkAsUnread else Icons.Outlined.Drafts,
-                    contentDescription = stringResource(if (email.isRead) R.string.mark_as_unread else R.string.mark_as_read),
+                DetailActionButton(
+                    icon = Icons.Default.Inbox,
+                    label = stringResource(R.string.move_to_inbox),
+                    onClick = { onMoveToFolder?.invoke("Inbox") },
                     tint = iconTint,
-                    modifier = iconModifier
+                    iconSize = iconSize,
+                    labelFontSize = labelFontSize
                 )
             }
-            IconButton(onClick = onForward) {
-                Icon(Icons.Default.Forward, contentDescription = stringResource(R.string.forward), tint = iconTint, modifier = iconModifier)
-            }
-            IconButton(onClick = onReplyToSender) {
-                Icon(Icons.Default.Person, contentDescription = stringResource(R.string.reply_to_sender), tint = iconTint, modifier = iconModifier)
-            }
-            IconButton(onClick = onReplyAll) {
-                Icon(Icons.Default.ReplyAll, contentDescription = stringResource(R.string.reply_all), tint = iconTint, modifier = iconModifier)
-            }
-            IconButton(onClick = onReply) {
-                Icon(Icons.Default.Reply, contentDescription = stringResource(R.string.reply), tint = iconTint, modifier = iconModifier)
-            }
+            DetailActionButton(
+                icon = Icons.AutoMirrored.Filled.DriveFileMove,
+                label = stringResource(R.string.move_to_folder),
+                onClick = { showMoveDialog = true },
+                tint = iconTint,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
+            DetailActionButton(
+                icon = if (email.isRead) Icons.Outlined.MarkAsUnread else Icons.Outlined.Drafts,
+                label = stringResource(if (email.isRead) R.string.mark_as_unread else R.string.mark_as_read),
+                onClick = onToggleReadStatus,
+                tint = iconTint,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
+            DetailActionButton(
+                icon = Icons.Default.Forward,
+                label = stringResource(R.string.forward),
+                onClick = onForward,
+                tint = iconTint,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
+            DetailActionButton(
+                icon = Icons.Default.Person,
+                label = stringResource(R.string.reply_to_sender),
+                onClick = onReplyToSender,
+                tint = iconTint,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
+            DetailActionButton(
+                icon = Icons.Default.ReplyAll,
+                label = stringResource(R.string.reply_all),
+                onClick = onReplyAll,
+                tint = iconTint,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
+            DetailActionButton(
+                icon = Icons.Default.Reply,
+                label = stringResource(R.string.reply),
+                onClick = onReply,
+                tint = iconTint,
+                iconSize = iconSize,
+                labelFontSize = labelFontSize
+            )
         }
 
         if (showMoveDialog) {
@@ -987,6 +1026,42 @@ fun EmailDetailScreen(
                 }
             )
         }
+    }
+}
+
+@Composable
+private fun DetailActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    tint: Color = MaterialTheme.colorScheme.onSurface,
+    iconSize: androidx.compose.ui.unit.Dp = 24.dp,
+    labelFontSize: androidx.compose.ui.unit.TextUnit = 10.sp
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .clickable(onClick = onClick)
+            .padding(horizontal = 6.dp, vertical = 4.dp)
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = label,
+            tint = tint,
+            modifier = Modifier.size(iconSize)
+        )
+        Spacer(modifier = Modifier.height(2.dp))
+        Text(
+            text = label,
+            fontSize = labelFontSize,
+            color = tint,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.Center
+        )
     }
 }
 
