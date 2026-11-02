@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">LightEmail</string>
     <string name="app_title">LightEmail</string>
-    <string name="default_signature">Sent from my Light Phone 3</string>
     <string name="back">Back</string>
     <string name="back_to_email">Back to email</string>
     <string name="refresh">Refresh</string>

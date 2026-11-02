@@ -75,7 +75,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _autoCheckUpdates = MutableStateFlow(prefs.getBoolean("auto_check_updates", true))
     val autoCheckUpdates: StateFlow<Boolean> = _autoCheckUpdates
 
-    private val _signature = MutableStateFlow(prefs.getString("signature", application.getString(R.string.default_signature)) ?: application.getString(R.string.default_signature))
+    private val _signature = MutableStateFlow(prefs.getString("signature", "") ?: "")
     val signature: StateFlow<String> = _signature
 
     private val _folders = MutableStateFlow<List<com.light.lightemail.data.FolderInfo>>(
@@ -171,7 +171,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _headerTextSize.value = prefs.getFloat("header_text_size", 16f)
                 _useColorMode.value = prefs.getBoolean("use_color_mode", false)
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
-                _signature.value = prefs.getString("signature", getApplication<Application>().getString(R.string.default_signature)) ?: getApplication<Application>().getString(R.string.default_signature)
+                _signature.value = prefs.getString("signature", "") ?: ""
                 
                 refreshEmails()
                 refreshFolders()

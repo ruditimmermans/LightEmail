@@ -1,7 +1,6 @@
 <resources>
     <string name="app_name">LightEmail</string>
     <string name="app_title">LightEmail</string>
-    <string name="default_signature">Verzonden vanaf mijn Light Phone 3</string>
     <string name="back">Terug</string>
     <string name="back_to_email">Terug naar e-mail</string>
     <string name="refresh">Vernieuwen</string>

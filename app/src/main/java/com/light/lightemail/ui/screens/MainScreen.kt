@@ -342,17 +342,17 @@ fun MainScreen(
                             selected = currentScreen == Screen.Home,
                             onClick = { currentScreen = Screen.Home },
                             icon = { Icon(painterResource(R.drawable.ic_envelope), contentDescription = stringResource(R.string.home), modifier = Modifier.size(iconSize)) },
-                            label = { if (isLP3) Text(stringResource(R.string.home), fontSize = footerTextSize) },
+                            label = { Text(stringResource(R.string.home), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = isLP3
+                            alwaysShowLabel = true
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.AddressBook,
                             onClick = { currentScreen = Screen.AddressBook },
                             icon = { Icon(Icons.Outlined.Person, contentDescription = stringResource(R.string.address_book), modifier = Modifier.size(iconSize)) },
-                            label = { if (isLP3) Text(stringResource(R.string.address_book), fontSize = footerTextSize) },
+                            label = { Text(stringResource(R.string.address_book), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = isLP3
+                            alwaysShowLabel = true
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.Settings,
@@ -368,9 +368,9 @@ fun MainScreen(
                                     Icon(Icons.Outlined.Settings, contentDescription = stringResource(R.string.settings), modifier = Modifier.size(iconSize))
                                 }
                             },
-                            label = { if (isLP3) Text(stringResource(R.string.settings), fontSize = footerTextSize) },
+                            label = { Text(stringResource(R.string.settings), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = isLP3
+                            alwaysShowLabel = true
                         )
                         NavigationBarItem(
                             selected = currentScreen == Screen.About,
@@ -378,9 +378,9 @@ fun MainScreen(
                             icon = { 
                                 Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.about), modifier = Modifier.size(iconSize))
                             },
-                            label = { if (isLP3) Text(stringResource(R.string.about), fontSize = footerTextSize) },
+                            label = { Text(stringResource(R.string.about), fontSize = footerTextSize) },
                             colors = itemColors,
-                            alwaysShowLabel = isLP3
+                            alwaysShowLabel = true
                         )
                     }
                 }
