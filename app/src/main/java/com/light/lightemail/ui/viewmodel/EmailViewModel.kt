@@ -69,7 +69,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _headerTextSize = MutableStateFlow(prefs.getFloat("header_text_size", 16f))
     val headerTextSize: StateFlow<Float> = _headerTextSize
 
-    private val _useColorMode = MutableStateFlow(prefs.getBoolean("use_color_mode", false))
+    private val _themeMode = MutableStateFlow(
+        prefs.getString("theme_mode", null) ?: if (prefs.getBoolean("use_color_mode", false)) "color" else "black"
+    )
+    val themeMode: StateFlow<String> = _themeMode
+
+    private val _useColorMode = MutableStateFlow(_themeMode.value == "color")
     val useColorMode: StateFlow<Boolean> = _useColorMode
 
     private val _autoCheckUpdates = MutableStateFlow(prefs.getBoolean("auto_check_updates", true))
@@ -169,7 +174,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _senderName.value = prefs.getString("sender_name", "") ?: ""
                 _textSize.value = prefs.getFloat("text_size", 16f)
                 _headerTextSize.value = prefs.getFloat("header_text_size", 16f)
-                _useColorMode.value = prefs.getBoolean("use_color_mode", false)
+                _themeMode.value = prefs.getString("theme_mode", null) ?: if (prefs.getBoolean("use_color_mode", false)) "color" else "black"
+                _useColorMode.value = (_themeMode.value == "color")
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
                 _signature.value = prefs.getString("signature", "") ?: ""
                 
@@ -191,7 +197,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         textSize: Float,
         headerTextSize: Float,
         signature: String,
-        useColorMode: Boolean,
+        useColorMode: Boolean = false,
+        themeMode: String = if (useColorMode) "color" else "black",
         autoCheckUpdates: Boolean
     ) {
         _accountEmail.value = email
@@ -203,7 +210,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _textSize.value = textSize
         _headerTextSize.value = headerTextSize
         _signature.value = signature
-        _useColorMode.value = useColorMode
+        _themeMode.value = themeMode
+        _useColorMode.value = (themeMode == "color")
         _autoCheckUpdates.value = autoCheckUpdates
 
         prefs.edit().apply {
@@ -217,7 +225,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putFloat("text_size", textSize)
             putFloat("header_text_size", headerTextSize)
             putString("signature", signature)
-            putBoolean("use_color_mode", useColorMode)
+            putString("theme_mode", themeMode)
+            putBoolean("use_color_mode", themeMode == "color")
             putBoolean("auto_check_updates", autoCheckUpdates)
             apply()
         }

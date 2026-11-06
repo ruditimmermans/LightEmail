@@ -43,9 +43,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val viewModel: EmailViewModel = viewModel()
-            val useColorMode by viewModel.useColorMode.collectAsState()
+            val themeMode by viewModel.themeMode.collectAsState()
             
-            LightEmailTheme(useColorMode = useColorMode) {
+            LightEmailTheme(themeMode = themeMode) {
                 MainScreen(
                     viewModel = viewModel,
                     initialEmailUid = initialEmailUid,

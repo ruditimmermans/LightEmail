@@ -34,6 +34,7 @@
     <string name="theme_mode_label">Theme Mode</string>
     <string name="black_mode_label">Black Mode</string>
     <string name="color_mode_label">Color Mode (Thunderbird)</string>
+    <string name="eink_mode_label">E-Ink Mode</string>
     <string name="text_size_label">Text Size: %1$d sp</string>
     <string name="header_text_size_label">Header Text Size: %1$d sp</string>
     <string name="email_signature_title">Email Signature</string>

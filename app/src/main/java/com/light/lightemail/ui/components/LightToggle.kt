@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.accessibility.AccessibilityNodeInfo
@@ -31,6 +32,8 @@ class LightToggle @JvmOverloads constructor(
         isClickable = true
         isFocusable = true
 
+        val defaultColor = getDefaultTextColor(context)
+
         addView(
             mark,
             LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT).apply {
@@ -38,7 +41,7 @@ class LightToggle @JvmOverloads constructor(
             },
         )
         label.apply {
-            setTextColor(context.getColor(R.color.white))
+            setTextColor(defaultColor)
             textSize = 20f
             attrs?.let {
                 val a = context.obtainStyledAttributes(it, intArrayOf(android.R.attr.text))
@@ -47,6 +50,7 @@ class LightToggle @JvmOverloads constructor(
             }
         }
         addView(label, LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f))
+        mark.setToggleColor(defaultColor)
 
         setOnClickListener {
             mark.checked = !mark.checked
@@ -54,7 +58,23 @@ class LightToggle @JvmOverloads constructor(
         }
     }
 
+    private fun getDefaultTextColor(context: Context): Int {
+        val typedValue = TypedValue()
+        return if (context.theme.resolveAttribute(android.R.attr.textColorPrimary, typedValue, true)) {
+            typedValue.data
+        } else {
+            context.getColor(R.color.white)
+        }
+    }
+
     fun setText(text: CharSequence) { label.text = text }
+
+    fun setTextSize(sizeSp: Float) { label.textSize = sizeSp }
+
+    fun setToggleColor(color: Int) {
+        label.setTextColor(color)
+        mark.setToggleColor(color)
+    }
 
     /** Fires only on user taps, never on programmatic [isChecked] changes. */
     fun setOnCheckedChangeListener(onChange: (Boolean) -> Unit) { listener = onChange }
@@ -79,9 +99,7 @@ class LightToggle @JvmOverloads constructor(
         private val lineWidth = 19f * density
         private val lineHeight = 3f * density
         private val border = 3f * density
-        private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = context.getColor(R.color.white)
-        }
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
 
         var checked = false
             set(value) {
@@ -89,6 +107,13 @@ class LightToggle @JvmOverloads constructor(
                 field = value
                 invalidate()
             }
+
+        fun setToggleColor(color: Int) {
+            if (paint.color != color) {
+                paint.color = color
+                invalidate()
+            }
+        }
 
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
             setMeasuredDimension((lineWidth + circle).toInt(), circle.toInt())

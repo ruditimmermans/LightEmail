@@ -336,7 +336,7 @@ fun MainScreen(
                             indicatorColor = Color.Transparent
                         )
                         val iconSize = if (isSquareScreen) 24.dp else if (isVerySmallScreen) 20.dp else if (isLP3) 32.dp else if (isStandardPhone) 26.dp else 24.dp
-                        val footerTextSize = if (isLP3) 12.sp else if (isStandardPhone) (textSize * 0.7f).sp else 11.sp
+                        val footerTextSize = if (isLP3) 12.sp else 11.sp
                         
                         NavigationBarItem(
                             selected = currentScreen == Screen.Home,
@@ -725,7 +725,8 @@ fun EmailDetailScreen(
     onReplyToSender: () -> Unit, 
     onAddContact: (String, String) -> Unit
 ) {
-    val isDark = isSystemInDarkTheme()
+    val themeMode by viewModel.themeMode.collectAsState()
+    val isDark = if (themeMode == "eink") false else isSystemInDarkTheme()
     val context = LocalContext.current
     var showMoveDialog by remember { mutableStateOf(false) }
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
@@ -2050,7 +2051,8 @@ fun ComposeEmailScreen(
                     contentAlignment = Alignment.TopStart
                 ) {
                     if (originalEmail.htmlContent != null) {
-                        HtmlView(html = originalEmail.htmlContent, isDark = isSystemInDarkTheme(), textSize = textSize)
+                        val themeModeVal by viewModel.themeMode.collectAsState()
+                        HtmlView(html = originalEmail.htmlContent, isDark = if (themeModeVal == "eink") false else isSystemInDarkTheme(), textSize = textSize)
                     } else if (originalEmail.content.isNotEmpty()) {
                         Text(
                             text = originalEmail.content,
@@ -2282,6 +2284,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val senderNameVal by viewModel.senderName.collectAsState()
     val textSizeVal by viewModel.textSize.collectAsState()
     val headerTextSizeVal by viewModel.headerTextSize.collectAsState()
+    val themeModeVal by viewModel.themeMode.collectAsState()
     val useColorModeVal by viewModel.useColorMode.collectAsState()
     val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
@@ -2298,6 +2301,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var senderName by remember { mutableStateOf(senderNameVal) }
     var textSize by remember { mutableFloatStateOf(textSizeVal) }
     var headerTextSize by remember { mutableFloatStateOf(headerTextSizeVal) }
+    var themeMode by remember { mutableStateOf(themeModeVal) }
     var useColorMode by remember { mutableStateOf(useColorModeVal) }
     var autoCheckUpdates by remember { mutableStateOf(autoCheckUpdatesVal) }
     var signature by remember { mutableStateOf(signatureVal) }
@@ -2330,13 +2334,18 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, autoCheckUpdates) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, themeMode, autoCheckUpdates) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
-            textSize != textSizeVal || headerTextSize != headerTextSizeVal || signature != signatureVal || useColorMode != useColorModeVal ||
+            textSize != textSizeVal || headerTextSize != headerTextSizeVal || signature != signatureVal || themeMode != themeModeVal ||
             autoCheckUpdates != autoCheckUpdatesVal) {
             delay(1000)
-            viewModel.saveSettings(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, useColorMode, autoCheckUpdates)
+            viewModel.saveSettings(
+                email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature,
+                useColorMode = (themeMode == "color"),
+                themeMode = themeMode,
+                autoCheckUpdates = autoCheckUpdates
+            )
         }
     }
 
@@ -2389,9 +2398,22 @@ fun SettingsScreen(viewModel: EmailViewModel) {
 
         Text(stringResource(R.string.theme_mode_label).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
         LightToggleRow(
+            text = stringResource(R.string.black_mode_label),
+            checked = themeMode == "black",
+            onCheckedChange = { if (it) themeMode = "black" },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
+        )
+        LightToggleRow(
             text = stringResource(R.string.color_mode_label),
-            checked = useColorMode,
-            onCheckedChange = { useColorMode = it }
+            checked = themeMode == "color",
+            onCheckedChange = { if (it) themeMode = "color" },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
+        )
+        LightToggleRow(
+            text = stringResource(R.string.eink_mode_label),
+            checked = themeMode == "eink",
+            onCheckedChange = { if (it) themeMode = "eink" },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
         )
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 32.dp else if (isShortScreen) 12.dp else 24.dp))
@@ -2401,7 +2423,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             LightToggleRow(
                 text = "${size.toInt()} SP",
                 checked = textSize == size,
-                onCheckedChange = { if (it) textSize = size }
+                onCheckedChange = { if (it) textSize = size },
+                textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
             )
         }
 
@@ -2412,7 +2435,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             LightToggleRow(
                 text = "${size.toInt()} SP",
                 checked = headerTextSize == size,
-                onCheckedChange = { if (it) headerTextSize = size }
+                onCheckedChange = { if (it) headerTextSize = size },
+                textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
             )
         }
 
@@ -2489,7 +2513,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         LightToggleRow(
             text = stringResource(R.string.auto_check_updates_label).uppercase(),
             checked = autoCheckUpdates,
-            onCheckedChange = { autoCheckUpdates = it }
+            onCheckedChange = { autoCheckUpdates = it },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
         )
 
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 8.dp else if (isLP3) 40.dp else if (isShortScreen) 16.dp else 32.dp))
@@ -2915,21 +2940,25 @@ fun LightToggleRow(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    textSize: Float = 16f
+    textSize: Float = 16f,
+    textColor: Color = MaterialTheme.colorScheme.onBackground
 ) {
+    val colorInt = textColor.toArgb()
     AndroidView(
         factory = { context ->
             LightToggle(context).apply {
                 setText(text)
+                setTextSize(textSize)
                 isChecked = checked
+                setToggleColor(colorInt)
                 setOnCheckedChangeListener(onCheckedChange)
             }
         },
         update = { toggle ->
             toggle.setText(text)
+            toggle.setTextSize(textSize)
             toggle.isChecked = checked
-            // Avoid setting the listener again if it hasn't changed, 
-            // but for simplicity here we just update it.
+            toggle.setToggleColor(colorInt)
             toggle.setOnCheckedChangeListener(onCheckedChange)
         },
         modifier = modifier
