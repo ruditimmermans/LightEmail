@@ -56,8 +56,6 @@ class ImapManager {
             folder.open(Folder.READ_ONLY)
 
             if (store is com.sun.mail.imap.IMAPStore && !store.hasCapability("IDLE")) {
-                // If IDLE is not supported, we can't do much here except return
-                // and let the caller handle it (e.g. by falling back to polling)
                 return
             }
 
@@ -72,7 +70,6 @@ class ImapManager {
             }
             folder.addMessageCountListener(listener)
 
-            // Also listen for flag changes (e.g. marked as read on other device)
             folder.addMessageChangedListener(object : MessageChangedListener {
                 override fun messageChanged(e: MessageChangedEvent) {
                     onFolderChanged()
@@ -80,18 +77,16 @@ class ImapManager {
             })
 
             while (!Thread.currentThread().isInterrupted && store.isConnected) {
-                if (!folder.isOpen) folder.open(Folder.READ_ONLY)
-                
                 try {
-                    // Start IDLE. This blocks until a message arrives or server kicks us.
+                    if (!folder.isOpen) folder.open(Folder.READ_ONLY)
                     folder.idle()
                 } catch (e: Exception) {
                     if (e is InterruptedException || Thread.currentThread().isInterrupted || !store.isConnected) break
                 }
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
-            throw e // Rethrow to let EmailPushService handle the delay/restart
+            throw e
         } finally {
             try {
                 folder?.close(false)
@@ -109,7 +104,7 @@ class ImapManager {
         noSubjectString: String = "(No Subject)",
         unknownSenderString: String = "Unknown",
         errorReadingContentString: String = "Error reading content",
-        fetchContent: Boolean = false // Default to false for faster refresh
+        fetchContent: Boolean = false
     ): List<EmailMessage> {
         val properties = getImapProperties(host)
 
@@ -123,20 +118,23 @@ class ImapManager {
 
             val totalMessages = folder.messageCount
             if (totalMessages == 0) {
-                folder.close(false)
-                store.close()
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
                 return emptyList()
             }
 
-            // Get last 'limit' messages more efficiently
             val start = (totalMessages - limit + 1).coerceAtLeast(1)
             val end = totalMessages
             val messages = folder.getMessages(start, end)
             
-            // Filter out deleted messages if necessary, though getMessages is faster than search
-            val lastMessages = messages.filter { !it.flags.contains(Flags.Flag.DELETED) }.toTypedArray()
+            val lastMessages = messages.filterNotNull().filter { msg ->
+                try {
+                    !msg.flags.contains(Flags.Flag.DELETED)
+                } catch (e: Exception) {
+                    false
+                }
+            }.toTypedArray()
             
-            // Optimize fetching by using a FetchProfile
             val fp = FetchProfile()
             fp.add(FetchProfile.Item.ENVELOPE)
             fp.add(FetchProfile.Item.FLAGS)
@@ -146,38 +144,60 @@ class ImapManager {
             if (folder is IMAPFolder) {
                 fp.add(UIDFolder.FetchProfileItem.UID)
             }
-            folder.fetch(lastMessages, fp)
-
-            val result = lastMessages.reversedArray().map { msg ->
-                val (text, html, atts) = if (fetchContent) {
-                    val uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L
-                    getContent(msg, uid, folderName, errorReadingContentString)
-                } else {
-                    Triple("", null, emptyList())
-                }
-                EmailMessage(
-                    id = msg.messageNumber.toString(),
-                    uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
-                    subject = msg.subject ?: noSubjectString,
-                    sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
-                    replyTo = msg.replyTo?.firstOrNull()?.toString(),
-                    toRecipients = msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() },
-                    ccRecipients = msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() },
-                    content = text,
-                    htmlContent = html,
-                    date = msg.sentDate?.toString() ?: "",
-                    folder = folderName,
-                    isRead = msg.flags.contains(Flags.Flag.SEEN),
-                    hasAttachments = atts.isNotEmpty() || checkHasAttachments(msg)
-                )
+            try {
+                folder.fetch(lastMessages, fp)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            folder.close(false)
-            store.close()
+            val result = lastMessages.reversedArray().mapNotNull { msg ->
+                try {
+                    val uid = if (folder is IMAPFolder) {
+                        try { folder.getUID(msg) } catch (e: Exception) { -1L }
+                    } else -1L
+
+                    val (text, html, atts) = if (fetchContent && uid > 0) {
+                        getContent(msg, uid, folderName, errorReadingContentString)
+                    } else {
+                        Triple("", null, emptyList())
+                    }
+
+                    val subject = try { msg.subject } catch (e: Exception) { null } ?: noSubjectString
+                    val sender = try { msg.from?.firstOrNull()?.toString() } catch (e: Exception) { null } ?: unknownSenderString
+                    val replyTo = try { msg.replyTo?.firstOrNull()?.toString() } catch (e: Exception) { null }
+                    val toRecipients = try { msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                    val ccRecipients = try { msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                    val date = try { msg.sentDate?.toString() } catch (e: Exception) { null } ?: ""
+                    val isRead = try { msg.flags.contains(Flags.Flag.SEEN) } catch (e: Exception) { false }
+                    val hasAttachments = atts.isNotEmpty() || try { checkHasAttachments(msg) } catch (e: Exception) { false }
+                    val id = try { msg.messageNumber.toString() } catch (e: Exception) { uid.toString() }
+
+                    EmailMessage(
+                        id = id,
+                        uid = uid,
+                        subject = subject,
+                        sender = sender,
+                        replyTo = replyTo,
+                        toRecipients = toRecipients,
+                        ccRecipients = ccRecipients,
+                        content = text,
+                        htmlContent = html,
+                        date = date,
+                        folder = folderName,
+                        isRead = isRead,
+                        hasAttachments = hasAttachments
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             result
         } catch (e: Exception) {
             e.printStackTrace()
-            throw e
+            emptyList()
         }
     }
 
@@ -187,39 +207,53 @@ class ImapManager {
         host: String,
         folderName: String = "Inbox",
         limit: Int = 50
-    ): List<Long> {
+    ): List<Long>? {
         val properties = getImapProperties(host)
         return try {
             val session = Session.getInstance(properties, null)
             val store = session.getStore("imaps")
             store.connect(host, email, password)
 
-            val folder = (getFolderSafely(store, folderName) as? IMAPFolder) ?: return emptyList()
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder) ?: return null
             folder.open(Folder.READ_ONLY)
 
             val totalMessages = folder.messageCount
             if (totalMessages == 0) {
-                folder.close(false)
-                store.close()
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
                 return emptyList()
             }
 
             val start = (totalMessages - limit + 1).coerceAtLeast(1)
             val end = totalMessages
             val messages = folder.getMessages(start, end)
-            
-            val fp = FetchProfile()
-            fp.add(UIDFolder.FetchProfileItem.UID)
-            folder.fetch(messages, fp)
+            val validMessages = messages.filterNotNull().toTypedArray()
 
-            val uids = messages.map { folder.getUID(it) }.reversed()
+            if (validMessages.isNotEmpty()) {
+                val fp = FetchProfile()
+                fp.add(UIDFolder.FetchProfileItem.UID)
+                try {
+                    folder.fetch(validMessages, fp)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            val uids = validMessages.mapNotNull { msg ->
+                try {
+                    val uid = folder.getUID(msg)
+                    if (uid > 0) uid else null
+                } catch (e: Exception) {
+                    null
+                }
+            }.reversed()
             
-            folder.close(false)
-            store.close()
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             uids
         } catch (e: Exception) {
             e.printStackTrace()
-            emptyList()
+            null
         }
     }
 
@@ -242,18 +276,33 @@ class ImapManager {
             folder.open(Folder.READ_ONLY)
 
             val messages = folder.getMessagesByUID(uids.toLongArray())
-            
-            val fp = FetchProfile()
-            fp.add(FetchProfile.Item.FLAGS)
-            fp.add(UIDFolder.FetchProfileItem.UID)
-            folder.fetch(messages, fp)
+            val validMessages = messages.filterNotNull().toTypedArray()
 
-            val result = messages.associate { msg ->
-                folder.getUID(msg) to msg.flags.contains(Flags.Flag.SEEN)
+            if (validMessages.isNotEmpty()) {
+                val fp = FetchProfile()
+                fp.add(FetchProfile.Item.FLAGS)
+                fp.add(UIDFolder.FetchProfileItem.UID)
+                try {
+                    folder.fetch(validMessages, fp)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
 
-            folder.close(false)
-            store.close()
+            val result = validMessages.mapNotNull { msg ->
+                try {
+                    val uid = folder.getUID(msg)
+                    if (uid <= 0) return@mapNotNull null
+                    val flags = try { msg.flags } catch (e: Exception) { null }
+                    val isRead = flags?.contains(Flags.Flag.SEEN) == true
+                    uid to isRead
+                } catch (e: Exception) {
+                    null
+                }
+            }.toMap()
+
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             result
         } catch (e: Exception) {
             e.printStackTrace()
@@ -282,33 +331,60 @@ class ImapManager {
             folder.open(Folder.READ_ONLY)
 
             val messages = folder.getMessagesByUID(uids.toLongArray())
-            
-            val fp = FetchProfile()
-            fp.add(FetchProfile.Item.ENVELOPE)
-            fp.add(FetchProfile.Item.FLAGS)
-            fp.add(UIDFolder.FetchProfileItem.UID)
-            folder.fetch(messages, fp)
+            val validMessages = messages.filterNotNull().toTypedArray()
 
-            val result = messages.map { msg ->
-                EmailMessage(
-                    id = msg.messageNumber.toString(),
-                    uid = folder.getUID(msg),
-                    subject = msg.subject ?: noSubjectString,
-                    sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
-                    replyTo = msg.replyTo?.firstOrNull()?.toString(),
-                    toRecipients = msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() },
-                    ccRecipients = msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() },
-                    content = "",
-                    htmlContent = null,
-                    date = msg.sentDate?.toString() ?: "",
-                    folder = folderName,
-                    isRead = msg.flags.contains(Flags.Flag.SEEN),
-                    hasAttachments = checkHasAttachments(msg)
-                )
+            if (validMessages.isNotEmpty()) {
+                val fp = FetchProfile()
+                fp.add(FetchProfile.Item.ENVELOPE)
+                fp.add(FetchProfile.Item.FLAGS)
+                fp.add(UIDFolder.FetchProfileItem.UID)
+                try {
+                    folder.fetch(validMessages, fp)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            val result = validMessages.mapNotNull { msg ->
+                try {
+                    val uid = folder.getUID(msg)
+                    if (uid <= 0) return@mapNotNull null
+
+                    val flags = try { msg.flags } catch (e: Exception) { null }
+                    if (flags?.contains(Flags.Flag.DELETED) == true) return@mapNotNull null
+
+                    val subject = try { msg.subject } catch (e: Exception) { null } ?: noSubjectString
+                    val sender = try { msg.from?.firstOrNull()?.toString() } catch (e: Exception) { null } ?: unknownSenderString
+                    val replyTo = try { msg.replyTo?.firstOrNull()?.toString() } catch (e: Exception) { null }
+                    val toRecipients = try { msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                    val ccRecipients = try { msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                    val date = try { msg.sentDate?.toString() } catch (e: Exception) { null } ?: ""
+                    val isRead = flags?.contains(Flags.Flag.SEEN) == true
+                    val hasAttachments = try { checkHasAttachments(msg) } catch (e: Exception) { false }
+                    val messageNumber = try { msg.messageNumber.toString() } catch (e: Exception) { uid.toString() }
+
+                    EmailMessage(
+                        id = messageNumber,
+                        uid = uid,
+                        subject = subject,
+                        sender = sender,
+                        replyTo = replyTo,
+                        toRecipients = toRecipients,
+                        ccRecipients = ccRecipients,
+                        content = "",
+                        htmlContent = null,
+                        date = date,
+                        folder = folderName,
+                        isRead = isRead,
+                        hasAttachments = hasAttachments
+                    )
+                } catch (e: Exception) {
+                    null
+                }
             }.reversed()
 
-            folder.close(false)
-            store.close()
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             result
         } catch (e: Exception) {
             e.printStackTrace()
@@ -338,13 +414,12 @@ class ImapManager {
             val unreadMessages = folder.search(FlagTerm(Flags(Flags.Flag.SEEN), false))
             
             if (unreadMessages.isEmpty()) {
-                folder.close(false)
-                store.close()
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
                 return emptyList()
             }
 
-            // Take the latest 'limit' unread messages
-            val lastUnread = unreadMessages.reversedArray().take(limit).toTypedArray()
+            val lastUnread = unreadMessages.filterNotNull().reversed().take(limit).toTypedArray()
             
             val fp = FetchProfile()
             fp.add(FetchProfile.Item.ENVELOPE)
@@ -352,32 +427,53 @@ class ImapManager {
             if (folder is IMAPFolder) {
                 fp.add(UIDFolder.FetchProfileItem.UID)
             }
-            folder.fetch(lastUnread, fp)
-
-            val result = lastUnread.map { msg ->
-                EmailMessage(
-                    id = msg.messageNumber.toString(),
-                    uid = if (folder is IMAPFolder) folder.getUID(msg) else -1L,
-                    subject = msg.subject ?: noSubjectString,
-                    sender = msg.from?.firstOrNull()?.toString() ?: unknownSenderString,
-                    replyTo = msg.replyTo?.firstOrNull()?.toString(),
-                    toRecipients = msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() },
-                    ccRecipients = msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() },
-                    content = "",
-                    htmlContent = null,
-                    date = msg.sentDate?.toString() ?: "",
-                    folder = folderName,
-                    isRead = false,
-                    hasAttachments = checkHasAttachments(msg)
-                )
+            try {
+                folder.fetch(lastUnread, fp)
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
 
-            folder.close(false)
-            store.close()
+            val result = lastUnread.mapNotNull { msg ->
+                try {
+                    val uid = if (folder is IMAPFolder) {
+                        try { folder.getUID(msg) } catch (e: Exception) { -1L }
+                    } else -1L
+
+                    val subject = try { msg.subject } catch (e: Exception) { null } ?: noSubjectString
+                    val sender = try { msg.from?.firstOrNull()?.toString() } catch (e: Exception) { null } ?: unknownSenderString
+                    val replyTo = try { msg.replyTo?.firstOrNull()?.toString() } catch (e: Exception) { null }
+                    val toRecipients = try { msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                    val ccRecipients = try { msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                    val date = try { msg.sentDate?.toString() } catch (e: Exception) { null } ?: ""
+                    val hasAttachments = try { checkHasAttachments(msg) } catch (e: Exception) { false }
+                    val id = try { msg.messageNumber.toString() } catch (e: Exception) { uid.toString() }
+
+                    EmailMessage(
+                        id = id,
+                        uid = uid,
+                        subject = subject,
+                        sender = sender,
+                        replyTo = replyTo,
+                        toRecipients = toRecipients,
+                        ccRecipients = ccRecipients,
+                        content = "",
+                        htmlContent = null,
+                        date = date,
+                        folder = folderName,
+                        isRead = false,
+                        hasAttachments = hasAttachments
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             result
         } catch (e: Exception) {
             e.printStackTrace()
-            throw e
+            emptyList()
         }
     }
 
@@ -409,12 +505,15 @@ class ImapManager {
             if (folder == null) return Triple(errorReadingContentString, null, emptyList())
             folder.open(Folder.READ_ONLY)
 
-            val msg = folder.getMessageByUID(uid)
-            val result = if (msg != null) getContent(msg, uid, folderName, errorReadingContentString) 
-                         else Triple(errorReadingContentString, null, emptyList())
+            val msg = try { folder.getMessageByUID(uid) } catch (e: Exception) { null }
+            val result = if (msg != null) {
+                getContent(msg, uid, folderName, errorReadingContentString)
+            } else {
+                Triple(errorReadingContentString, null, emptyList())
+            }
 
-            folder.close(false)
-            store.close()
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
             result
         } catch (e: Exception) {
             e.printStackTrace()
@@ -433,8 +532,7 @@ class ImapManager {
             var text = textBuilder.toString().trim()
             var html = htmlBuilder.toString().trim().ifEmpty { null }
             
-            // Fallback: if text is empty or looks like a placeholder, and HTML is not, strip HTML to get text
-            val isPlaceholder = text.isEmpty() || 
+            val isPlaceholder = text.isEmpty() ||
                                text.lowercase().contains("cannot load") || 
                                text.lowercase().contains("view this email in a browser") ||
                                text.lowercase().contains("fout bij lezen") ||
@@ -455,7 +553,6 @@ class ImapManager {
                 if (images.isNotEmpty()) {
                     var updatedHtml = h
                     for ((cid, base64) in images) {
-                        // More robust regex to handle various CID formats in src attributes
                         val encodedCid = cid.replace("@", "%40")
                         val pattern = "cid:<?(${Regex.escape(cid)}|${Regex.escape(encodedCid)})>?".toRegex(RegexOption.IGNORE_CASE)
                         updatedHtml = updatedHtml.replace(pattern, base64)
@@ -500,11 +597,13 @@ class ImapManager {
         try {
             val disposition = try { part.disposition } catch (e: Exception) { null }
             val fileName = try { part.fileName } catch (e: Exception) { null }
-            
-            // Check if this part has a Content-ID (inline image)
-            val cid = part.getHeader("Content-ID")?.firstOrNull()?.trim()?.removeSurrounding("<", ">")
+            val contentType = try { part.contentType } catch (e: Exception) { null }
 
-            val isCalendar = part.isMimeType("text/calendar") || part.isMimeType("application/ics") || fileName?.lowercase()?.endsWith(".ics") == true
+            val cid = try { part.getHeader("Content-ID")?.firstOrNull()?.trim()?.removeSurrounding("<", ">") } catch (e: Exception) { null }
+
+            val isCalendar = (try { part.isMimeType("text/calendar") } catch (e: Exception) { false }) ||
+                             (try { part.isMimeType("application/ics") } catch (e: Exception) { false }) ||
+                             fileName?.lowercase()?.endsWith(".ics") == true
             val effectiveFileName = fileName ?: if (isCalendar) "invite.ics" else null
 
             val isAttachment = disposition?.equals(Part.ATTACHMENT, ignoreCase = true) == true || 
@@ -512,20 +611,28 @@ class ImapManager {
                               isCalendar
             
             if (isAttachment && effectiveFileName != null) {
+                val mime = if (isCalendar) "text/calendar" else (contentType?.substringBefore(";") ?: "application/octet-stream")
+                val size = try { part.size.toLong().coerceAtLeast(0L) } catch (e: Exception) { 0L }
                 attachments.add(
                     Attachment(
                         emailUid = uid,
                         folder = folderName,
                         fileName = effectiveFileName,
-                        mimeType = if (part.isMimeType("text/calendar") || part.isMimeType("application/ics")) "text/calendar" else part.contentType.substringBefore(";"),
-                        size = part.size.toLong().coerceAtLeast(0L),
+                        mimeType = mime,
+                        size = size,
                         partIndex = partPath
                     )
                 )
-                return // Don't process content of attachments as body text
+                return
             }
 
-            if (part.isMimeType("text/plain")) {
+            val isTextPlain = try { part.isMimeType("text/plain") } catch (e: Exception) { false }
+            val isTextHtml = try { part.isMimeType("text/html") } catch (e: Exception) { false }
+            val isMultipart = try { part.isMimeType("multipart/*") } catch (e: Exception) { false }
+            val isRfc822 = try { part.isMimeType("message/rfc822") } catch (e: Exception) { false }
+            val isImage = try { part.isMimeType("image/*") } catch (e: Exception) { false }
+
+            if (isTextPlain) {
                 val content = try { part.content } catch (e: Exception) { null }
                 if (content is String) {
                     text.append(content)
@@ -537,7 +644,7 @@ class ImapManager {
                         e.printStackTrace()
                     }
                 }
-            } else if (part.isMimeType("text/html")) {
+            } else if (isTextHtml) {
                 val content = try { part.content } catch (e: Exception) { null }
                 if (content is String) {
                     html.append(content)
@@ -549,37 +656,44 @@ class ImapManager {
                         e.printStackTrace()
                     }
                 }
-            } else if (part.isMimeType("multipart/*")) {
-                val multiPart = part.content as MimeMultipart
-                for (i in 0 until multiPart.count) {
-                    val nextPath = if (partPath.isEmpty()) "$i" else "$partPath.$i"
-                    extractContent(multiPart.getBodyPart(i), uid, folderName, nextPath, text, html, images, attachments)
+            } else if (isMultipart) {
+                val multiPart = try { part.content as? MimeMultipart } catch (e: Exception) { null }
+                if (multiPart != null) {
+                    val count = try { multiPart.count } catch (e: Exception) { 0 }
+                    for (i in 0 until count) {
+                        val bodyPart = try { multiPart.getBodyPart(i) } catch (e: Exception) { null } ?: continue
+                        val nextPath = if (partPath.isEmpty()) "$i" else "$partPath.$i"
+                        extractContent(bodyPart, uid, folderName, nextPath, text, html, images, attachments)
+                    }
                 }
-            } else if (part.isMimeType("message/rfc822")) {
-                val content = part.content
+            } else if (isRfc822) {
+                val content = try { part.content } catch (e: Exception) { null }
                 if (content is Part) {
                     extractContent(content, uid, folderName, partPath, text, html, images, attachments)
                 }
-            } else if (part.isMimeType("image/*")) {
-                val imageCid = cid ?: part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">")
+            } else if (isImage) {
+                val imageCid = cid ?: try { part.getHeader("Content-ID")?.firstOrNull()?.removeSurrounding("<", ">") } catch (e: Exception) { null }
                 if (imageCid != null) {
                     try {
                         val inputStream = part.inputStream
                         val bytes = inputStream.readBytes()
                         val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-                        images[imageCid] = "data:${part.contentType.substringBefore(";")};base64,$base64"
+                        val mime = contentType?.substringBefore(";") ?: "image/jpeg"
+                        images[imageCid] = "data:$mime;base64,$base64"
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
                 }
                 if (fileName != null) {
+                    val mime = contentType?.substringBefore(";") ?: "image/jpeg"
+                    val size = try { part.size.toLong().coerceAtLeast(0L) } catch (e: Exception) { 0L }
                     attachments.add(
                         Attachment(
                             emailUid = uid,
                             folder = folderName,
                             fileName = fileName,
-                            mimeType = part.contentType.substringBefore(";"),
-                            size = part.size.toLong().coerceAtLeast(0L),
+                            mimeType = mime,
+                            size = size,
                             partIndex = partPath
                         )
                     )
@@ -731,7 +845,7 @@ class ImapManager {
                     null
                 }
             }
-            store.close()
+            try { store.close() } catch (e: Exception) {}
             if (folders.none { it.name.equals("Inbox", ignoreCase = true) }) {
                 listOf(FolderInfo("Inbox", 0, 0)) + folders
             } else {
@@ -762,14 +876,14 @@ class ImapManager {
                 return false
             }
             folder.open(Folder.READ_WRITE)
-            val message = folder.getMessageByUID(uid)
+            val message = try { folder.getMessageByUID(uid) } catch (e: Exception) { null }
 
             if (message != null) {
                 val trashFolder = findTrashFolder(store)
                 val inTrash = isTrashFolder(folderName, folder, trashFolder)
 
                 if (inTrash) {
-                    message.setFlag(Flags.Flag.DELETED, true)
+                    try { message.setFlag(Flags.Flag.DELETED, true) } catch (e: Exception) {}
                 } else {
                     if (trashFolder != null && !trashFolder.fullName.equals(folder.fullName, ignoreCase = true)) {
                         if (!trashFolder.exists()) {
@@ -785,7 +899,7 @@ class ImapManager {
                             e.printStackTrace()
                         }
                     }
-                    message.setFlag(Flags.Flag.DELETED, true)
+                    try { message.setFlag(Flags.Flag.DELETED, true) } catch (e: Exception) {}
                 }
                 try {
                     folder.expunge()
@@ -828,7 +942,7 @@ class ImapManager {
             }
 
             srcFolder.open(Folder.READ_WRITE)
-            val message = srcFolder.getMessageByUID(uid)
+            val message = try { srcFolder.getMessageByUID(uid) } catch (e: Exception) { null }
 
             if (message != null) {
                 if (!targetFolder.exists()) {
@@ -877,8 +991,8 @@ class ImapManager {
                 return false
             }
             folder.open(Folder.READ_WRITE)
-            val message = folder.getMessageByUID(uid)
-            message?.setFlag(Flags.Flag.SEEN, isRead)
+            val message = try { folder.getMessageByUID(uid) } catch (e: Exception) { null }
+            try { message?.setFlag(Flags.Flag.SEEN, isRead) } catch (e: Exception) {}
             try { folder.close(true) } catch (e: Exception) {}
             try { store.close() } catch (e: Exception) {}
             true
@@ -899,10 +1013,10 @@ class ImapManager {
             if (trashFolder != null) {
                 trashFolder.open(Folder.READ_WRITE)
                 val messages = trashFolder.messages
-                for (msg in messages) {
-                    msg.setFlag(Flags.Flag.DELETED, true)
+                for (msg in messages.filterNotNull()) {
+                    try { msg.setFlag(Flags.Flag.DELETED, true) } catch (e: Exception) {}
                 }
-                trashFolder.expunge()
+                try { trashFolder.expunge() } catch (e: Exception) {}
                 try { trashFolder.close(true) } catch (e: Exception) {}
             }
             try { store.close() } catch (e: Exception) {}
@@ -926,7 +1040,9 @@ class ImapManager {
             val store = session.getStore("imaps")
             store.connect(host, email, password)
             val sentFolder = findSentFolder(store) ?: store.getFolder("Sent")
-            if (!sentFolder.exists()) sentFolder.create(Folder.HOLDS_MESSAGES)
+            if (!sentFolder.exists()) {
+                try { sentFolder.create(Folder.HOLDS_MESSAGES) } catch (e: Exception) {}
+            }
             sentFolder.appendMessages(arrayOf(message))
             try { store.close() } catch (e: Exception) {}
         } catch (e: Exception) {
@@ -1002,7 +1118,6 @@ class ImapManager {
             } else {
                 val multipart = MimeMultipart()
 
-                // Body part
                 val messageBodyPart = javax.mail.internet.MimeBodyPart()
                 if (isHtml) {
                     messageBodyPart.setContent(content, "text/html; charset=utf-8")
@@ -1011,7 +1126,6 @@ class ImapManager {
                 }
                 multipart.addBodyPart(messageBodyPart)
 
-                // Attachment parts
                 for (uri in attachments) {
                     val attachmentBodyPart = javax.mail.internet.MimeBodyPart()
                     val inputStream = context.contentResolver.openInputStream(uri)
@@ -1019,7 +1133,6 @@ class ImapManager {
                     val dataSource = javax.mail.util.ByteArrayDataSource(bytes, context.contentResolver.getType(uri) ?: "application/octet-stream")
                     attachmentBodyPart.dataHandler = javax.activation.DataHandler(dataSource)
                     
-                    // Get filename from URI
                     var fileName = "attachment"
                     val cursor = context.contentResolver.query(uri, null, null, null, null)
                     cursor?.use {
@@ -1069,10 +1182,10 @@ class ImapManager {
             }
             folder.open(Folder.READ_ONLY)
 
-            val msg = folder.getMessageByUID(uid)
+            val msg = try { folder.getMessageByUID(uid) } catch (e: Exception) { null }
             if (msg == null) {
-                folder.close(false)
-                store.close()
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
                 return false
             }
 
@@ -1081,12 +1194,12 @@ class ImapManager {
                 part.inputStream.use { input ->
                     input.copyTo(outputStream)
                 }
-                folder.close(false)
-                store.close()
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
                 true
             } else {
-                folder.close(false)
-                store.close()
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
                 false
             }
         } catch (e: Exception) {
@@ -1103,10 +1216,10 @@ class ImapManager {
         
         for (p in parts) {
             val idx = p.toIntOrNull() ?: return null
-            val content = currentPart.content
+            val content = try { currentPart.content } catch (e: Exception) { return null }
             if (content is MimeMultipart) {
                 if (idx < content.count) {
-                    currentPart = content.getBodyPart(idx)
+                    currentPart = try { content.getBodyPart(idx) } catch (e: Exception) { return null }
                 } else {
                     return null
                 }

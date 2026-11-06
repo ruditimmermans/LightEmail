@@ -4,6 +4,7 @@
     <string name="back">Back</string>
     <string name="back_to_email">Back to email</string>
     <string name="refresh">Refresh</string>
+    <string name="more_options">More options</string>
     <string name="reply_sent">Reply sent</string>
     <string name="email_sent">Email sent</string>
     <string name="failed_to_send_reply">Failed to send reply</string>

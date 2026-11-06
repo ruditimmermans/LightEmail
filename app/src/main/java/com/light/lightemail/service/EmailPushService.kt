@@ -53,29 +53,33 @@ class EmailPushService : Service() {
     }
 
     private fun startForegroundService() {
-        val channelId = "push_service_channel"
-        val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                getString(R.string.push_service_channel_name),
-                NotificationManager.IMPORTANCE_LOW
-            )
-            notificationManager.createNotificationChannel(channel)
-        }
+        try {
+            val channelId = "push_service_channel"
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(getString(R.string.push_service_title))
-            .setContentText(getString(R.string.push_service_desc))
-            .setSmallIcon(android.R.drawable.ic_dialog_email)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
-            .build()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    channelId,
+                    getString(R.string.push_service_channel_name),
+                    NotificationManager.IMPORTANCE_LOW
+                )
+                notificationManager.createNotificationChannel(channel)
+            }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(1001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
-        } else {
-            startForeground(1001, notification)
+            val notification = NotificationCompat.Builder(this, channelId)
+                .setContentTitle(getString(R.string.push_service_title))
+                .setContentText(getString(R.string.push_service_desc))
+                .setSmallIcon(android.R.drawable.ic_dialog_email)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build()
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                startForeground(1001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+            } else {
+                startForeground(1001, notification)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -96,30 +100,30 @@ class EmailPushService : Service() {
                     try {
                         imapManager.startIdle(email, password, host) {
                             val now = System.currentTimeMillis()
-                            // Refined debounce: 5 seconds and check if WorkManager already has pending sync
                             if (now - lastSyncTime > 5000) {
                                 lastSyncTime = now
-                                // Trigger SyncWorker
-                                val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
-                                    .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                                    .setConstraints(
-                                        androidx.work.Constraints.Builder()
-                                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
-                                            .build()
+                                try {
+                                    val syncRequest = OneTimeWorkRequestBuilder<SyncWorker>()
+                                        .setExpedited(androidx.work.OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
+                                        .setConstraints(
+                                            androidx.work.Constraints.Builder()
+                                                .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                                .build()
+                                        )
+                                        .build()
+                                    WorkManager.getInstance(applicationContext).enqueueUniqueWork(
+                                        "email_sync_push",
+                                        ExistingWorkPolicy.REPLACE,
+                                        syncRequest
                                     )
-                                    .build()
-                                WorkManager.getInstance(applicationContext).enqueueUniqueWork(
-                                    "email_sync_push",
-                                    ExistingWorkPolicy.REPLACE, // Use REPLACE to ensure new flags/read status are processed immediately
-                                    syncRequest
-                                )
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
                             }
                         }
-                    } catch (e: Exception) {
+                    } catch (e: Throwable) {
                         e.printStackTrace()
-                        // If it fails, wait a bit before retrying.
-                        // Shorter delay for potential transient network issues.
-                        delay(30000) 
+                        delay(30000)
                     }
                 } else {
                     stopSelf()
@@ -131,7 +135,11 @@ class EmailPushService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        connectivityManager?.unregisterNetworkCallback(networkCallback)
+        try {
+            connectivityManager?.unregisterNetworkCallback(networkCallback)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         serviceScope.cancel()
     }
 }

@@ -4,6 +4,7 @@
     <string name="back">Terug</string>
     <string name="back_to_email">Terug naar e-mail</string>
     <string name="refresh">Vernieuwen</string>
+    <string name="more_options">Meer opties</string>
     <string name="reply_sent">Antwoord verzonden</string>
     <string name="email_sent">E-mail verzonden</string>
     <string name="failed_to_send_reply">Antwoord verzenden mislukt</string>

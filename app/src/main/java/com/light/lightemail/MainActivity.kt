@@ -28,8 +28,7 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { isGranted: Boolean ->
-        // Handle permission result if needed
+    ) { _: Boolean ->
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -91,7 +90,6 @@ class MainActivity : ComponentActivity() {
                                 body = mt.body ?: ""
                                 cc = mt.cc ?: ""
 
-                                // bcc isn't explicitly in MailTo but can be in query
                                 val uri = Uri.parse(mailto)
                                 bcc = uri.getQueryParameter("bcc") ?: ""
                             } catch (e: Exception) {
@@ -148,7 +146,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun getRecipients(intent: Intent, extra: String): String {
-        // 1. Try String Array (Standard)
         try {
             val recipients = intent.getStringArrayExtra(extra)
             if (recipients != null && recipients.isNotEmpty()) {
@@ -156,7 +153,6 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {}
 
-        // 2. Try String ArrayList (Common in some apps)
         try {
             val recipientsList = intent.getStringArrayListExtra(extra)
             if (recipientsList != null && recipientsList.isNotEmpty()) {
@@ -164,7 +160,6 @@ class MainActivity : ComponentActivity() {
             }
         } catch (e: Exception) {}
 
-        // 3. Fallback to single String
         return try {
             intent.getStringExtra(extra) ?: ""
         } catch (e: Exception) {
@@ -196,11 +191,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startPushService() {
-        val serviceIntent = Intent(this, com.light.lightemail.service.EmailPushService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
+        try {
+            val serviceIntent = Intent(this, com.light.lightemail.service.EmailPushService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 }

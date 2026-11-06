@@ -40,9 +40,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.DriveFileMove
-import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.automirrored.filled.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -118,6 +116,7 @@ fun MainScreen(
     var currentScreen by remember { mutableStateOf(Screen.Home) }
     var selectedEmail by remember { mutableStateOf<EmailMessage?>(null) }
     var composeMode by remember { mutableStateOf(ComposeMode.New) }
+    var showMoveDialog by remember { mutableStateOf(false) }
     
     var initialTo by remember { mutableStateOf("") }
     var initialSubject by remember { mutableStateOf("") }
@@ -128,6 +127,11 @@ fun MainScreen(
     
     val pagingEmails = viewModel.pagingEmails.collectAsLazyPagingItems()
     val emails by viewModel.emails.collectAsState()
+    val activeEmail by remember(selectedEmail, emails) {
+        derivedStateOf {
+            emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+        }
+    }
     val isLoading by viewModel.isLoading.collectAsState()
     val accountEmail by viewModel.accountEmail.collectAsState()
     val textSize by viewModel.textSize.collectAsState()
@@ -313,6 +317,104 @@ fun MainScreen(
                                 IconButton(onClick = { viewModel.refreshEmails() }) {
                                     Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.refresh), modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier)
                                 }
+                            } else if (currentScreen == Screen.ViewEmail && activeEmail != null) {
+                                val currentEmail = activeEmail!!
+                                var showMenu by remember { mutableStateOf(false) }
+                                Box {
+                                    IconButton(onClick = { showMenu = true }) {
+                                        Icon(
+                                            imageVector = Icons.Default.MoreVert,
+                                            contentDescription = stringResource(R.string.more_options),
+                                            modifier = if (isVerySmallScreen) Modifier.size(20.dp) else Modifier
+                                        )
+                                    }
+                                    DropdownMenu(
+                                        expanded = showMenu,
+                                        onDismissRequest = { showMenu = false }
+                                    ) {
+                                        val folderLower = currentEmail.folder.lowercase()
+                                        val isTrashFolder = folderLower.contains("trash") || folderLower.contains("bin") || folderLower.contains("deleted") || folderLower.contains("papierkorb") || folderLower.contains("corbeille")
+
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.reply)) },
+                                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                selectedEmail = currentEmail
+                                                composeMode = ComposeMode.Reply
+                                                currentScreen = Screen.Compose
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.reply_all)) },
+                                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.ReplyAll, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                selectedEmail = currentEmail
+                                                composeMode = ComposeMode.ReplyAll
+                                                currentScreen = Screen.Compose
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.reply_to_sender)) },
+                                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                selectedEmail = currentEmail
+                                                composeMode = ComposeMode.ReplyToSender
+                                                currentScreen = Screen.Compose
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.forward)) },
+                                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.Forward, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                selectedEmail = currentEmail
+                                                composeMode = ComposeMode.Forward
+                                                currentScreen = Screen.Compose
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(if (currentEmail.isRead) R.string.mark_as_unread else R.string.mark_as_read)) },
+                                            leadingIcon = { Icon(if (currentEmail.isRead) Icons.Outlined.MarkAsUnread else Icons.Outlined.Drafts, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                viewModel.toggleReadStatus(currentEmail)
+                                            }
+                                        )
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.move_to_folder)) },
+                                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.DriveFileMove, contentDescription = null) },
+                                            onClick = {
+                                                showMenu = false
+                                                showMoveDialog = true
+                                            }
+                                        )
+                                        if (isTrashFolder) {
+                                            DropdownMenuItem(
+                                                text = { Text(stringResource(R.string.move_to_inbox)) },
+                                                leadingIcon = { Icon(Icons.Default.Inbox, contentDescription = null) },
+                                                onClick = {
+                                                    showMenu = false
+                                                    selectedEmail = null
+                                                    currentScreen = Screen.Home
+                                                    viewModel.moveEmail(currentEmail, "Inbox")
+                                                }
+                                            )
+                                        }
+                                        DropdownMenuItem(
+                                            text = { Text(stringResource(R.string.delete), color = MaterialTheme.colorScheme.error) },
+                                            leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                            onClick = {
+                                                showMenu = false
+                                                selectedEmail = null
+                                                currentScreen = Screen.Home
+                                                viewModel.deleteEmail(currentEmail)
+                                            }
+                                        )
+                                    }
+                                }
                             }
                         },
                         windowInsets = TopAppBarDefaults.windowInsets,
@@ -436,50 +538,12 @@ fun MainScreen(
                         Screen.Settings -> SettingsScreen(viewModel = viewModel)
                         Screen.AddressBook -> AddressBookScreen(viewModel = viewModel, textSize = textSize)
                         Screen.ViewEmail -> {
-                            // Use derivedStateOf to avoid unnecessary recompositions while viewing
-                            val emailToDisplay by remember(selectedEmail, emails) {
-                                derivedStateOf {
-                                    emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
-                                }
-                            }
-
-                            emailToDisplay?.let { email ->
+                            activeEmail?.let { email ->
                                 key(email.uid) {
                                     EmailDetailScreen(
                                         viewModel = viewModel,
                                         email = email,
                                         textSize = textSize,
-                                        onToggleReadStatus = { viewModel.toggleReadStatus(email) },
-                                        onReply = {
-                                            selectedEmail = email
-                                            composeMode = ComposeMode.Reply
-                                            currentScreen = Screen.Compose
-                                        },
-                                        onForward = {
-                                            selectedEmail = email
-                                            composeMode = ComposeMode.Forward
-                                            currentScreen = Screen.Compose
-                                        },
-                                        onDelete = {
-                                            selectedEmail = null
-                                            currentScreen = Screen.Home
-                                            viewModel.deleteEmail(email)
-                                        },
-                                        onMoveToFolder = { targetFolder ->
-                                            selectedEmail = null
-                                            currentScreen = Screen.Home
-                                            viewModel.moveEmail(email, targetFolder)
-                                        },
-                                        onReplyAll = {
-                                            selectedEmail = email
-                                            composeMode = ComposeMode.ReplyAll
-                                            currentScreen = Screen.Compose
-                                        },
-                                        onReplyToSender = {
-                                            selectedEmail = email
-                                            composeMode = ComposeMode.ReplyToSender
-                                            currentScreen = Screen.Compose
-                                        },
                                         onAddContact = { name, emailAddr ->
                                             viewModel.addContact(name, emailAddr)
                                             Toast.makeText(context, context.getString(R.string.contact_added), Toast.LENGTH_SHORT).show()
@@ -518,6 +582,44 @@ fun MainScreen(
                 }
             }
         }
+    }
+
+    if (showMoveDialog && activeEmail != null) {
+        val emailToMove = activeEmail!!
+        AlertDialog(
+            onDismissRequest = { showMoveDialog = false },
+            title = { Text(stringResource(R.string.move_to_folder), fontSize = headerTextSize.sp, fontWeight = FontWeight.Bold) },
+            text = {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    folders.filter { !it.name.equals(emailToMove.folder, ignoreCase = true) }.forEach { folder ->
+                        val displayName = remember(folder.name) {
+                            folder.name
+                                .removePrefix("[Gmail]/")
+                                .removePrefix("[GMAIL]/")
+                                .removePrefix("INBOX.")
+                                .removePrefix("INBOX/")
+                        }
+                        TextButton(
+                            onClick = {
+                                showMoveDialog = false
+                                selectedEmail = null
+                                currentScreen = Screen.Home
+                                viewModel.moveEmail(emailToMove, folder.name)
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(displayName, fontSize = textSize.sp)
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showMoveDialog = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
+        )
     }
 }
 
@@ -716,19 +818,11 @@ fun EmailDetailScreen(
     viewModel: EmailViewModel,
     email: EmailMessage, 
     textSize: Float, 
-    onToggleReadStatus: () -> Unit = {},
-    onReply: () -> Unit, 
-    onForward: () -> Unit, 
-    onDelete: () -> Unit, 
-    onMoveToFolder: ((String) -> Unit)? = null,
-    onReplyAll: () -> Unit, 
-    onReplyToSender: () -> Unit, 
     onAddContact: (String, String) -> Unit
 ) {
     val themeMode by viewModel.themeMode.collectAsState()
     val isDark = if (themeMode == "eink") false else isSystemInDarkTheme()
     val context = LocalContext.current
-    var showMoveDialog by remember { mutableStateOf(false) }
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
     val isVerySmallScreen = configuration.screenHeightDp < 480
@@ -749,320 +843,162 @@ fun EmailDetailScreen(
     val lazyListState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
 
-    Column(modifier = Modifier.fillMaxSize()) {
-        Box(modifier = Modifier.weight(1f)) {
-            if (showAttachments && attachments.isNotEmpty()) {
-                // Full screen Attachment View
-                Column(
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (showAttachments && attachments.isNotEmpty()) {
+            // Full screen Attachment View
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(if (isVerySmallScreen) 8.dp else 16.dp)
+            ) {
+                Row(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(if (isVerySmallScreen) 8.dp else 16.dp)
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Text(
+                        text = "ATTACHMENTS (${attachments.size})",
+                        fontSize = (textSize * 0.85f).sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    TextButton(
+                        onClick = { showAttachments = false },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
                     ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.back_to_email),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
                         Text(
-                            text = "ATTACHMENTS (${attachments.size})",
-                            fontSize = (textSize * 0.85f).sp,
-                            fontWeight = FontWeight.Bold,
+                            text = stringResource(R.string.back_to_email),
+                            fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
                         )
-                        TextButton(
-                            onClick = { showAttachments = false },
-                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = stringResource(R.string.back_to_email),
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(if (isVerySmallScreen) 14.dp else 16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = stringResource(R.string.back_to_email),
-                                fontSize = (if (isVerySmallScreen) textSize * 0.75f else textSize * 0.8f).sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
                     }
-                    HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
+                }
+                HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
 
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        item(key = "calendar") {
-                            CalendarSection(
-                                attachments = attachments,
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    item(key = "calendar") {
+                        CalendarSection(
+                            attachments = attachments,
+                            textSize = textSize,
+                            viewModel = viewModel
+                        )
+                    }
+                    if (regularAttachments.isNotEmpty()) {
+                        item(key = "regular") {
+                            AttachmentSection(
+                                attachments = regularAttachments,
+                                expanded = true,
+                                onToggle = { showAttachments = false },
                                 textSize = textSize,
                                 viewModel = viewModel
                             )
                         }
-                        if (regularAttachments.isNotEmpty()) {
-                            item(key = "regular") {
-                                AttachmentSection(
-                                    attachments = regularAttachments,
-                                    expanded = true,
-                                    onToggle = { showAttachments = false },
-                                    textSize = textSize,
-                                    viewModel = viewModel
-                                )
-                            }
-                        }
                     }
                 }
-            } else if (email.htmlContent != null) {
-                // HTML Layout: Email Header and WebView
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    item(key = "header") {
-                        EmailHeader(
-                            email = email,
-                            textSize = textSize,
-                            isVerySmallScreen = isVerySmallScreen,
-                            isShortScreen = isShortScreen,
-                            hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
-                            attachmentsCount = attachments.size,
-                            isAttachmentsExpanded = showAttachments,
-                            onToggleAttachments = {
-                                showAttachments = !showAttachments
-                            },
-                            onAddContact = onAddContact
-                        )
-                        HorizontalDivider()
-                    }
-
-                    item(key = "body") {
-                        HtmlView(
-                            html = email.htmlContent,
-                            isDark = isDark,
-                            textSize = textSize,
-                            attachments = emptyList(),
-                            showAttachments = false,
-                            viewModel = viewModel
-                        )
-                    }
+            }
+        } else if (email.htmlContent != null) {
+            // HTML Layout: Email Header and WebView
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item(key = "header") {
+                    EmailHeader(
+                        email = email,
+                        textSize = textSize,
+                        isVerySmallScreen = isVerySmallScreen,
+                        isShortScreen = isShortScreen,
+                        hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
+                        attachmentsCount = attachments.size,
+                        isAttachmentsExpanded = showAttachments,
+                        onToggleAttachments = {
+                            showAttachments = !showAttachments
+                        },
+                        onAddContact = onAddContact
+                    )
+                    HorizontalDivider()
                 }
-            } else {
-                // Plain Text Layout
-                LazyColumn(
-                    state = lazyListState,
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(if (isVerySmallScreen) 8.dp else 16.dp)
-                ) {
-                    item(key = "header") {
-                        EmailHeader(
-                            email = email,
-                            textSize = textSize,
-                            isVerySmallScreen = isVerySmallScreen,
-                            isShortScreen = isShortScreen,
-                            hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
-                            attachmentsCount = attachments.size,
-                            isAttachmentsExpanded = showAttachments,
-                            onToggleAttachments = {
-                                showAttachments = !showAttachments
-                            },
-                            onAddContact = onAddContact
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        HorizontalDivider()
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
 
-                    item(key = "body") {
-                        if (email.content.isNotEmpty()) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(Color.Black)
-                                    .padding(if (isVerySmallScreen) 4.dp else 8.dp)
-                            ) {
-                                if (!isVerySmallScreen) {
-                                    Text(
-                                        text = stringResource(R.string.secure_text_email),
-                                        color = Color.Green,
-                                        fontSize = textSize.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        modifier = Modifier.padding(bottom = 8.dp)
-                                    )
-                                }
+                item(key = "body") {
+                    HtmlView(
+                        html = email.htmlContent,
+                        isDark = isDark,
+                        textSize = textSize,
+                        attachments = emptyList(),
+                        showAttachments = false,
+                        viewModel = viewModel
+                    )
+                }
+            }
+        } else {
+            // Plain Text Layout
+            LazyColumn(
+                state = lazyListState,
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(if (isVerySmallScreen) 8.dp else 16.dp)
+            ) {
+                item(key = "header") {
+                    EmailHeader(
+                        email = email,
+                        textSize = textSize,
+                        isVerySmallScreen = isVerySmallScreen,
+                        isShortScreen = isShortScreen,
+                        hasAttachments = attachments.isNotEmpty() || email.hasAttachments,
+                        attachmentsCount = attachments.size,
+                        isAttachmentsExpanded = showAttachments,
+                        onToggleAttachments = {
+                            showAttachments = !showAttachments
+                        },
+                        onAddContact = onAddContact
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                item(key = "body") {
+                    if (email.content.isNotEmpty()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color.Black)
+                                .padding(if (isVerySmallScreen) 4.dp else 8.dp)
+                        ) {
+                            if (!isVerySmallScreen) {
                                 Text(
-                                    text = email.content,
+                                    text = stringResource(R.string.secure_text_email),
+                                    color = Color.Green,
                                     fontSize = textSize.sp,
-                                    color = MaterialTheme.colorScheme.onBackground
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(bottom = 8.dp)
                                 )
                             }
-                        } else {
-                            Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
-                                CircularProgressIndicator()
-                            }
+                            Text(
+                                text = email.content,
+                                fontSize = textSize.sp,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    } else {
+                        Box(modifier = Modifier.fillMaxWidth().height(200.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
                         }
                     }
                 }
             }
         }
-
-        val folderLower = email.folder.lowercase()
-        val isTrashFolder = folderLower.contains("trash") || folderLower.contains("bin") || folderLower.contains("deleted") || folderLower.contains("papierkorb") || folderLower.contains("corbeille")
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(vertical = if (isVerySmallScreen) 4.dp else 8.dp, horizontal = 4.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val iconSize = if (isVerySmallScreen) 20.dp else 24.dp
-            val labelFontSize = (if (isVerySmallScreen) textSize * 0.55f else textSize * 0.65f).coerceIn(9f, 13f).sp
-            val iconTint = MaterialTheme.colorScheme.onSurface
-
-            DetailActionButton(
-                icon = Icons.Default.Delete,
-                label = stringResource(R.string.delete),
-                onClick = onDelete,
-                tint = MaterialTheme.colorScheme.error,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-            if (isTrashFolder) {
-                DetailActionButton(
-                    icon = Icons.Default.Inbox,
-                    label = stringResource(R.string.move_to_inbox),
-                    onClick = { onMoveToFolder?.invoke("Inbox") },
-                    tint = iconTint,
-                    iconSize = iconSize,
-                    labelFontSize = labelFontSize
-                )
-            }
-            DetailActionButton(
-                icon = Icons.AutoMirrored.Filled.DriveFileMove,
-                label = stringResource(R.string.move_to_folder),
-                onClick = { showMoveDialog = true },
-                tint = iconTint,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-            DetailActionButton(
-                icon = if (email.isRead) Icons.Outlined.MarkAsUnread else Icons.Outlined.Drafts,
-                label = stringResource(if (email.isRead) R.string.mark_as_unread else R.string.mark_as_read),
-                onClick = onToggleReadStatus,
-                tint = iconTint,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-            DetailActionButton(
-                icon = Icons.Default.Forward,
-                label = stringResource(R.string.forward),
-                onClick = onForward,
-                tint = iconTint,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-            DetailActionButton(
-                icon = Icons.Default.Person,
-                label = stringResource(R.string.reply_to_sender),
-                onClick = onReplyToSender,
-                tint = iconTint,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-            DetailActionButton(
-                icon = Icons.Default.ReplyAll,
-                label = stringResource(R.string.reply_all),
-                onClick = onReplyAll,
-                tint = iconTint,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-            DetailActionButton(
-                icon = Icons.Default.Reply,
-                label = stringResource(R.string.reply),
-                onClick = onReply,
-                tint = iconTint,
-                iconSize = iconSize,
-                labelFontSize = labelFontSize
-            )
-        }
-
-        if (showMoveDialog) {
-            val folders by viewModel.folders.collectAsState()
-            val headerTextSize = viewModel.headerTextSize.collectAsState().value
-            AlertDialog(
-                onDismissRequest = { showMoveDialog = false },
-                title = { Text(stringResource(R.string.move_to_folder), fontSize = headerTextSize.sp, fontWeight = FontWeight.Bold) },
-                text = {
-                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                        folders.filter { !it.name.equals(email.folder, ignoreCase = true) }.forEach { folder ->
-                            val displayName = remember(folder.name) {
-                                folder.name
-                                    .removePrefix("[Gmail]/")
-                                    .removePrefix("[GMAIL]/")
-                                    .removePrefix("INBOX.")
-                                    .removePrefix("INBOX/")
-                            }
-                            TextButton(
-                                onClick = {
-                                    showMoveDialog = false
-                                    onMoveToFolder?.invoke(folder.name)
-                                },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(displayName, fontSize = textSize.sp)
-                            }
-                        }
-                    }
-                },
-                confirmButton = {},
-                dismissButton = {
-                    TextButton(onClick = { showMoveDialog = false }) {
-                        Text(stringResource(R.string.cancel))
-                    }
-                }
-            )
-        }
-    }
-}
-
-@Composable
-private fun DetailActionButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    label: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    tint: Color = MaterialTheme.colorScheme.onSurface,
-    iconSize: androidx.compose.ui.unit.Dp = 24.dp,
-    labelFontSize: androidx.compose.ui.unit.TextUnit = 10.sp
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = modifier
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(onClick = onClick)
-            .padding(horizontal = 6.dp, vertical = 4.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = tint,
-            modifier = Modifier.size(iconSize)
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            fontSize = labelFontSize,
-            color = tint,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center
-        )
     }
 }
 

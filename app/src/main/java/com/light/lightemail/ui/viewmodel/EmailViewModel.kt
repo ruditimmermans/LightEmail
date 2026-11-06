@@ -2,13 +2,10 @@ package com.light.lightemail.ui.viewmodel
 
 import android.app.Application
 import android.app.NotificationManager
-import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.*
-import androidx.work.*
 import com.light.lightemail.R
 import com.light.lightemail.data.AppDatabase
 import com.light.lightemail.data.BackupManager
@@ -17,7 +14,6 @@ import com.light.lightemail.data.EmailMessage
 import com.light.lightemail.data.ImapManager
 import com.light.lightemail.data.EmailRepository
 import com.light.lightemail.data.SyncEvent
-import com.light.lightemail.worker.SyncWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.isActive
@@ -27,12 +23,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.util.concurrent.TimeUnit
 
 class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val imapManager = ImapManager()
@@ -156,16 +150,25 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     fun exportBackup(outputStream: java.io.OutputStream, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val success = backupManager.exportBackup(outputStream)
+            val success = try {
+                backupManager.exportBackup(outputStream)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
             onResult(success)
         }
     }
 
     fun importBackup(inputStream: java.io.InputStream, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val success = backupManager.importBackup(inputStream)
+            val success = try {
+                backupManager.importBackup(inputStream)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
             if (success) {
-                // Reload settings into StateFlows
                 _accountEmail.value = prefs.getString("email", "") ?: ""
                 _accountPassword.value = prefs.getString("password", "") ?: ""
                 _imapHost.value = prefs.getString("host", "posteo.de") ?: "posteo.de"
@@ -253,19 +256,24 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-
     fun selectFolder(folder: String) {
         if (_currentFolder.value == folder) return
         _currentFolder.value = folder
         refreshEmails()
     }
 
-    fun markAsRead(emailMessage: EmailMessage) {
-        // Remove notification when email is read
-        val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        notificationManager.cancel(1)
+    private fun safeCancelNotification() {
+        try {
+            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(1)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
-        // Always try to fetch content if it's missing, even if already read
+    fun markAsRead(emailMessage: EmailMessage) {
+        safeCancelNotification()
+
         if (emailMessage.content.isEmpty() || (emailMessage.content == getApplication<Application>().getString(R.string.error_reading_content))) {
             fetchEmailContent(emailMessage)
         }
@@ -273,62 +281,75 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (emailMessage.isRead) return
 
         viewModelScope.launch {
-            repository.markAsRead(
-                _accountEmail.value,
-                _accountPassword.value,
-                _imapHost.value,
-                emailMessage.folder,
-                emailMessage.uid
-            )
-            // Update folders to reflect unread count change
-            refreshFolders()
+            try {
+                repository.markAsRead(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    emailMessage.uid
+                )
+                refreshFolders()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun markAsUnread(emailMessage: EmailMessage) {
         viewModelScope.launch {
-            repository.updateReadStatus(
-                _accountEmail.value,
-                _accountPassword.value,
-                _imapHost.value,
-                emailMessage.folder,
-                emailMessage.uid,
-                false
-            )
-            refreshFolders()
+            try {
+                repository.updateReadStatus(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    emailMessage.uid,
+                    false
+                )
+                refreshFolders()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun toggleReadStatus(emailMessage: EmailMessage) {
         val targetStatus = !emailMessage.isRead
         if (targetStatus) {
-            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.cancel(1)
+            safeCancelNotification()
         }
         viewModelScope.launch {
-            repository.updateReadStatus(
-                _accountEmail.value,
-                _accountPassword.value,
-                _imapHost.value,
-                emailMessage.folder,
-                emailMessage.uid,
-                targetStatus
-            )
-            refreshFolders()
+            try {
+                repository.updateReadStatus(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage.folder,
+                    emailMessage.uid,
+                    targetStatus
+                )
+                refreshFolders()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun fetchEmailContent(emailMessage: EmailMessage) {
-        // If content already fetched, don't fetch again
         if (emailMessage.content.isNotEmpty() && emailMessage.content != getApplication<Application>().getString(R.string.error_reading_content)) return
 
         viewModelScope.launch {
-            repository.fetchEmailContent(
-                _accountEmail.value,
-                _accountPassword.value,
-                _imapHost.value,
-                emailMessage
-            )
+            try {
+                repository.fetchEmailContent(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    emailMessage
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -339,10 +360,14 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (email.isEmpty()) return
 
         viewModelScope.launch {
-            val fetchedFolders = withContext(Dispatchers.IO) {
-                imapManager.fetchFolders(email, password, host)
+            try {
+                val fetchedFolders = withContext(Dispatchers.IO) {
+                    imapManager.fetchFolders(email, password, host)
+                }
+                _folders.value = fetchedFolders
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-            _folders.value = fetchedFolders
         }
     }
 
@@ -355,7 +380,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         if (email.isEmpty()) return
 
         viewModelScope.launch {
-            // Only show loading if we don't have any emails cached for this folder yet
             val currentList = repository.getEmailsList(folder)
             if (showLoading && currentList.isEmpty()) _isLoading.value = true
             
@@ -367,25 +391,31 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     folder = folder
                 )
                 
-                // Pre-fetch content for the latest 3 emails in the background safely with timeout
                 viewModelScope.launch(Dispatchers.IO) {
-                    val updatedEmails = repository.getEmailsList(folder)
-                    for (emailMsg in updatedEmails.take(3)) {
-                        if (!isActive) break
-                        if (emailMsg.content.isEmpty() || emailMsg.content == getApplication<Application>().getString(R.string.error_reading_content)) {
-                            withTimeoutOrNull(5000L) {
-                                repository.fetchEmailContent(
-                                    _accountEmail.value,
-                                    _accountPassword.value,
-                                    _imapHost.value,
-                                    emailMsg
-                                )
+                    try {
+                        val updatedEmails = repository.getEmailsList(folder)
+                        for (emailMsg in updatedEmails.take(3)) {
+                            if (!isActive) break
+                            if (emailMsg.content.isEmpty() || emailMsg.content == getApplication<Application>().getString(R.string.error_reading_content)) {
+                                withTimeoutOrNull(5000L) {
+                                    try {
+                                        repository.fetchEmailContent(
+                                            _accountEmail.value,
+                                            _accountPassword.value,
+                                            _imapHost.value,
+                                            emailMsg
+                                        )
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                    }
+                                }
                             }
                         }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
 
-                // Update last seen UID and count for notifications (using cached data)
                 if (folder == "Inbox") {
                     val currentEmails = repository.getEmailsList(folder)
                     if (currentEmails.isNotEmpty()) {
@@ -410,12 +440,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteEmail(emailMessage: EmailMessage) {
-        try {
-            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.cancel(1)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        safeCancelNotification()
 
         viewModelScope.launch {
             try {
@@ -434,12 +459,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun moveEmail(emailMessage: EmailMessage, targetFolder: String) {
-        try {
-            val notificationManager = getApplication<Application>().getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            notificationManager.cancel(1)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        safeCancelNotification()
 
         viewModelScope.launch {
             try {
@@ -462,12 +482,17 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     fun downloadAttachment(attachment: com.light.lightemail.data.Attachment, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
-            val success = repository.downloadAttachment(
-                _accountEmail.value,
-                _accountPassword.value,
-                _imapHost.value,
-                attachment
-            )
+            val success = try {
+                repository.downloadAttachment(
+                    _accountEmail.value,
+                    _accountPassword.value,
+                    _imapHost.value,
+                    attachment
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
+            }
             onResult(success)
         }
     }
@@ -488,11 +513,16 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             val currentFolderVal = _currentFolder.value
             val success = withContext(Dispatchers.IO) {
-                imapManager.emptyTrash(
-                    _accountEmail.value,
-                    _accountPassword.value,
-                    _imapHost.value
-                )
+                try {
+                    imapManager.emptyTrash(
+                        _accountEmail.value,
+                        _accountPassword.value,
+                        _imapHost.value
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
             }
             if (success) {
                 repository.clearCache(currentFolderVal)
@@ -506,22 +536,27 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     fun sendEmail(to: String, subject: String, content: String, isHtml: Boolean = false, cc: String? = null, attachments: List<android.net.Uri> = emptyList(), bcc: String? = null, onResult: (Boolean) -> Unit) {
         viewModelScope.launch {
             val success = withContext(Dispatchers.IO) {
-                imapManager.sendEmail(
-                    getApplication(),
-                    _accountEmail.value,
-                    _accountPassword.value,
-                    _smtpHost.value,
-                    _smtpPort.value,
-                    _senderName.value,
-                    to,
-                    subject,
-                    content,
-                    isHtml,
-                    _imapHost.value,
-                    cc,
-                    attachments,
-                    bcc
-                )
+                try {
+                    imapManager.sendEmail(
+                        getApplication(),
+                        _accountEmail.value,
+                        _accountPassword.value,
+                        _smtpHost.value,
+                        _smtpPort.value,
+                        _senderName.value,
+                        to,
+                        subject,
+                        content,
+                        isHtml,
+                        _imapHost.value,
+                        cc,
+                        attachments,
+                        bcc
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    false
+                }
             }
             if (success) refreshFolders()
             onResult(success)
@@ -530,19 +565,31 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addContact(name: String, email: String) {
         viewModelScope.launch {
-            db.contactDao().insertContact(Contact(name = name, email = email))
+            try {
+                db.contactDao().insertContact(Contact(name = name, email = email))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun updateContact(contact: Contact) {
         viewModelScope.launch {
-            db.contactDao().insertContact(contact)
+            try {
+                db.contactDao().insertContact(contact)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
     fun deleteContact(contact: Contact) {
         viewModelScope.launch {
-            db.contactDao().deleteContact(contact)
+            try {
+                db.contactDao().deleteContact(contact)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 

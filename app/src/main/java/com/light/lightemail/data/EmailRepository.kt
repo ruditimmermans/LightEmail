@@ -31,13 +31,19 @@ class EmailRepository(private val context: Context) {
         try {
             // 1. Fetch latest UIDs from IMAP
             val latestUids = imapManager.fetchLatestUids(email, password, host, folder, limit)
+            if (latestUids == null) {
+                // Fetch failed due to network or IMAP error. Preserve local cache!
+                return@withContext
+            }
+
             if (latestUids.isEmpty()) {
+                // Server confirmed folder is completely empty.
                 emailDao.clearFolder(folder)
                 emailDao.clearAttachmentsForFolder(folder)
                 return@withContext
             }
 
-            // 2. Identify which UIDs we don't have in DB and which we do
+            // 2. Identify existing vs new UIDs
             val existingUids = mutableListOf<Long>()
             val newUids = mutableListOf<Long>()
 
@@ -49,14 +55,16 @@ class EmailRepository(private val context: Context) {
                 }
             }
 
-            // 3. Fetch headers only for new UIDs
+            // 3. Fetch headers for new UIDs
             if (newUids.isNotEmpty()) {
                 val newEmails = imapManager.fetchEmailsByUids(
                     email, password, host, folder, newUids,
                     context.getString(R.string.no_subject),
                     context.getString(R.string.unknown_sender)
                 )
-                emailDao.insertEmails(newEmails)
+                if (newEmails.isNotEmpty()) {
+                    emailDao.insertEmails(newEmails)
+                }
             }
 
             // 4. Update read status for existing emails efficiently
@@ -67,7 +75,7 @@ class EmailRepository(private val context: Context) {
                 }
             }
 
-            // 5. Cleanup: delete emails that are no longer on the server within our fetched UID range
+            // 5. Cleanup: delete old emails in range that are no longer on the server
             val minUid = latestUids.minOrNull()
             if (minUid != null) {
                 emailDao.deleteOldEmailsInRange(folder, minUid, latestUids)
@@ -84,14 +92,18 @@ class EmailRepository(private val context: Context) {
         host: String,
         emailMessage: EmailMessage
     ) = withContext(Dispatchers.IO) {
-        val (text, html, attachments) = imapManager.fetchEmailContent(
-            email, password, host, emailMessage.folder, emailMessage.uid,
-            context.getString(R.string.error_reading_content)
-        )
-        emailDao.updateContent(emailMessage.uid, emailMessage.folder, text, html)
-        if (attachments.isNotEmpty()) {
-            emailDao.insertAttachments(attachments)
-            emailDao.updateHasAttachments(emailMessage.uid, emailMessage.folder, true)
+        try {
+            val (text, html, attachments) = imapManager.fetchEmailContent(
+                email, password, host, emailMessage.folder, emailMessage.uid,
+                context.getString(R.string.error_reading_content)
+            )
+            emailDao.updateContent(emailMessage.uid, emailMessage.folder, text, html)
+            if (attachments.isNotEmpty()) {
+                emailDao.insertAttachments(attachments)
+                emailDao.updateHasAttachments(emailMessage.uid, emailMessage.folder, true)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -103,20 +115,25 @@ class EmailRepository(private val context: Context) {
         host: String,
         attachment: Attachment
     ): Boolean = withContext(Dispatchers.IO) {
-        val fileName = attachment.fileName
-        val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_$fileName")
-        file.parentFile?.mkdirs()
-        
-        val success = file.outputStream().use { output ->
-            imapManager.fetchAttachment(
-                email, password, host, attachment.folder, attachment.emailUid, attachment.partIndex, output
-            )
+        try {
+            val fileName = attachment.fileName
+            val file = java.io.File(context.filesDir, "attachments/${attachment.emailUid}_${attachment.id}_$fileName")
+            file.parentFile?.mkdirs()
+
+            val success = file.outputStream().use { output ->
+                imapManager.fetchAttachment(
+                    email, password, host, attachment.folder, attachment.emailUid, attachment.partIndex, output
+                )
+            }
+
+            if (success) {
+                emailDao.updateAttachmentLocalPath(attachment.id, file.absolutePath)
+            }
+            success
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
-        
-        if (success) {
-            emailDao.updateAttachmentLocalPath(attachment.id, file.absolutePath)
-        }
-        success
     }
 
     suspend fun markAsRead(
@@ -126,10 +143,12 @@ class EmailRepository(private val context: Context) {
         folder: String,
         uid: Long
     ) = withContext(Dispatchers.IO) {
-        // Optimistic update
-        emailDao.updateReadStatus(uid, folder, true)
-        
-        imapManager.markAsRead(email, password, host, folder, uid)
+        try {
+            emailDao.updateReadStatus(uid, folder, true)
+            imapManager.markAsRead(email, password, host, folder, uid)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     suspend fun updateReadStatus(
@@ -140,10 +159,12 @@ class EmailRepository(private val context: Context) {
         uid: Long,
         isRead: Boolean
     ) = withContext(Dispatchers.IO) {
-        // Optimistic update
-        emailDao.updateReadStatus(uid, folder, isRead)
-        
-        imapManager.updateReadStatusOnServer(email, password, host, folder, uid, isRead)
+        try {
+            emailDao.updateReadStatus(uid, folder, isRead)
+            imapManager.updateReadStatusOnServer(email, password, host, folder, uid, isRead)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     suspend fun deleteEmail(
@@ -153,11 +174,13 @@ class EmailRepository(private val context: Context) {
         folder: String,
         uid: Long
     ) = withContext(Dispatchers.IO) {
-        // Optimistic update
-        emailDao.deleteEmail(uid, folder)
-        emailDao.deleteAttachmentsForEmail(uid, folder)
-        
-        imapManager.deleteEmail(email, password, host, folder, uid)
+        try {
+            emailDao.deleteEmail(uid, folder)
+            emailDao.deleteAttachmentsForEmail(uid, folder)
+            imapManager.deleteEmail(email, password, host, folder, uid)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     suspend fun moveEmail(
@@ -168,19 +191,26 @@ class EmailRepository(private val context: Context) {
         targetFolder: String,
         uid: Long
     ) = withContext(Dispatchers.IO) {
-        // Optimistic update
-        emailDao.deleteEmail(uid, srcFolder)
-        emailDao.deleteAttachmentsForEmail(uid, srcFolder)
+        try {
+            emailDao.deleteEmail(uid, srcFolder)
+            emailDao.deleteAttachmentsForEmail(uid, srcFolder)
 
-        val success = imapManager.moveEmail(email, password, host, srcFolder, targetFolder, uid)
-        if (success) {
-            syncEmails(email, password, host, targetFolder)
-            syncEmails(email, password, host, srcFolder)
+            val success = imapManager.moveEmail(email, password, host, srcFolder, targetFolder, uid)
+            if (success) {
+                syncEmails(email, password, host, targetFolder)
+                syncEmails(email, password, host, srcFolder)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
     
     suspend fun clearCache(folder: String) {
-        emailDao.clearFolder(folder)
-        emailDao.clearAttachmentsForFolder(folder)
+        try {
+            emailDao.clearFolder(folder)
+            emailDao.clearAttachmentsForFolder(folder)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

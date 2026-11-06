@@ -7,7 +7,6 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
-import com.light.lightemail.MainActivity
 import com.light.lightemail.R
 import com.light.lightemail.data.EmailRepository
 import com.light.lightemail.data.SyncEvent
@@ -45,7 +44,6 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
 
         val repository = EmailRepository(applicationContext)
         try {
-            // Perform a full sync of the Inbox
             repository.syncEmails(email, password, host, "Inbox")
             
             val unreadEmails = repository.getEmails("Inbox").first().filter { !it.isRead }
@@ -74,12 +72,12 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
                 NotificationHelper.cancelNotification(applicationContext)
                 prefs.edit().putLong("last_unread_count", 0).apply()
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             e.printStackTrace()
             return Result.retry()
         }
 
-        SyncEvent.trigger()
+        try { SyncEvent.trigger() } catch (e: Exception) {}
         return Result.success()
     }
 }
