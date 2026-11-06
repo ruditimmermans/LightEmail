@@ -74,6 +74,12 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _autoCheckUpdates = MutableStateFlow(prefs.getBoolean("auto_check_updates", true))
     val autoCheckUpdates: StateFlow<Boolean> = _autoCheckUpdates
 
+    private val _startOnBoot = MutableStateFlow(prefs.getBoolean("start_on_boot", true))
+    val startOnBoot: StateFlow<Boolean> = _startOnBoot
+
+    private val _keepRunningWhenClosed = MutableStateFlow(prefs.getBoolean("keep_running_when_closed", false))
+    val keepRunningWhenClosed: StateFlow<Boolean> = _keepRunningWhenClosed
+
     private val _signature = MutableStateFlow(prefs.getString("signature", "") ?: "")
     val signature: StateFlow<String> = _signature
 
@@ -180,6 +186,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _themeMode.value = prefs.getString("theme_mode", null) ?: if (prefs.getBoolean("use_color_mode", false)) "color" else "black"
                 _useColorMode.value = (_themeMode.value == "color")
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
+                _startOnBoot.value = prefs.getBoolean("start_on_boot", true)
+                _keepRunningWhenClosed.value = prefs.getBoolean("keep_running_when_closed", false)
                 _signature.value = prefs.getString("signature", "") ?: ""
                 
                 refreshEmails()
@@ -202,7 +210,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         signature: String,
         useColorMode: Boolean = false,
         themeMode: String = if (useColorMode) "color" else "black",
-        autoCheckUpdates: Boolean
+        autoCheckUpdates: Boolean,
+        startOnBoot: Boolean = true,
+        keepRunningWhenClosed: Boolean = false
     ) {
         _accountEmail.value = email
         _accountPassword.value = password
@@ -216,6 +226,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _themeMode.value = themeMode
         _useColorMode.value = (themeMode == "color")
         _autoCheckUpdates.value = autoCheckUpdates
+        _startOnBoot.value = startOnBoot
+        _keepRunningWhenClosed.value = keepRunningWhenClosed
 
         prefs.edit().apply {
             putString("email", email)
@@ -231,6 +243,8 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putString("theme_mode", themeMode)
             putBoolean("use_color_mode", themeMode == "color")
             putBoolean("auto_check_updates", autoCheckUpdates)
+            putBoolean("start_on_boot", startOnBoot)
+            putBoolean("keep_running_when_closed", keepRunningWhenClosed)
             apply()
         }
         
@@ -241,15 +255,39 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun updatePushService(enabled: Boolean) {
         try {
-            val intent = android.content.Intent(getApplication(), com.light.lightemail.service.EmailPushService::class.java)
+            val app = getApplication<Application>()
+            val intent = android.content.Intent(app, com.light.lightemail.service.EmailPushService::class.java)
             if (enabled) {
                 if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                    getApplication<Application>().startForegroundService(intent)
+                    app.startForegroundService(intent)
                 } else {
-                    getApplication<Application>().startService(intent)
+                    app.startService(intent)
+                }
+
+                try {
+                    val periodicSyncRequest = androidx.work.PeriodicWorkRequestBuilder<com.light.lightemail.worker.SyncWorker>(
+                        15, java.util.concurrent.TimeUnit.MINUTES
+                    ).setConstraints(
+                        androidx.work.Constraints.Builder()
+                            .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                            .build()
+                    ).build()
+
+                    androidx.work.WorkManager.getInstance(app).enqueueUniquePeriodicWork(
+                        "email_periodic_sync",
+                        androidx.work.ExistingPeriodicWorkPolicy.KEEP,
+                        periodicSyncRequest
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             } else {
-                getApplication<Application>().stopService(intent)
+                app.stopService(intent)
+                try {
+                    androidx.work.WorkManager.getInstance(app).cancelUniqueWork("email_periodic_sync")
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()

@@ -98,6 +98,10 @@
     <string name="downloading_event">Downloading event…</string>
 
     <string name="background_settings_title">Background Settings</string>
+    <string name="start_on_boot_label">Start on Device Startup</string>
+    <string name="start_on_boot_desc">Automatically launch the app in the background when your device starts up.</string>
+    <string name="keep_running_closed_label">Keep Running When Closed (Bigme Hibreak Pro)</string>
+    <string name="keep_running_closed_desc">Minimizes the app to the background instead of closing it when pressing Back, keeping Push sync active on Bigme Hibreak Pro and e-ink devices.</string>
     <string name="battery_optimization_label">Unlimited Battery Mode</string>
     <string name="battery_optimization_desc">Ensure the app runs in the background without being killed.</string>
     <string name="app_hibernation_label">Disable App Hibernation</string>

@@ -151,6 +151,9 @@ fun MainScreen(
     val isLP3 = isSquareScreen && isShortScreen && !isVerySmallScreen
     val isStandardPhone = !isLP3 && !isVerySmallScreen && configuration.screenHeightDp >= 600
 
+    val keepRunningWhenClosed by viewModel.keepRunningWhenClosed.collectAsState()
+    val activity = androidx.compose.ui.platform.LocalContext.current as? android.app.Activity
+
     // Intercept Back button press to return to Home or close drawer/modals
     androidx.activity.compose.BackHandler(enabled = drawerState.isOpen) {
         scope.launch { drawerState.close() }
@@ -161,6 +164,10 @@ fun MainScreen(
             viewModel.clearPendingAttachments()
         }
         currentScreen = Screen.Home
+    }
+
+    androidx.activity.compose.BackHandler(enabled = currentScreen == Screen.Home && !drawerState.isOpen && keepRunningWhenClosed) {
+        activity?.moveTaskToBack(true)
     }
 
     // Handle deep link from notification
@@ -2223,6 +2230,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     val themeModeVal by viewModel.themeMode.collectAsState()
     val useColorModeVal by viewModel.useColorMode.collectAsState()
     val autoCheckUpdatesVal by viewModel.autoCheckUpdates.collectAsState()
+    val startOnBootVal by viewModel.startOnBoot.collectAsState()
+    val keepRunningWhenClosedVal by viewModel.keepRunningWhenClosed.collectAsState()
     val signatureVal by viewModel.signature.collectAsState()
     val updateAvailable by viewModel.updateAvailable.collectAsState()
     val updateInfo by viewModel.updateInfo.collectAsState()
@@ -2240,6 +2249,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     var themeMode by remember { mutableStateOf(themeModeVal) }
     var useColorMode by remember { mutableStateOf(useColorModeVal) }
     var autoCheckUpdates by remember { mutableStateOf(autoCheckUpdatesVal) }
+    var startOnBoot by remember { mutableStateOf(startOnBootVal) }
+    var keepRunningWhenClosed by remember { mutableStateOf(keepRunningWhenClosedVal) }
     var signature by remember { mutableStateOf(signatureVal) }
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -2270,17 +2281,19 @@ fun SettingsScreen(viewModel: EmailViewModel) {
     )
 
     // Auto-save settings
-    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, themeMode, autoCheckUpdates) {
+    LaunchedEffect(email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature, themeMode, autoCheckUpdates, startOnBoot, keepRunningWhenClosed) {
         if (email != emailVal || password != passwordVal || imapHost != imapHostVal ||
             smtpHost != smtpHostVal || smtpPort != smtpPortVal || senderName != senderNameVal ||
             textSize != textSizeVal || headerTextSize != headerTextSizeVal || signature != signatureVal || themeMode != themeModeVal ||
-            autoCheckUpdates != autoCheckUpdatesVal) {
+            autoCheckUpdates != autoCheckUpdatesVal || startOnBoot != startOnBootVal || keepRunningWhenClosed != keepRunningWhenClosedVal) {
             delay(1000)
             viewModel.saveSettings(
                 email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature,
                 useColorMode = (themeMode == "color"),
                 themeMode = themeMode,
-                autoCheckUpdates = autoCheckUpdates
+                autoCheckUpdates = autoCheckUpdates,
+                startOnBoot = startOnBoot,
+                keepRunningWhenClosed = keepRunningWhenClosed
             )
         }
     }
@@ -2458,6 +2471,36 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         // Background Settings Section
         Text(stringResource(R.string.background_settings_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
+
+        LightToggleRow(
+            text = stringResource(R.string.start_on_boot_label).uppercase(),
+            checked = startOnBoot,
+            onCheckedChange = { startOnBoot = it },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
+        )
+        Text(
+            text = stringResource(R.string.start_on_boot_desc),
+            fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 2.dp, bottom = if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 24.dp else if (isShortScreen) 12.dp else 16.dp))
+
+        LightToggleRow(
+            text = stringResource(R.string.keep_running_closed_label).uppercase(),
+            checked = keepRunningWhenClosed,
+            onCheckedChange = { keepRunningWhenClosed = it },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
+        )
+        Text(
+            text = stringResource(R.string.keep_running_closed_desc),
+            fontSize = if (isVerySmallScreen) 10.sp else if (isLP3) 14.sp else 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 2.dp, bottom = if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp)
+        )
+
+        Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 24.dp else if (isShortScreen) 12.dp else 16.dp))
 
         // Battery Optimization
         Column(modifier = Modifier.fillMaxWidth().clickable {

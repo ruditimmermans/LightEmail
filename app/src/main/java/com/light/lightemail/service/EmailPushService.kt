@@ -66,11 +66,23 @@ class EmailPushService : Service() {
                 notificationManager.createNotificationChannel(channel)
             }
 
+            val contentIntent = Intent(this, com.light.lightemail.MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            }
+            val pendingIntent = PendingIntent.getActivity(
+                this,
+                0,
+                contentIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
             val notification = NotificationCompat.Builder(this, channelId)
                 .setContentTitle(getString(R.string.push_service_title))
                 .setContentText(getString(R.string.push_service_desc))
                 .setSmallIcon(android.R.drawable.ic_dialog_email)
                 .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true)
+                .setContentIntent(pendingIntent)
                 .build()
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {

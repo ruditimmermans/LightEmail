@@ -98,6 +98,10 @@
     <string name="downloading_event">Evenement downloaden…</string>
 
     <string name="background_settings_title">Achtergrondinstellingen</string>
+    <string name="start_on_boot_label">Starten bij opstarten van apparaat</string>
+    <string name="start_on_boot_desc">Start de app automatisch op de achtergrond wanneer uw apparaat opstart.</string>
+    <string name="keep_running_closed_label">Blijf draaien bij sluiten (Bigme Hibreak Pro)</string>
+    <string name="keep_running_closed_desc">Minimaliseer de app naar de achtergrond in plaats van te sluiten wanneer u op Terug drukt, zodat Push-synchronisatie actief blijft op Bigme Hibreak Pro en e-ink-apparaten.</string>
     <string name="battery_optimization_label">Onbeperkte Batterijmodus</string>
     <string name="battery_optimization_desc">Zorg ervoor dat de app op de achtergrond blijft draaien.</string>
     <string name="app_hibernation_label">App-hibernatie Uitschakelen</string>
