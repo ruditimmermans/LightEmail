@@ -309,6 +309,38 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    private suspend fun updateNotificationState() {
+        try {
+            val currentEmails = repository.getEmailsList("Inbox")
+            val unreadEmails = currentEmails.filter { !it.isRead }
+            if (unreadEmails.isNotEmpty()) {
+                val latestEmail = unreadEmails.first()
+                val maxUid = unreadEmails.maxOf { it.uid }
+                val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
+                val lastUnreadCount = prefs.getLong("last_unread_count", -1L)
+
+                if (maxUid > lastSeenUid || unreadEmails.size.toLong() != lastUnreadCount) {
+                    com.light.lightemail.worker.NotificationHelper.updateNotification(
+                        getApplication(),
+                        latestEmail.sender,
+                        latestEmail.subject,
+                        latestEmail.uid,
+                        unreadEmails.size
+                    )
+                    prefs.edit()
+                        .putLong("last_seen_uid", maxOf(maxUid, lastSeenUid))
+                        .putLong("last_unread_count", unreadEmails.size.toLong())
+                        .apply()
+                }
+            } else {
+                com.light.lightemail.worker.NotificationHelper.cancelNotification(getApplication())
+                prefs.edit().putLong("last_unread_count", 0).apply()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     fun markAsRead(emailMessage: EmailMessage) {
         safeCancelNotification()
 
@@ -328,6 +360,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     emailMessage.uid
                 )
                 refreshFolders()
+                if (emailMessage.folder == "Inbox") {
+                    updateNotificationState()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -346,6 +381,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     false
                 )
                 refreshFolders()
+                if (emailMessage.folder == "Inbox") {
+                    updateNotificationState()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -368,6 +406,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                     targetStatus
                 )
                 refreshFolders()
+                if (emailMessage.folder == "Inbox") {
+                    updateNotificationState()
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -455,19 +496,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 if (folder == "Inbox") {
-                    val currentEmails = repository.getEmailsList(folder)
-                    if (currentEmails.isNotEmpty()) {
-                        val latestUid = currentEmails.first().uid
-                        val lastSeenUid = prefs.getLong("last_seen_uid", -1L)
-                        val unreadCount = currentEmails.count { !it.isRead }
-                        
-                        if (latestUid > lastSeenUid || unreadCount.toLong() != prefs.getLong("last_unread_count", -1L)) {
-                            prefs.edit()
-                                .putLong("last_seen_uid", maxOf(latestUid, lastSeenUid))
-                                .putLong("last_unread_count", unreadCount.toLong())
-                                .apply()
-                        }
-                    }
+                    updateNotificationState()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -493,6 +522,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 e.printStackTrace()
             }
             refreshFolders()
+            if (emailMessage.folder == "Inbox") {
+                updateNotificationState()
+            }
         }
     }
 
@@ -513,6 +545,9 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 e.printStackTrace()
             }
             refreshFolders()
+            if (emailMessage.folder == "Inbox" || targetFolder == "Inbox") {
+                updateNotificationState()
+            }
         }
     }
 

@@ -7,8 +7,6 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
-import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,7 +34,6 @@ class MainActivity : ComponentActivity() {
         
         handleIntent(intent)
         requestNotificationPermission()
-        requestIgnoreBatteryOptimizations()
         startPushService()
 
         enableEdgeToEdge()
@@ -175,22 +172,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun requestIgnoreBatteryOptimizations() {
-        try {
-            val intent = Intent()
-            val packageName = packageName
-            val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
-            if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-                intent.action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                intent.data = Uri.parse("package:$packageName")
-                startActivity(intent)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     private fun startPushService() {
+        val prefs = getSharedPreferences("light_email_prefs", Context.MODE_PRIVATE)
+        val email = prefs.getString("email", null)
+        val password = prefs.getString("password", null)
+        if (email.isNullOrEmpty() || password.isNullOrEmpty()) return
+
         try {
             val serviceIntent = Intent(this, com.light.lightemail.service.EmailPushService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -10,7 +10,6 @@ import androidx.work.WorkerParameters
 import com.light.lightemail.R
 import com.light.lightemail.data.EmailRepository
 import com.light.lightemail.data.SyncEvent
-import kotlinx.coroutines.flow.first
 
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
@@ -46,7 +45,8 @@ class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(c
         try {
             repository.syncEmails(email, password, host, "Inbox")
             
-            val unreadEmails = repository.getEmails("Inbox").first().filter { !it.isRead }
+            val inboxEmails = repository.getEmailsList("Inbox")
+            val unreadEmails = inboxEmails.filter { !it.isRead }
 
             if (unreadEmails.isNotEmpty()) {
                 val latestEmail = unreadEmails.first()

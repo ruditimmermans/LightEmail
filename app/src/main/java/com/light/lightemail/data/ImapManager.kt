@@ -231,6 +231,7 @@ class ImapManager {
 
             if (validMessages.isNotEmpty()) {
                 val fp = FetchProfile()
+                fp.add(FetchProfile.Item.FLAGS)
                 fp.add(UIDFolder.FetchProfileItem.UID)
                 try {
                     folder.fetch(validMessages, fp)
@@ -239,7 +240,13 @@ class ImapManager {
                 }
             }
 
-            val uids = validMessages.mapNotNull { msg ->
+            val uids = validMessages.filter { msg ->
+                try {
+                    !msg.flags.contains(Flags.Flag.DELETED)
+                } catch (e: Exception) {
+                    true
+                }
+            }.mapNotNull { msg ->
                 try {
                     val uid = folder.getUID(msg)
                     if (uid > 0) uid else null
