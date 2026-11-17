@@ -21,8 +21,6 @@
     <string name="feature_minimal_desc">Gefocust op duidelijke, snelle tekstgebaseerde communicatie zonder rommel.</string>
     <string name="feature_privacy_title">Privacy &amp; Directe Verbinding</string>
     <string name="feature_privacy_desc">Maakt rechtstreeks verbinding met uw IMAP/SMTP-server. Geen tussenpersonen die gegevens opslaan.</string>
-    <string name="feature_eink_title">E-Ink &amp; Batterijvriendelijk</string>
-    <string name="feature_eink_desc">Contrastrijke interface geoptimaliseerd voor e-ink-schermen en een lange batterijduur.</string>
     <string name="open_source_title">Licentie &amp; Open Source</string>
     <string name="open_source_badge">GNU GPLv3 Open Source</string>
     <string name="gpl_license_summary">Gedistribueerd onder de voorwaarden van de GNU General Public License v3.0 (GPLv3).</string>
@@ -35,7 +33,6 @@
     <string name="theme_mode_label">Thema modus</string>
     <string name="black_mode_label">Zwarte modus</string>
     <string name="color_mode_label">Kleurmodus (Thunderbird)</string>
-    <string name="eink_mode_label">E-Ink modus</string>
     <string name="text_size_label">Tekengrootte: %1$d sp</string>
     <string name="header_text_size_label">Tekengrootte header: %1$d sp</string>
     <string name="email_signature_title">E-mailhandtekening</string>
@@ -100,8 +97,6 @@
     <string name="background_settings_title">Achtergrondinstellingen</string>
     <string name="start_on_boot_label">Starten bij opstarten van apparaat</string>
     <string name="start_on_boot_desc">Start de app automatisch op de achtergrond wanneer uw apparaat opstart.</string>
-    <string name="keep_running_closed_label">Blijf draaien bij sluiten (Bigme Hibreak Pro)</string>
-    <string name="keep_running_closed_desc">Minimaliseer de app naar de achtergrond in plaats van te sluiten wanneer u op Terug drukt, zodat Push-synchronisatie actief blijft op Bigme Hibreak Pro en e-ink-apparaten.</string>
     <string name="battery_optimization_label">Onbeperkte Batterijmodus</string>
     <string name="battery_optimization_desc">Zorg ervoor dat de app op de achtergrond blijft draaien.</string>
     <string name="app_hibernation_label">App-hibernatie Uitschakelen</string>

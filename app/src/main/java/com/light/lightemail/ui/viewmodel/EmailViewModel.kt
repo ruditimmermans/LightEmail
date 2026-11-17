@@ -77,9 +77,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     private val _startOnBoot = MutableStateFlow(prefs.getBoolean("start_on_boot", true))
     val startOnBoot: StateFlow<Boolean> = _startOnBoot
 
-    private val _keepRunningWhenClosed = MutableStateFlow(prefs.getBoolean("keep_running_when_closed", false))
-    val keepRunningWhenClosed: StateFlow<Boolean> = _keepRunningWhenClosed
-
     private val _signature = MutableStateFlow(prefs.getString("signature", "") ?: "")
     val signature: StateFlow<String> = _signature
 
@@ -187,7 +184,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _useColorMode.value = (_themeMode.value == "color")
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
                 _startOnBoot.value = prefs.getBoolean("start_on_boot", true)
-                _keepRunningWhenClosed.value = prefs.getBoolean("keep_running_when_closed", false)
                 _signature.value = prefs.getString("signature", "") ?: ""
                 
                 refreshEmails()
@@ -211,8 +207,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         useColorMode: Boolean = false,
         themeMode: String = if (useColorMode) "color" else "black",
         autoCheckUpdates: Boolean,
-        startOnBoot: Boolean = true,
-        keepRunningWhenClosed: Boolean = false
+        startOnBoot: Boolean = true
     ) {
         _accountEmail.value = email
         _accountPassword.value = password
@@ -227,7 +222,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _useColorMode.value = (themeMode == "color")
         _autoCheckUpdates.value = autoCheckUpdates
         _startOnBoot.value = startOnBoot
-        _keepRunningWhenClosed.value = keepRunningWhenClosed
 
         prefs.edit().apply {
             putString("email", email)
@@ -244,7 +238,6 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putBoolean("use_color_mode", themeMode == "color")
             putBoolean("auto_check_updates", autoCheckUpdates)
             putBoolean("start_on_boot", startOnBoot)
-            putBoolean("keep_running_when_closed", keepRunningWhenClosed)
             apply()
         }
         

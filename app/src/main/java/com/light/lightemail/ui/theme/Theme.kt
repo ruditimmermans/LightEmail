@@ -62,27 +62,6 @@ private val ThunderbirdDarkColorScheme = darkColorScheme(
     outline = DarkGray
 )
 
-private val EInkColorScheme = lightColorScheme(
-    primary = Black,
-    onPrimary = White,
-    background = White,
-    onBackground = Black,
-    surface = White,
-    onSurface = Black,
-    secondary = Black,
-    onSecondary = White,
-    primaryContainer = Black,
-    onPrimaryContainer = White,
-    secondaryContainer = White,
-    onSecondaryContainer = Black,
-    surfaceVariant = White,
-    onSurfaceVariant = Black,
-    outline = Black,
-    outlineVariant = Black,
-    error = Black,
-    onError = White
-)
-
 @Composable
 fun LightEmailTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -99,7 +78,6 @@ fun LightEmailTheme(
     }
 
     val colorScheme = when (mode) {
-        "eink" -> EInkColorScheme
         "color" -> if (darkTheme) ThunderbirdDarkColorScheme else ThunderbirdLightColorScheme
         else -> if (darkTheme) BlackDarkColorScheme else BlackLightColorScheme
     }

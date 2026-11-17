@@ -21,8 +21,6 @@
     <string name="feature_minimal_desc">Focused on clear, fast text-based communication without clutter.</string>
     <string name="feature_privacy_title">Privacy &amp; Direct Connection</string>
     <string name="feature_privacy_desc">Connects directly to your IMAP/SMTP server. No middleman tracking or storage.</string>
-    <string name="feature_eink_title">E-Ink &amp; Battery Friendly</string>
-    <string name="feature_eink_desc">High-contrast interface optimized for e-ink screens and battery longevity.</string>
     <string name="open_source_title">License &amp; Open Source</string>
     <string name="open_source_badge">GNU GPLv3 Open Source</string>
     <string name="gpl_license_summary">Distributed under the terms of the GNU General Public License v3.0 (GPLv3).</string>
@@ -35,7 +33,6 @@
     <string name="theme_mode_label">Theme Mode</string>
     <string name="black_mode_label">Black Mode</string>
     <string name="color_mode_label">Color Mode (Thunderbird)</string>
-    <string name="eink_mode_label">E-Ink Mode</string>
     <string name="text_size_label">Text Size: %1$d sp</string>
     <string name="header_text_size_label">Header Text Size: %1$d sp</string>
     <string name="email_signature_title">Email Signature</string>
@@ -100,8 +97,6 @@
     <string name="background_settings_title">Background Settings</string>
     <string name="start_on_boot_label">Start on Device Startup</string>
     <string name="start_on_boot_desc">Automatically launch the app in the background when your device starts up.</string>
-    <string name="keep_running_closed_label">Keep Running When Closed (Bigme Hibreak Pro)</string>
-    <string name="keep_running_closed_desc">Minimizes the app to the background instead of closing it when pressing Back, keeping Push sync active on Bigme Hibreak Pro and e-ink devices.</string>
     <string name="battery_optimization_label">Unlimited Battery Mode</string>
     <string name="battery_optimization_desc">Ensure the app runs in the background without being killed.</string>
     <string name="app_hibernation_label">Disable App Hibernation</string>
