@@ -1,7 +1,9 @@
 package com.light.lightemail.ui.screens
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
@@ -15,6 +17,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -2106,6 +2109,7 @@ fun ComposeEmailScreen(
 
 @Composable
 fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
+    val context = LocalContext.current
     val contacts by viewModel.contacts.collectAsState(initial = emptyList())
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isShortScreen = configuration.screenHeightDp < 600
@@ -2115,6 +2119,38 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
     var email by remember { mutableStateOf("") }
     var editingContact by remember { mutableStateOf<Contact?>(null) }
     var searchQuery by remember { mutableStateOf("") }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.importGoogleContacts(context) { count ->
+                val msg = if (count > 0) {
+                    context.getString(R.string.contacts_imported, count)
+                } else {
+                    context.getString(R.string.no_google_contacts_found)
+                }
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, context.getString(R.string.permission_denied_contacts), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun onImportGoogleContacts() {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.READ_CONTACTS) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.importGoogleContacts(context) { count ->
+                val msg = if (count > 0) {
+                    context.getString(R.string.contacts_imported, count)
+                } else {
+                    context.getString(R.string.no_google_contacts_found)
+                }
+                Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            permissionLauncher.launch(Manifest.permission.READ_CONTACTS)
+        }
+    }
 
     val filteredContacts = remember(contacts, searchQuery) {
         if (searchQuery.isBlank()) contacts
@@ -2176,6 +2212,25 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
                         }
                     }.padding(8.dp),
                     fontWeight = FontWeight.ExtraBold,
+                    fontSize = textSize.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 16.dp))
+
+            OutlinedButton(
+                onClick = { onImportGoogleContacts() },
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(vertical = if (isVerySmallScreen) 4.dp else 8.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.import_google_contacts),
                     fontSize = textSize.sp
                 )
             }

@@ -135,4 +135,8 @@
     <string name="move_to_folder">Verplaatsen naar map</string>
     <string name="select_target_folder">Selecteer map</string>
     <string name="restore">Herstellen</string>
+    <string name="import_google_contacts">Importeren uit Google Contacts</string>
+    <string name="contacts_imported">%1$d contact(en) geïmporteerd</string>
+    <string name="no_google_contacts_found">Geen nieuwe e-mailcontacten gevonden</string>
+    <string name="permission_denied_contacts">Contacten-toestemming is vereist om contacten te importeren</string>
 </resources>

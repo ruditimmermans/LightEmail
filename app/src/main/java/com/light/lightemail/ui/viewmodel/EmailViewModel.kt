@@ -659,6 +659,55 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun importGoogleContacts(context: Context, onResult: (Int) -> Unit) {
+        viewModelScope.launch(Dispatchers.IO) {
+            var importedCount = 0
+            try {
+                val existingContacts = db.contactDao().getAllContactsList()
+                val existingEmails = existingContacts.map { it.email.lowercase().trim() }.toMutableSet()
+
+                val contentResolver = context.contentResolver
+                val uri = android.provider.ContactsContract.CommonDataKinds.Email.CONTENT_URI
+                val projection = arrayOf(
+                    android.provider.ContactsContract.CommonDataKinds.Email.DISPLAY_NAME_PRIMARY,
+                    android.provider.ContactsContract.CommonDataKinds.Email.ADDRESS
+                )
+
+                val cursor = contentResolver.query(uri, projection, null, null, null)
+                val newContacts = mutableListOf<Contact>()
+
+                cursor?.use {
+                    val nameIdxPrimary = it.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Email.DISPLAY_NAME_PRIMARY)
+                    val nameIdxFallback = it.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Email.DISPLAY_NAME)
+                    val nameIndex = if (nameIdxPrimary >= 0) nameIdxPrimary else nameIdxFallback
+                    val emailIndex = it.getColumnIndex(android.provider.ContactsContract.CommonDataKinds.Email.ADDRESS)
+
+                    while (it.moveToNext()) {
+                        val rawName = if (nameIndex >= 0) it.getString(nameIndex) else null
+                        val rawEmail = if (emailIndex >= 0) it.getString(emailIndex) else null
+
+                        val emailStr = rawEmail?.trim() ?: ""
+                        if (emailStr.isNotEmpty() && !existingEmails.contains(emailStr.lowercase())) {
+                            val nameStr = rawName?.trim()?.ifEmpty { emailStr } ?: emailStr
+                            newContacts.add(Contact(name = nameStr, email = emailStr))
+                            existingEmails.add(emailStr.lowercase())
+                        }
+                    }
+                }
+
+                if (newContacts.isNotEmpty()) {
+                    db.contactDao().insertContacts(newContacts)
+                    importedCount = newContacts.size
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            withContext(Dispatchers.Main) {
+                onResult(importedCount)
+            }
+        }
+    }
+
     fun checkForUpdates() {
         if (_isCheckingUpdates.value) return
         
