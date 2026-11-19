@@ -1,10 +1,14 @@
 package com.light.lightemail.data
 
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import java.io.Serializable
 
-@Entity(tableName = "attachments")
+@Entity(
+    tableName = "attachments",
+    indices = [Index(value = ["emailUid", "folder"])]
+)
 data class Attachment(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val emailUid: Long,

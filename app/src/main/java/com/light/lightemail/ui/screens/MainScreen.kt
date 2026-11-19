@@ -223,7 +223,7 @@ fun MainScreen(
                 }
                 HorizontalDivider()
                 LazyColumn(modifier = Modifier.weight(1f)) {
-                    items(folders) { folder ->
+                    items(folders, key = { it.name }, contentType = { "folder_item" }) { folder ->
                         val displayName = remember(folder.name) {
                             folder.name
                                 .removePrefix("[Gmail]/")
@@ -749,7 +749,8 @@ fun EmailListScreen(
                                 val email = safePeek(itemIndex)
                                 if (email != null) "${email.folder}_${email.uid}" else "idx_${idx}_$itemIndex"
                             } else "idx_$idx"
-                        }
+                        },
+                        contentType = { "email_item" }
                     ) { idx ->
                         val itemIndex = filteredIndices.getOrNull(idx)
                         val email = if (itemIndex != null) safeGet(itemIndex) else null
@@ -2077,7 +2078,7 @@ fun ComposeEmailScreen(
                         }
                     }
                 } else {
-                    items(contacts) { contact ->
+                    items(contacts, key = { it.id }, contentType = { "contact_item" }) { contact ->
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -2251,7 +2252,7 @@ fun AddressBookScreen(viewModel: EmailViewModel, textSize: Float) {
             Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isShortScreen) 12.dp else 24.dp))
         }
 
-        items(filteredContacts) { contact ->
+        items(filteredContacts, key = { it.id }, contentType = { "contact_item" }) { contact ->
             Row(modifier = Modifier.fillMaxWidth().padding(vertical = if (isVerySmallScreen) 4.dp else if (isShortScreen) 8.dp else 12.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(contact.name.uppercase(), fontWeight = FontWeight.Bold, fontSize = textSize.sp)

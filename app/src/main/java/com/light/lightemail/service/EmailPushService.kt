@@ -125,7 +125,7 @@ class EmailPushService : Service() {
                                         .build()
                                     WorkManager.getInstance(applicationContext).enqueueUniqueWork(
                                         "email_sync_push",
-                                        ExistingWorkPolicy.REPLACE,
+                                        ExistingWorkPolicy.KEEP,
                                         syncRequest
                                     )
                                 } catch (e: Exception) {
@@ -135,8 +135,8 @@ class EmailPushService : Service() {
                         }
                     } catch (e: Throwable) {
                         e.printStackTrace()
-                        delay(30000)
                     }
+                    delay(15000)
                 } else {
                     stopSelf()
                     break

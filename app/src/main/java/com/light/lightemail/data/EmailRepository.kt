@@ -29,58 +29,40 @@ class EmailRepository(private val context: Context) {
         limit: Int = 50
     ) = withContext(Dispatchers.IO) {
         try {
-            // 1. Fetch latest UIDs from IMAP
-            val latestUids = imapManager.fetchLatestUids(email, password, host, folder, limit)
-            if (latestUids == null) {
-                // Fetch failed due to network or IMAP error. Preserve local cache!
-                return@withContext
-            }
+            val existingUidSet = emailDao.getUidsByFolder(folder).toHashSet()
 
+            val syncResult = imapManager.syncFolderSingleConnection(
+                email = email,
+                password = password,
+                host = host,
+                folderName = folder,
+                limit = limit,
+                isUidExisting = { uid -> existingUidSet.contains(uid) },
+                noSubjectString = context.getString(R.string.no_subject),
+                unknownSenderString = context.getString(R.string.unknown_sender)
+            ) ?: return@withContext
+
+            val latestUids = syncResult.latestUids
             if (latestUids.isEmpty()) {
-                // Server confirmed folder is completely empty.
                 emailDao.clearFolder(folder)
                 emailDao.clearAttachmentsForFolder(folder)
                 return@withContext
             }
 
-            // 2. Identify existing vs new UIDs
-            val existingUids = mutableListOf<Long>()
-            val newUids = mutableListOf<Long>()
-
-            latestUids.forEach { uid ->
-                if (emailDao.getEmailByUid(uid, folder) != null) {
-                    existingUids.add(uid)
-                } else {
-                    newUids.add(uid)
-                }
+            if (syncResult.newEmails.isNotEmpty()) {
+                emailDao.insertEmails(syncResult.newEmails)
             }
 
-            // 3. Fetch headers for new UIDs
-            if (newUids.isNotEmpty()) {
-                val newEmails = imapManager.fetchEmailsByUids(
-                    email, password, host, folder, newUids,
-                    context.getString(R.string.no_subject),
-                    context.getString(R.string.unknown_sender)
-                )
-                if (newEmails.isNotEmpty()) {
-                    emailDao.insertEmails(newEmails)
-                }
-            }
-
-            // 4. Update read status for existing emails efficiently
-            if (existingUids.isNotEmpty()) {
-                val flags = imapManager.fetchFlagsByUids(email, password, host, folder, existingUids)
-                flags.forEach { (uid, isRead) ->
+            if (syncResult.flagsMap.isNotEmpty()) {
+                syncResult.flagsMap.forEach { (uid, isRead) ->
                     emailDao.updateReadStatus(uid, folder, isRead)
                 }
             }
 
-            // 5. Cleanup: delete old emails in range that are no longer on the server
             val minUid = latestUids.minOrNull()
             if (minUid != null) {
                 emailDao.deleteOldEmailsInRange(folder, minUid, latestUids)
             }
-
         } catch (e: Exception) {
             e.printStackTrace()
         }

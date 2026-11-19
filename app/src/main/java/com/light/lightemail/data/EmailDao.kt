@@ -15,6 +15,9 @@ interface EmailDao {
     @Query("SELECT * FROM emails WHERE uid = :uid AND folder = :folder")
     suspend fun getEmailByUid(uid: Long, folder: String): EmailMessage?
 
+    @Query("SELECT uid FROM emails WHERE folder = :folder")
+    suspend fun getUidsByFolder(folder: String): List<Long>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertEmails(emails: List<EmailMessage>)
 

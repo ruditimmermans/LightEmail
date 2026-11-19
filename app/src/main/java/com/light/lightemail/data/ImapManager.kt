@@ -11,6 +11,12 @@ import javax.mail.search.FlagTerm
 
 data class FolderInfo(val name: String, val messageCount: Int, val unreadCount: Int)
 
+data class SingleConnSyncResult(
+    val latestUids: List<Long>,
+    val newEmails: List<EmailMessage>,
+    val flagsMap: Map<Long, Boolean>
+)
+
 class ImapManager {
     private fun getImapProperties(host: String): Properties {
         val properties = Properties()
@@ -30,6 +36,113 @@ class ImapManager {
         // IDLE optimization
         properties["mail.imaps.peek"] = "true"
         return properties
+    }
+
+    fun syncFolderSingleConnection(
+        email: String,
+        password: String,
+        host: String,
+        folderName: String = "Inbox",
+        limit: Int = 50,
+        isUidExisting: (Long) -> Boolean,
+        noSubjectString: String = "(No Subject)",
+        unknownSenderString: String = "Unknown"
+    ): SingleConnSyncResult? {
+        val properties = getImapProperties(host)
+        return try {
+            val session = Session.getInstance(properties, null)
+            val store = session.getStore("imaps")
+            store.connect(host, email, password)
+
+            val folder = (getFolderSafely(store, folderName) as? IMAPFolder) ?: return null
+            folder.open(Folder.READ_ONLY)
+
+            val totalMessages = folder.messageCount
+            if (totalMessages == 0) {
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
+                return SingleConnSyncResult(emptyList(), emptyList(), emptyMap())
+            }
+
+            val start = (totalMessages - limit + 1).coerceAtLeast(1)
+            val end = totalMessages
+            val messages = folder.getMessages(start, end)
+            val validMessages = messages.filterNotNull().toTypedArray()
+
+            if (validMessages.isEmpty()) {
+                try { folder.close(false) } catch (e: Exception) {}
+                try { store.close() } catch (e: Exception) {}
+                return SingleConnSyncResult(emptyList(), emptyList(), emptyMap())
+            }
+
+            val fp = FetchProfile()
+            fp.add(FetchProfile.Item.ENVELOPE)
+            fp.add(FetchProfile.Item.FLAGS)
+            fp.add(UIDFolder.FetchProfileItem.UID)
+            try {
+                folder.fetch(validMessages, fp)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            val latestUids = mutableListOf<Long>()
+            val newEmails = mutableListOf<EmailMessage>()
+            val flagsMap = mutableMapOf<Long, Boolean>()
+
+            validMessages.reversed().forEach { msg ->
+                try {
+                    val flags = try { msg.flags } catch (e: Exception) { null }
+                    if (flags?.contains(Flags.Flag.DELETED) == true) return@forEach
+
+                    val uid = folder.getUID(msg)
+                    if (uid <= 0) return@forEach
+
+                    latestUids.add(uid)
+                    val isRead = flags?.contains(Flags.Flag.SEEN) == true
+
+                    if (isUidExisting(uid)) {
+                        flagsMap[uid] = isRead
+                    } else {
+                        val subject = try { msg.subject } catch (e: Exception) { null } ?: noSubjectString
+                        val sender = try { msg.from?.firstOrNull()?.toString() } catch (e: Exception) { null } ?: unknownSenderString
+                        val replyTo = try { msg.replyTo?.firstOrNull()?.toString() } catch (e: Exception) { null }
+                        val toRecipients = try { msg.getRecipients(Message.RecipientType.TO)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                        val ccRecipients = try { msg.getRecipients(Message.RecipientType.CC)?.joinToString(", ") { it.toString() } } catch (e: Exception) { null }
+                        val date = try { msg.sentDate?.toString() } catch (e: Exception) { null } ?: ""
+                        val hasAttachments = try { checkHasAttachments(msg) } catch (e: Exception) { false }
+                        val messageNumber = try { msg.messageNumber.toString() } catch (e: Exception) { uid.toString() }
+
+                        newEmails.add(
+                            EmailMessage(
+                                id = messageNumber,
+                                uid = uid,
+                                subject = subject,
+                                sender = sender,
+                                replyTo = replyTo,
+                                toRecipients = toRecipients,
+                                ccRecipients = ccRecipients,
+                                content = "",
+                                htmlContent = null,
+                                date = date,
+                                folder = folderName,
+                                isRead = isRead,
+                                hasAttachments = hasAttachments
+                            )
+                        )
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+
+            try { folder.close(false) } catch (e: Exception) {}
+            try { store.close() } catch (e: Exception) {}
+
+            SingleConnSyncResult(latestUids, newEmails, flagsMap)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
     }
 
     fun startIdle(
@@ -82,6 +195,7 @@ class ImapManager {
                     folder.idle()
                 } catch (e: Exception) {
                     if (e is InterruptedException || Thread.currentThread().isInterrupted || !store.isConnected) break
+                    try { Thread.sleep(2000) } catch (ie: InterruptedException) { break }
                 }
             }
         } catch (e: Throwable) {
@@ -575,12 +689,12 @@ class ImapManager {
     }
 
     private fun stripHtml(html: String): String {
-        return html.replace(Regex("(?s)<style.*?>.*?</style>"), "")
-            .replace(Regex("(?s)<script.*?>.*?</script>"), "")
-            .replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n\n")
-            .replace(Regex("</div>", RegexOption.IGNORE_CASE), "\n")
-            .replace(Regex("<[^>]*>"), "")
+        return html.replace(STYLE_REGEX, "")
+            .replace(SCRIPT_REGEX, "")
+            .replace(BR_REGEX, "\n")
+            .replace(P_REGEX, "\n\n")
+            .replace(DIV_REGEX, "\n")
+            .replace(TAG_REGEX, "")
             .replace("&nbsp;", " ")
             .replace("&amp;", "&")
             .replace("&lt;", "<")
@@ -1235,5 +1349,14 @@ class ImapManager {
             }
         }
         return currentPart
+    }
+
+    companion object {
+        private val STYLE_REGEX = Regex("(?s)<style.*?>.*?</style>")
+        private val SCRIPT_REGEX = Regex("(?s)<script.*?>.*?</script>")
+        private val BR_REGEX = Regex("<br\\s*/?>", RegexOption.IGNORE_CASE)
+        private val P_REGEX = Regex("</p>", RegexOption.IGNORE_CASE)
+        private val DIV_REGEX = Regex("</div>", RegexOption.IGNORE_CASE)
+        private val TAG_REGEX = Regex("<[^>]*>")
     }
 }
