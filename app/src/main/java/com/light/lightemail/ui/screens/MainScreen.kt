@@ -2356,7 +2356,7 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             delay(1000)
             viewModel.saveSettings(
                 email, password, imapHost, smtpHost, smtpPort, senderName, textSize, headerTextSize, signature,
-                useColorMode = (themeMode == "color"),
+                useColorMode = (themeMode != "black"),
                 themeMode = themeMode,
                 autoCheckUpdates = autoCheckUpdates,
                 startOnBoot = startOnBoot
@@ -2422,6 +2422,12 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             text = stringResource(R.string.color_mode_label),
             checked = themeMode == "color",
             onCheckedChange = { if (it) themeMode = "color" },
+            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
+        )
+        LightToggleRow(
+            text = stringResource(R.string.posteo_mode_label),
+            checked = themeMode == "posteo",
+            onCheckedChange = { if (it) themeMode = "posteo" },
             textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
         )
 

@@ -86,6 +86,58 @@ private val ThunderbirdDarkColorScheme = darkColorScheme(
     inversePrimary = ThunderbirdBlue
 )
 
+private val PosteoLightColorScheme = lightColorScheme(
+    primary = PosteoGreen,
+    onPrimary = White,
+    primaryContainer = PosteoLightGreen,
+    onPrimaryContainer = PosteoOnLightGreen,
+    secondary = PosteoTeal,
+    onSecondary = White,
+    secondaryContainer = PosteoLightTeal,
+    onSecondaryContainer = Color(0xFF00201D),
+    tertiary = PosteoAmber,
+    onTertiary = Black,
+    tertiaryContainer = PosteoLightAmber,
+    onTertiaryContainer = Color(0xFF261A00),
+    background = PosteoLightBackground,
+    onBackground = PosteoLightOnBackground,
+    surface = PosteoLightSurface,
+    onSurface = PosteoLightOnSurface,
+    surfaceVariant = PosteoLightSurfaceVariant,
+    onSurfaceVariant = PosteoLightOnSurfaceVariant,
+    outline = PosteoLightOutline,
+    outlineVariant = PosteoLightOutlineVariant,
+    inverseSurface = Color(0xFF2C342C),
+    inverseOnSurface = Color(0xFFEFF5ED),
+    inversePrimary = PosteoDarkPrimary
+)
+
+private val PosteoDarkColorScheme = darkColorScheme(
+    primary = PosteoDarkPrimary,
+    onPrimary = PosteoDarkOnPrimary,
+    primaryContainer = PosteoDarkPrimaryContainer,
+    onPrimaryContainer = PosteoDarkOnPrimaryContainer,
+    secondary = PosteoBrightTeal,
+    onSecondary = Color(0xFF003734),
+    secondaryContainer = PosteoDarkTeal,
+    onSecondaryContainer = Color(0xFFB2ECEF),
+    tertiary = PosteoBrightAmber,
+    onTertiary = Color(0xFF3E2E00),
+    tertiaryContainer = PosteoDarkAmber,
+    onTertiaryContainer = Color(0xFFFFE08B),
+    background = PosteoDarkBackground,
+    onBackground = PosteoDarkOnBackground,
+    surface = PosteoDarkSurface,
+    onSurface = PosteoDarkOnSurface,
+    surfaceVariant = PosteoDarkSurfaceVariant,
+    onSurfaceVariant = PosteoDarkOnSurfaceVariant,
+    outline = PosteoDarkOutline,
+    outlineVariant = PosteoDarkOutlineVariant,
+    inverseSurface = PosteoLightSurface,
+    inverseOnSurface = PosteoLightOnSurface,
+    inversePrimary = PosteoGreen
+)
+
 @Composable
 fun LightEmailTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
@@ -103,6 +155,7 @@ fun LightEmailTheme(
 
     val colorScheme = when (mode) {
         "color" -> if (darkTheme) ThunderbirdDarkColorScheme else ThunderbirdLightColorScheme
+        "posteo" -> if (darkTheme) PosteoDarkColorScheme else PosteoLightColorScheme
         else -> if (darkTheme) BlackDarkColorScheme else BlackLightColorScheme
     }
 

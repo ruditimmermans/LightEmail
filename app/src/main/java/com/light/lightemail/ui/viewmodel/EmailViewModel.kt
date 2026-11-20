@@ -68,7 +68,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
     )
     val themeMode: StateFlow<String> = _themeMode
 
-    private val _useColorMode = MutableStateFlow(_themeMode.value == "color")
+    private val _useColorMode = MutableStateFlow(_themeMode.value != "black")
     val useColorMode: StateFlow<Boolean> = _useColorMode
 
     private val _autoCheckUpdates = MutableStateFlow(prefs.getBoolean("auto_check_updates", true))
@@ -181,7 +181,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
                 _textSize.value = prefs.getFloat("text_size", 16f)
                 _headerTextSize.value = prefs.getFloat("header_text_size", 16f)
                 _themeMode.value = prefs.getString("theme_mode", null) ?: if (prefs.getBoolean("use_color_mode", false)) "color" else "black"
-                _useColorMode.value = (_themeMode.value == "color")
+                _useColorMode.value = (_themeMode.value != "black")
                 _autoCheckUpdates.value = prefs.getBoolean("auto_check_updates", true)
                 _startOnBoot.value = prefs.getBoolean("start_on_boot", true)
                 _signature.value = prefs.getString("signature", "") ?: ""
@@ -219,7 +219,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
         _headerTextSize.value = headerTextSize
         _signature.value = signature
         _themeMode.value = themeMode
-        _useColorMode.value = (themeMode == "color")
+        _useColorMode.value = (themeMode != "black")
         _autoCheckUpdates.value = autoCheckUpdates
         _startOnBoot.value = startOnBoot
 
@@ -235,7 +235,7 @@ class EmailViewModel(application: Application) : AndroidViewModel(application) {
             putFloat("header_text_size", headerTextSize)
             putString("signature", signature)
             putString("theme_mode", themeMode)
-            putBoolean("use_color_mode", themeMode == "color")
+            putBoolean("use_color_mode", themeMode != "black")
             putBoolean("auto_check_updates", autoCheckUpdates)
             putBoolean("start_on_boot", startOnBoot)
             apply()
