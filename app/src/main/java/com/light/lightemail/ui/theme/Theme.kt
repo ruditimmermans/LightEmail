@@ -19,7 +19,7 @@ private val BlackDarkColorScheme = darkColorScheme(
     onSurface = White,
     secondary = DarkGray,
     onSecondary = White,
-    outline = DarkGray
+    outline = DarkGray,
 )
 
 private val BlackLightColorScheme = lightColorScheme(
@@ -31,35 +31,59 @@ private val BlackLightColorScheme = lightColorScheme(
     onSurface = Black,
     secondary = LightGray,
     onSecondary = Black,
-    outline = LightGray
+    outline = LightGray,
 )
 
 private val ThunderbirdLightColorScheme = lightColorScheme(
     primary = ThunderbirdBlue,
     onPrimary = White,
-    background = ThunderbirdSurface,
-    onBackground = ThunderbirdOnSurface,
-    surface = White,
-    onSurface = ThunderbirdOnSurface,
     primaryContainer = ThunderbirdLightBlue,
-    onPrimaryContainer = ThunderbirdDarkBlue,
-    secondary = ThunderbirdBlue,
+    onPrimaryContainer = ThunderbirdOnLightBlue,
+    secondary = ThunderbirdCyan,
     onSecondary = White,
-    outline = LightGray
+    secondaryContainer = ThunderbirdLightCyan,
+    onSecondaryContainer = Color(0xFF001F29),
+    tertiary = ThunderbirdAmber,
+    onTertiary = White,
+    tertiaryContainer = ThunderbirdLightAmber,
+    onTertiaryContainer = Color(0xFF3B1800),
+    background = ThunderbirdLightBackground,
+    onBackground = ThunderbirdLightOnBackground,
+    surface = ThunderbirdLightSurface,
+    onSurface = ThunderbirdLightOnSurface,
+    surfaceVariant = ThunderbirdLightSurfaceVariant,
+    onSurfaceVariant = ThunderbirdLightOnSurfaceVariant,
+    outline = ThunderbirdLightOutline,
+    outlineVariant = ThunderbirdLightOutlineVariant,
+    inverseSurface = Color(0xFF2E3440),
+    inverseOnSurface = Color(0xFFF0F4F9),
+    inversePrimary = ThunderbirdDarkPrimary
 )
 
 private val ThunderbirdDarkColorScheme = darkColorScheme(
-    primary = ThunderbirdBlue,
-    onPrimary = White,
-    background = Color(0xFF1C1B1F),
-    onBackground = Color(0xFFE6E1E5),
-    surface = Color(0xFF1C1B1F),
-    onSurface = Color(0xFFE6E1E5),
-    primaryContainer = ThunderbirdDarkBlue,
-    onPrimaryContainer = ThunderbirdLightBlue,
-    secondary = ThunderbirdBlue,
-    onSecondary = White,
-    outline = DarkGray
+    primary = ThunderbirdDarkPrimary,
+    onPrimary = ThunderbirdDarkOnPrimary,
+    primaryContainer = ThunderbirdDarkPrimaryContainer,
+    onPrimaryContainer = ThunderbirdDarkOnPrimaryContainer,
+    secondary = ThunderbirdBrightCyan,
+    onSecondary = Color(0xFF003545),
+    secondaryContainer = ThunderbirdDarkCyan,
+    onSecondaryContainer = Color(0xFFC8F2FF),
+    tertiary = ThunderbirdBrightAmber,
+    onTertiary = Color(0xFF4A2800),
+    tertiaryContainer = ThunderbirdDarkAmber,
+    onTertiaryContainer = Color(0xFFFFDBC7),
+    background = ThunderbirdDarkBackground,
+    onBackground = ThunderbirdDarkOnBackground,
+    surface = ThunderbirdDarkSurface,
+    onSurface = ThunderbirdDarkOnSurface,
+    surfaceVariant = ThunderbirdDarkSurfaceVariant,
+    onSurfaceVariant = ThunderbirdDarkOnSurfaceVariant,
+    outline = ThunderbirdDarkOutline,
+    outlineVariant = ThunderbirdDarkOutlineVariant,
+    inverseSurface = ThunderbirdLightSurface,
+    inverseOnSurface = ThunderbirdLightOnSurface,
+    inversePrimary = ThunderbirdBlue
 )
 
 @Composable

@@ -992,7 +992,7 @@ fun EmailDetailScreen(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color.Black)
+                                .background(MaterialTheme.colorScheme.surface)
                                 .padding(if (isVerySmallScreen) 4.dp else 8.dp)
                         ) {
                             if (!isVerySmallScreen) {
@@ -1007,7 +1007,7 @@ fun EmailDetailScreen(
                             Text(
                                 text = email.content,
                                 fontSize = textSize.sp,
-                                color = MaterialTheme.colorScheme.onBackground
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     } else {
@@ -1400,11 +1400,19 @@ fun HtmlView(
     val context = LocalContext.current
     val configuration = androidx.compose.ui.platform.LocalConfiguration.current
     val isVerySmallScreen = configuration.screenHeightDp < 480
+
+    val themeBgColor = MaterialTheme.colorScheme.background
+    val themeTextColor = MaterialTheme.colorScheme.onBackground
+    val themePrimaryColor = MaterialTheme.colorScheme.primary
+    val bgHex = remember(themeBgColor) { String.format("#%06X", 0xFFFFFF and themeBgColor.toArgb()) }
+    val textHex = remember(themeTextColor) { String.format("#%06X", 0xFFFFFF and themeTextColor.toArgb()) }
+    val linkHex = remember(themePrimaryColor) { String.format("#%06X", 0xFFFFFF and themePrimaryColor.toArgb()) }
+    val bgArgb = remember(themeBgColor) { themeBgColor.toArgb() }
     
-    val styledHtml = remember(html, isDark, textSize, attachments, showAttachments) {
-        val backgroundColor = if (isDark) "#121212" else "#FFFFFF"
-        val textColor = if (isDark) "#FFFFFF" else "#000000"
-        val linkColor = if (isDark) "#8ab4f8" else "#1a73e8"
+    val styledHtml = remember(html, isDark, textSize, attachments, showAttachments, bgHex, textHex, linkHex) {
+        val backgroundColor = bgHex
+        val textColor = textHex
+        val linkColor = linkHex
         
         val darkModeCss = if (isDark) {
             """
@@ -1619,7 +1627,6 @@ fun HtmlView(
                             settings.isAlgorithmicDarkeningAllowed = isDark
                         }
                         
-                        val bgArgb = if (isDark) android.graphics.Color.parseColor("#121212") else android.graphics.Color.WHITE
                         setBackgroundColor(bgArgb)
                         loadDataWithBaseURL("https://light-email.local/", styledHtml, "text/html", "utf-8", null)
                         lastLoadedHtml.value = styledHtml
@@ -1631,7 +1638,6 @@ fun HtmlView(
             },
             update = { webView ->
                 if (webView is WebView) {
-                    val bgArgb = if (isDark) android.graphics.Color.parseColor("#121212") else android.graphics.Color.WHITE
                     webView.setBackgroundColor(bgArgb)
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         webView.settings.isAlgorithmicDarkeningAllowed = isDark
@@ -2039,7 +2045,7 @@ fun ComposeEmailScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(MaterialTheme.colorScheme.background)
                 .clickable(enabled = false) {}
         ) {
             LazyColumn(
