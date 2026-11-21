@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">LightEmail</string>
-    <string name="app_title">LightEmail</string>
+    <string name="app_name">Posteo Mail</string>
+    <string name="app_title">Posteo Mail</string>
     <string name="back">Terug</string>
     <string name="back_to_email">Terug naar e-mail</string>
     <string name="refresh">Vernieuwen</string>
@@ -15,7 +15,7 @@
     <string name="no_emails">Geen e-mails. Voeg een account toe of ververs.</string>
     <string name="app_description">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.</string>
     <string name="app_tagline">Lichtgewicht, veilige &amp; privacygerichte e-mail</string>
-    <string name="about_app_summary">LightEmail biedt een schone, afleidingsvrije e-mailervaring die speciaal is ontworpen voor Light Phone en Android-apparaten.</string>
+    <string name="about_app_summary">Posteo Mail biedt een schone, afleidingsvrije e-mailervaring die speciaal is ontworpen voor Light Phone en Android-apparaten.</string>
     <string name="key_features_title">Belangrijkste kenmerken</string>
     <string name="feature_minimal_title">Minimaal &amp; Afleidingsvrij</string>
     <string name="feature_minimal_desc">Gefocust op duidelijke, snelle tekstgebaseerde communicatie zonder rommel.</string>
@@ -32,7 +32,6 @@
     <string name="settings_title">Instellingen</string>
     <string name="theme_mode_label">Thema modus</string>
     <string name="black_mode_label">Zwarte modus</string>
-    <string name="color_mode_label">Kleurmodus (Thunderbird)</string>
     <string name="posteo_mode_label">Kleurmodus (Posteo Groen)</string>
     <string name="text_size_label">Tekengrootte: %1$d sp</string>
     <string name="header_text_size_label">Tekengrootte header: %1$d sp</string>
@@ -82,9 +81,8 @@
     <string name="select_contact">Contact selecteren</string>
     <string name="folders">Mappen</string>
     <string name="secure_text_email">Beveiligde text email</string>
-    <string name="outlook_oauth_warning">LightEmail ondersteunt geen Outlook OAuth e-mailaccounts.</string>
     <string name="push_service_channel_name">E-mail Push-service</string>
-    <string name="push_service_title">LightEmail is actief</string>
+    <string name="push_service_title">Posteo Mail is actief</string>
     <string name="push_service_desc">Luisteren naar nieuwe e-mails (Batterijgeoptimaliseerd)…</string>
     <string name="new_emails_channel_name">Nieuwe e-mails</string>
     <string name="new_emails_channel_desc">Meldingen voor nieuwe inkomende e-mails</string>

@@ -1,6 +1,6 @@
 <resources>
-    <string name="app_name">LightEmail</string>
-    <string name="app_title">LightEmail</string>
+    <string name="app_name">Posteo Mail</string>
+    <string name="app_title">Posteo Mail</string>
     <string name="back">Back</string>
     <string name="back_to_email">Back to email</string>
     <string name="refresh">Refresh</string>
@@ -15,7 +15,7 @@
     <string name="no_emails">No emails. Add an account or refresh.</string>
     <string name="app_description">This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details. You should have received a copy of the GNU General Public License along with this program. If not, see http://www.gnu.org/licenses.</string>
     <string name="app_tagline">Lightweight, secure &amp; privacy-focused email</string>
-    <string name="about_app_summary">LightEmail provides a clean, distraction-free email experience designed specifically for Light Phone and Android devices.</string>
+    <string name="about_app_summary">Posteo Mail provides a clean, distraction-free email experience designed specifically for Light Phone and Android devices.</string>
     <string name="key_features_title">Key Features</string>
     <string name="feature_minimal_title">Minimal &amp; Distraction-Free</string>
     <string name="feature_minimal_desc">Focused on clear, fast text-based communication without clutter.</string>
@@ -32,7 +32,6 @@
     <string name="settings_title">Settings</string>
     <string name="theme_mode_label">Theme Mode</string>
     <string name="black_mode_label">Black Mode</string>
-    <string name="color_mode_label">Color Mode (Thunderbird)</string>
     <string name="posteo_mode_label">Color Mode (Posteo Green)</string>
     <string name="text_size_label">Text Size: %1$d sp</string>
     <string name="header_text_size_label">Header Text Size: %1$d sp</string>
@@ -82,9 +81,8 @@
     <string name="select_contact">Select Contact</string>
     <string name="folders">Folders</string>
     <string name="secure_text_email">Secure text email</string>
-    <string name="outlook_oauth_warning">LightEmail does not support Outlook OAuth email accounts.</string>
     <string name="push_service_channel_name">Email Push Service</string>
-    <string name="push_service_title">LightEmail is active</string>
+    <string name="push_service_title">Posteo Mail is active</string>
     <string name="push_service_desc">Listening for new emails (Battery Optimized)...</string>
     <string name="new_emails_channel_name">New Emails</string>
     <string name="new_emails_channel_desc">Notifications for new incoming emails</string>

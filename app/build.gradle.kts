@@ -1,4 +1,4 @@
-val appVersionName = "7.5"
+val appVersionName = "7.6"
 
 plugins {
     alias(libs.plugins.androidApp)
@@ -8,7 +8,7 @@ plugins {
 }
 
 base {
-    archivesName = "LightEmail-v$appVersionName"
+    archivesName = "PosteoMail-v$appVersionName"
 }
 android {
     namespace = "com.light.lightemail"
@@ -18,7 +18,7 @@ android {
         applicationId = "com.light.lightemail"
         minSdk = 33
         targetSdk = 35
-        versionCode = 66
+        versionCode = 67
         versionName = appVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

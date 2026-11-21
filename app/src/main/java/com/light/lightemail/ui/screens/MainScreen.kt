@@ -2368,13 +2368,6 @@ fun SettingsScreen(viewModel: EmailViewModel) {
         Text(stringResource(R.string.settings_title).uppercase(), fontWeight = FontWeight.ExtraBold, fontSize = if (isVerySmallScreen) 14.sp else if (isLP3) 22.sp else if (isShortScreen) 16.sp else 20.sp, letterSpacing = 2.sp)
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 6.dp else if (isLP3) 28.dp else if (isShortScreen) 12.dp else 24.dp))
 
-        Text(
-            text = stringResource(R.string.outlook_oauth_warning),
-            color = MaterialTheme.colorScheme.error,
-            fontSize = if (isVerySmallScreen) 9.sp else if (isLP3) 13.sp else 11.sp,
-            modifier = Modifier.padding(bottom = if (isVerySmallScreen) 4.dp else if (isLP3) 20.dp else if (isShortScreen) 8.dp else 16.dp)
-        )
-
         Text(stringResource(R.string.add_imap_account_title).uppercase(), fontWeight = FontWeight.Bold, fontSize = if (isVerySmallScreen) 12.sp else if (isLP3) 16.sp else 14.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(if (isVerySmallScreen) 4.dp else if (isLP3) 12.dp else 8.dp))
         LightTextField(value = email, onValueChange = { email = it }, label = stringResource(R.string.email_label), textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f)
@@ -2419,14 +2412,8 @@ fun SettingsScreen(viewModel: EmailViewModel) {
             textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
         )
         LightToggleRow(
-            text = stringResource(R.string.color_mode_label),
-            checked = themeMode == "color",
-            onCheckedChange = { if (it) themeMode = "color" },
-            textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
-        )
-        LightToggleRow(
             text = stringResource(R.string.posteo_mode_label),
-            checked = themeMode == "posteo",
+            checked = themeMode == "posteo" || themeMode == "color",
             onCheckedChange = { if (it) themeMode = "posteo" },
             textSize = if (isVerySmallScreen) 14f else if (isLP3) 18f else 16f
         )
