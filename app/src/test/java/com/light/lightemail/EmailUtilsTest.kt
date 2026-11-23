@@ -60,4 +60,18 @@ class EmailUtilsTest {
         assertFalse(isNewerVersion("6.2", "6.1"))
         assertFalse(isNewerVersion("6.1", "6.1"))
     }
+
+    @Test
+    fun testDeletedEmailFilter() {
+        val existingUids = setOf(101L, 102L, 103L)
+        val deletedUids = setOf(104L)
+
+        val isUidExisting: (Long) -> Boolean = { uid ->
+            existingUids.contains(uid) || deletedUids.contains(uid)
+        }
+
+        assertTrue(isUidExisting(101L))
+        assertTrue(isUidExisting(104L)) // Deleted email must be treated as existing so it's not re-imported
+        assertFalse(isUidExisting(105L)) // Truly new email
+    }
 }

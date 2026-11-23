@@ -30,6 +30,7 @@ class EmailRepository(private val context: Context) {
     ) = withContext(Dispatchers.IO) {
         try {
             val existingUidSet = emailDao.getUidsByFolder(folder).toHashSet()
+            val deletedUidSet = emailDao.getDeletedUidsByFolder(folder).toHashSet()
 
             val syncResult = imapManager.syncFolderSingleConnection(
                 email = email,
@@ -37,7 +38,7 @@ class EmailRepository(private val context: Context) {
                 host = host,
                 folderName = folder,
                 limit = limit,
-                isUidExisting = { uid -> existingUidSet.contains(uid) },
+                isUidExisting = { uid -> existingUidSet.contains(uid) || deletedUidSet.contains(uid) },
                 noSubjectString = context.getString(R.string.no_subject),
                 unknownSenderString = context.getString(R.string.unknown_sender)
             ) ?: return@withContext
@@ -46,6 +47,7 @@ class EmailRepository(private val context: Context) {
             if (latestUids.isEmpty()) {
                 emailDao.clearFolder(folder)
                 emailDao.clearAttachmentsForFolder(folder)
+                emailDao.clearDeletedFolder(folder)
                 return@withContext
             }
 
@@ -62,6 +64,13 @@ class EmailRepository(private val context: Context) {
             val minUid = latestUids.minOrNull()
             if (minUid != null) {
                 emailDao.deleteOldEmailsInRange(folder, minUid, latestUids)
+            }
+
+            val latestUidSet = latestUids.toSet()
+            deletedUidSet.forEach { deletedUid ->
+                if (!latestUidSet.contains(deletedUid)) {
+                    emailDao.removeDeletedUid(deletedUid, folder)
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -157,6 +166,7 @@ class EmailRepository(private val context: Context) {
         uid: Long
     ) = withContext(Dispatchers.IO) {
         try {
+            emailDao.markEmailAsDeleted(DeletedEmail(uid, folder))
             emailDao.deleteEmail(uid, folder)
             emailDao.deleteAttachmentsForEmail(uid, folder)
             imapManager.deleteEmail(email, password, host, folder, uid)
@@ -174,6 +184,7 @@ class EmailRepository(private val context: Context) {
         uid: Long
     ) = withContext(Dispatchers.IO) {
         try {
+            emailDao.markEmailAsDeleted(DeletedEmail(uid, srcFolder))
             emailDao.deleteEmail(uid, srcFolder)
             emailDao.deleteAttachmentsForEmail(uid, srcFolder)
 
@@ -191,6 +202,7 @@ class EmailRepository(private val context: Context) {
         try {
             emailDao.clearFolder(folder)
             emailDao.clearAttachmentsForFolder(folder)
+            emailDao.clearDeletedFolder(folder)
         } catch (e: Exception) {
             e.printStackTrace()
         }

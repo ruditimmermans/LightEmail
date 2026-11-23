@@ -59,4 +59,16 @@ interface EmailDao {
 
     @Query("UPDATE attachments SET localPath = :localPath WHERE id = :id")
     suspend fun updateAttachmentLocalPath(id: Int, localPath: String)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun markEmailAsDeleted(deletedEmail: DeletedEmail)
+
+    @Query("SELECT uid FROM deleted_emails WHERE folder = :folder")
+    suspend fun getDeletedUidsByFolder(folder: String): List<Long>
+
+    @Query("DELETE FROM deleted_emails WHERE folder = :folder AND uid = :uid")
+    suspend fun removeDeletedUid(uid: Long, folder: String)
+
+    @Query("DELETE FROM deleted_emails WHERE folder = :folder")
+    suspend fun clearDeletedFolder(folder: String)
 }
