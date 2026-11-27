@@ -132,7 +132,9 @@ fun MainScreen(
     val emails by viewModel.emails.collectAsState()
     val activeEmail by remember(selectedEmail, emails) {
         derivedStateOf {
-            emails.find { it.uid == selectedEmail?.uid } ?: selectedEmail
+            selectedEmail?.let { sel ->
+                emails.find { it.uid == sel.uid }
+            }
         }
     }
     val isLoading by viewModel.isLoading.collectAsState()
@@ -164,6 +166,15 @@ fun MainScreen(
             viewModel.clearPendingAttachments()
         }
         currentScreen = Screen.Home
+    }
+
+    // Automatically return to Home screen if open email was deleted remotely
+    LaunchedEffect(currentScreen, activeEmail, selectedEmail) {
+        if (currentScreen == Screen.ViewEmail && selectedEmail != null && activeEmail == null) {
+            showMoveDialog = false
+            selectedEmail = null
+            currentScreen = Screen.Home
+        }
     }
 
     // Handle deep link from notification
